@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
@@ -45,6 +46,83 @@ class HomeController extends GetxController {
   }
 
   final RxInt unreadNotificationCount = 0.obs;
+
+  // Search state for Discover-in-Home feature
+  final TextEditingController searchController = TextEditingController();
+  final RxString searchQuery = "".obs;
+  bool get isSearching => searchQuery.value.trim().isNotEmpty;
+
+  // Recent Trades (Who Won The Trade?) Voting Feature
+  final RxInt currentTradeIndex = 0.obs;
+  final RxList<RecentTradeVoteModel> recentTrades = <RecentTradeVoteModel>[
+    RecentTradeVoteModel(
+      id: "trade_1",
+      itemAName: "Nike Dunk Low 'Panda' (DS)",
+      itemAValue: "\$180",
+      itemAImage: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=800",
+      itemBName: "Air Jordan 1 High 'Shadow 2.0'",
+      itemBValue: "\$210",
+      itemBImage: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?q=80&w=800",
+      category: "Sneakers",
+      timeAgo: "Completed 2h ago",
+      initialVotesA: 14,
+      initialVotesB: 36,
+    ),
+    RecentTradeVoteModel(
+      id: "trade_2",
+      itemAName: "Charizard Base Set Holo (PSA 8)",
+      itemAValue: "\$480",
+      itemAImage: "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
+      itemBName: "1986 Fleer Michael Jordan (PSA 7)",
+      itemBValue: "\$520",
+      itemBImage: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800",
+      category: "Trading Cards",
+      timeAgo: "Completed 5h ago",
+      initialVotesA: 42,
+      initialVotesB: 58,
+    ),
+    RecentTradeVoteModel(
+      id: "trade_3",
+      itemAName: "Supreme Box Logo Hoodie 'Heather Grey'",
+      itemAValue: "\$350",
+      itemAImage: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?q=80&w=800",
+      itemBName: "Travis Scott Jordan 1 Low 'Reverse Mocha'",
+      itemBValue: "\$450",
+      itemBImage: "https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?q=80&w=800",
+      category: "Streetwear",
+      timeAgo: "Completed 1d ago",
+      initialVotesA: 18,
+      initialVotesB: 82,
+    ),
+  ].obs;
+
+  void voteOnTrade(String tradeId, String option) {
+    final trade = recentTrades.firstWhereOrNull((t) => t.id == tradeId);
+    if (trade == null || trade.hasVoted.value) return;
+
+    trade.hasVoted.value = true;
+    trade.votedOption.value = option;
+    if (option == "A") {
+      trade.votesA.value += 1;
+    } else {
+      trade.votesB.value += 1;
+    }
+  }
+
+  void nextTrade() {
+    if (recentTrades.isEmpty) return;
+    currentTradeIndex.value = (currentTradeIndex.value + 1) % recentTrades.length;
+  }
+
+  void prevTrade() {
+    if (recentTrades.isEmpty) return;
+    currentTradeIndex.value = (currentTradeIndex.value - 1 + recentTrades.length) % recentTrades.length;
+  }
+
+  void clearSearch() {
+    searchController.clear();
+    searchQuery.value = "";
+  }
 
   @override
   void onInit() {
@@ -423,3 +501,41 @@ class LiveItemModel {
     this.raw,
   });
 }
+
+class RecentTradeVoteModel {
+  final String id;
+  final String itemAName;
+  final String itemAValue;
+  final String itemAImage;
+  final String itemBName;
+  final String itemBValue;
+  final String itemBImage;
+  final String category;
+  final String timeAgo;
+  final RxInt votesA;
+  final RxInt votesB;
+  final RxBool hasVoted;
+  final RxString votedOption; // 'A' or 'B'
+
+  RecentTradeVoteModel({
+    required this.id,
+    required this.itemAName,
+    required this.itemAValue,
+    required this.itemAImage,
+    required this.itemBName,
+    required this.itemBValue,
+    required this.itemBImage,
+    required this.category,
+    required this.timeAgo,
+    int initialVotesA = 12,
+    int initialVotesB = 28,
+  })  : votesA = initialVotesA.obs,
+        votesB = initialVotesB.obs,
+        hasVoted = false.obs,
+        votedOption = ''.obs;
+
+  int get totalVotes => votesA.value + votesB.value;
+  double get percentageA => totalVotes == 0 ? 50.0 : (votesA.value / totalVotes) * 100;
+  double get percentageB => totalVotes == 0 ? 50.0 : (votesB.value / totalVotes) * 100;
+}
+

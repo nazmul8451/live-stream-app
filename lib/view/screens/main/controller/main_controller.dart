@@ -20,9 +20,8 @@ class MainController extends GetxController {
 
   final List<Widget> screens = [
     const HomeScreen(),
-    const MessagesScreen(),
-    const DiscoverScreen(),
     const BidShwapScreen(),
+    const MessagesScreen(),
     const ProfileScreen(),
   ];
 
@@ -118,7 +117,7 @@ class MainController extends GetxController {
 
   void changeIndex(int index) {
     currentIndex.value = index;
-    if (index == 1) {
+    if (index == 2) {
       // Navigating to Messages tab
       fetchUnreadMessageCount();
     }

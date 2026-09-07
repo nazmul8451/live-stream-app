@@ -12,180 +12,172 @@ class CustomBottomNavbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.find<MainController>();
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    return SizedBox(
-      height: 165.h + bottomPadding,
-      child: Stack(
-        alignment: Alignment.topCenter,
-        clipBehavior: Clip.none,
-        children: [
-          // Invisible spacer to expand hit-test area
-          SizedBox(height: 165.h + bottomPadding, width: double.infinity),
-          // Navbar Background (Moved down to accommodate the spacer)
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              
-              height: 100.h + bottomPadding,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F0B1E),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(40.r),
-                  topRight: Radius.circular(40.r),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    blurRadius: 30.r,
-                    offset: const Offset(0, -10),
-                  ),
-                ],
-              ),
-              padding: EdgeInsets.only(
-                left: 12.w,
-                right: 12.w,
-                bottom: 10.h + bottomPadding,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _navItem(controller, 0, "assets/icons/Home-navBar.svg", "Home"),
-                  _navItem(controller, 1, "assets/icons/Messg-navbar.svg", "Message"),
-                  _navItem(controller, 2, "assets/icons/Discover-navBar.svg", "Discover"),
-                  _navItem(controller, 3, "assets/icons/Bidswap-navBar.svg", "BidShwap"),
-                  _navItem(controller, 4, "assets/icons/Profile-navBar.svg", "Profile"),
-                ],
-              ),
-            ),
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F0B1E),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(28.r),
+          topRight: Radius.circular(28.r),
+        ),
+        border: Border(
+          top: BorderSide(
+            color: const Color(0xFF261E42),
+            width: 1.2.w,
           ),
-          // Floating Action Button
-          Positioned(
-            top: 0,
-            child: GestureDetector(
-              onTap: () {
-                AuthGuard.check(
-                  title: "Sign in to Create a Trade",
-                  message: "Guest mode is browse-only. Sign in to list items and start trading with others.",
-                  onAuthorized: () => Get.toNamed('/create_trade'),
-                );
-              },
-              child: Container(
-                width: 72.w,
-                height: 72.w,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF8B9BFF),
-                  shape: BoxShape.circle,
-                  boxShadow : [
-                    BoxShadow(
-                      color: const Color(0xFF8B9BFF).withValues(alpha: 0.5),
-                      blurRadius: 25.r,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                  border: Border.all(color: const Color(0xFF0F0B1E), width: 6.w),
-                ),
-                child: Icon(Icons.add, color: Colors.black, size: 38.sp),
-              ),
-            ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.7),
+            blurRadius: 30.r,
+            offset: const Offset(0, -8),
+          ),
+          BoxShadow(
+            color: const Color(0xFF8B9BFF).withValues(alpha: 0.05),
+            blurRadius: 20.r,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.only(
+        top: 10.h,
+        bottom: bottomPadding > 0 ? bottomPadding : 10.h,
+        left: 8.w,
+        right: 8.w,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 1. Home
+          _navItem(
+            controller: controller,
+            index: 0,
+            iconPath: "assets/icons/Home-navBar.svg",
+            label: "Home",
+          ),
+
+          // 2. Trade Marketplace
+          _navItem(
+            controller: controller,
+            index: 1,
+            iconPath: "assets/icons/Bidswap-navBar.svg",
+            label: "Marketplace",
+          ),
+
+          // 3. Center Sell Button
+          _sellNavItem(context),
+
+          // 4. Messenger (with Badge)
+          _navItem(
+            controller: controller,
+            index: 2,
+            iconPath: "assets/icons/Messg-navbar.svg",
+            label: "Messenger",
+            isMessagesTab: true,
+          ),
+
+          // 5. Profile
+          _navItem(
+            controller: controller,
+            index: 3,
+            iconPath: "assets/icons/Profile-navBar.svg",
+            label: "Profile",
+            requiresAuth: true,
           ),
         ],
       ),
     );
   }
 
-  Widget _navItem(MainController controller, int index, String iconPath, String label) {
+  /// Standard Navigation Item with Icon on top and label underneath
+  Widget _navItem({
+    required MainController controller,
+    required int index,
+    required String iconPath,
+    required String label,
+    bool isMessagesTab = false,
+    bool requiresAuth = false,
+  }) {
     return Obx(() {
-      bool isSelected = controller.currentIndex.value == index;
-      final int unreadCount = index == 1 ? controller.unreadMessageCount.value : 0;
+      final bool isSelected = controller.currentIndex.value == index;
+      final int unreadCount = isMessagesTab ? controller.unreadMessageCount.value : 0;
 
-      return GestureDetector(
-        onTap: () {
-          if (index == 1) {
-            final allowed = AuthGuard.check(
-              title: "Sign in to access Messages",
-              message: "Guest mode is browse-only. Sign in or create an account to message other traders and view offers.",
-              onAuthorized: () {
-                controller.changeIndex(index);
-                if (Get.currentRoute != "/main") {
-                  Get.until((route) => Get.currentRoute == "/main");
-                }
-              },
-            );
-            if (!allowed) return;
-          } else if (index == 4) {
-            final allowed = AuthGuard.check(
-              title: "Sign in to view your Profile",
-              message: "Sign in or create an account to view your trade history, manage listings, and update profile settings.",
-              onAuthorized: () {
-                controller.changeIndex(index);
-                if (Get.currentRoute != "/main") {
-                  Get.until((route) => Get.currentRoute == "/main");
-                }
-              },
-            );
-            if (!allowed) return;
-          } else {
-            controller.changeIndex(index);
-            // If we are in a detail screen, go back to main first
-            if (Get.currentRoute != "/main") {
-              Get.until((route) => Get.currentRoute == "/main");
+      return Expanded(
+        child: InkWell(
+          onTap: () {
+            if (requiresAuth || isMessagesTab) {
+              final allowed = AuthGuard.check(
+                title: isMessagesTab ? "Sign in to access Messages" : "Sign in to view your Profile",
+                message: isMessagesTab
+                    ? "Guest mode is browse-only. Sign in or create an account to message other traders and view offers."
+                    : "Sign in or create an account to view your trade history, manage listings, and update profile settings.",
+                onAuthorized: () {
+                  controller.changeIndex(index);
+                  if (Get.currentRoute != "/main") {
+                    Get.until((route) => Get.currentRoute == "/main");
+                  }
+                },
+              );
+              if (!allowed) return;
+            } else {
+              controller.changeIndex(index);
+              if (Get.currentRoute != "/main") {
+                Get.until((route) => Get.currentRoute == "/main");
+              }
             }
-          }
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.fastOutSlowIn,
-          padding: EdgeInsets.symmetric(horizontal: isSelected ? 16.w : 10.w, vertical: 12.h),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF8B9BFF) : Colors.transparent,
-            borderRadius: BorderRadius.circular(28.r),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF8B9BFF).withValues(alpha: 0.45),
-                      blurRadius: 14.r,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
+          },
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Icon Container with optional Badge
               Stack(
                 clipBehavior: Clip.none,
+                alignment: Alignment.center,
                 children: [
-                  SizedBox(
-                    width: 22.w,
-                    height: 22.w,
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF8B9BFF).withValues(alpha: 0.15)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16.r),
+                    ),
                     child: SvgPicture.asset(
                       iconPath,
+                      width: 21.w,
+                      height: 21.w,
                       colorFilter: ColorFilter.mode(
-                        isSelected ? Colors.black : Colors.white70,
+                        isSelected ? const Color(0xFF8B9BFF) : Colors.white.withValues(alpha: 0.55),
                         BlendMode.srcIn,
                       ),
                     ),
                   ),
-                  if (unreadCount > 0)
+
+                  // Unread badge for Messenger
+                  if (isMessagesTab && unreadCount > 0)
                     Positioned(
-                      top: -6.h,
-                      right: -8.w,
+                      top: 0,
+                      right: 4.w,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.h),
+                        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 1.5.h),
                         constraints: BoxConstraints(minWidth: 16.r, minHeight: 16.r),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFF4B67),
                           borderRadius: BorderRadius.circular(10.r),
                           border: Border.all(
-                            color: isSelected ? const Color(0xFF8B9BFF) : const Color(0xFF0F0B1E),
+                            color: const Color(0xFF0F0B1E),
                             width: 1.5.w,
                           ),
                           boxShadow: [
                             BoxShadow(
                               color: const Color(0xFFFF4B67).withValues(alpha: 0.6),
-                              blurRadius: 8.r,
+                              blurRadius: 6.r,
                               offset: const Offset(0, 2),
                             ),
                           ],
@@ -204,21 +196,102 @@ class CustomBottomNavbar extends StatelessWidget {
                     ),
                 ],
               ),
-              if (isSelected) ...[
-                SizedBox(width: 8.w),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
+
+              SizedBox(height: 3.h),
+
+              // Text Label underneath
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFF8B9BFF) : Colors.white.withValues(alpha: 0.55),
+                  fontSize: 10.5.sp,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  letterSpacing: 0.2,
                 ),
-              ],
+              ),
+
+              SizedBox(height: 3.h),
+
+              // Tiny Active Dot Indicator
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                height: 3.h,
+                width: isSelected ? 14.w : 0,
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF8B9BFF) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
             ],
           ),
         ),
       );
     });
+  }
+
+  /// Center "Sell" Action Button with glowing icon and label underneath
+  Widget _sellNavItem(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          AuthGuard.check(
+            title: "Sign in to Create a Trade",
+            message: "Guest mode is browse-only. Sign in to list items and start trading with others.",
+            onAuthorized: () => Get.toNamed('/create_trade'),
+          );
+        },
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 38.w,
+              height: 38.w,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFFA5B4FF),
+                    Color(0xFF6E80FF),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF8B9BFF).withValues(alpha: 0.45),
+                    blurRadius: 12.r,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.add_rounded,
+                color: const Color(0xFF0F0B1E),
+                size: 26.sp,
+              ),
+            ),
+            SizedBox(height: 3.h),
+            Text(
+              "Sell",
+              maxLines: 1,
+              style: TextStyle(
+                color: const Color(0xFF8B9BFF),
+                fontSize: 10.5.sp,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.2,
+              ),
+            ),
+            SizedBox(height: 3.h),
+            SizedBox(height: 3.h), // Equal spacing for layout symmetry
+          ],
+        ),
+      ),
+    );
   }
 }

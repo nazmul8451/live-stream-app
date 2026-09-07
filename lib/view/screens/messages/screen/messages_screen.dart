@@ -17,10 +17,8 @@ class MessagesScreen extends GetView<MessagesController> {
     Get.put(MessagesController());
     return CustomBackground(
       child: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Column(
-              children: [
                 // Header
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 15.h),
@@ -174,33 +172,10 @@ class MessagesScreen extends GetView<MessagesController> {
                   ),
                 ),
               ),
-              ],
-            ),
-            
-            // Floating Action Button
-            Positioned(
-              bottom: 30.h,
-              right: 16.w,
-              left: 16.w,
-              child: Center(
-                child: Container(
-                  height: 60.h,
-                  width: 60.h,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B9BFF),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(color: const Color(0xFF8B9BFF).withOpacity(0.4), blurRadius: 20.r, offset: const Offset(0, 10)),
-                    ],
-                  ),
-                  child: Icon(Icons.add, color: Colors.black, size: 32.sp),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _buildSearchBar() {
