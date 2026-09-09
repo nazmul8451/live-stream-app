@@ -399,6 +399,10 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   _sideButton(Icons.gavel_rounded, const Color(0xFF8B9BFF), onTap: () {
                     _showStartNewAuctionSheet();
                   }),
+                  SizedBox(height: 16.h),
+                  _sideButton(Icons.stars_rounded, const Color(0xFFFFB800), onTap: () {
+                    _confirmGiveawayDraw(ctrl);
+                  }),
                 ],
               )),
             ),
@@ -431,6 +435,14 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
             Obx(() {
               if (ctrl.showWinnerOverlay.value) {
                 return _buildWinnerOverlay();
+              }
+              return const SizedBox.shrink();
+            }),
+
+            // ── Giveaway Winner Overlay Popup (Feature 2)
+            Obx(() {
+              if (ctrl.showGiveawayWinnerOverlay.value) {
+                return _buildGiveawayWinnerOverlay();
               }
               return const SizedBox.shrink();
             }),
@@ -630,6 +642,174 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmGiveawayDraw(AgoraLiveController ctrl) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        backgroundColor: const Color(0xFF1E1E2C),
+        child: Padding(
+          padding: EdgeInsets.all(24.r),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(16.r),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(colors: [Color(0xFFFFB800), Color(0xFFFF8B52)]),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.stars_rounded, color: Colors.white, size: 36.sp),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                "Draw Giveaway Winner?",
+                style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900),
+              ),
+              SizedBox(height: 10.h),
+              Text(
+                "This will trigger the real-time spin wheel and broadcast a live random winner from the enrolled pool to all viewers in this stream.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white60, fontSize: 13.sp, height: 1.4),
+              ),
+              SizedBox(height: 24.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Get.back(),
+                      child: Text("Cancel", style: TextStyle(color: Colors.white60, fontSize: 14.sp, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back();
+                        ctrl.drawGiveawayWinner();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFB800),
+                        foregroundColor: Colors.black,
+                        padding: EdgeInsets.symmetric(vertical: 14.h),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                      ),
+                      child: Text("Spin & Draw 🎲", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGiveawayWinnerOverlay() {
+    final ctrl = Get.find<AgoraLiveController>();
+    final winnerName = ctrl.giveawayWinnerName.value.isNotEmpty ? ctrl.giveawayWinnerName.value : "Lucky Participant";
+    final prizeName = ctrl.giveawayPrizeName.value.isNotEmpty ? ctrl.giveawayPrizeName.value : "Promotional Prize";
+
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black.withValues(alpha: 0.85),
+        padding: EdgeInsets.symmetric(horizontal: 24.w),
+        child: Center(
+          child: Container(
+            padding: EdgeInsets.all(24.r),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E1435), Color(0xFF130E26)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(28.r),
+              border: Border.all(color: const Color(0xFFBD8BFF), width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFBD8BFF).withValues(alpha: 0.35),
+                  blurRadius: 28,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16.r),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFBD8BFF), Color(0xFF8B9BFF)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.celebration_rounded, color: Colors.white, size: 36.sp),
+                ),
+                SizedBox(height: 16.h),
+                Text(
+                  "🎉 GIVEAWAY WINNER! 🎉",
+                  style: TextStyle(
+                    color: const Color(0xFFBD8BFF),
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                Text(
+                  winnerName,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 6.h),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Text(
+                    "Won: $prizeName",
+                    style: TextStyle(
+                      color: const Color(0xFF22C55E),
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => ctrl.showGiveawayWinnerOverlay.value = false,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B9BFF),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      "Dismiss",
+                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

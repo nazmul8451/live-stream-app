@@ -17,6 +17,7 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../profile/controller/profile_controller.dart';
 import '../../home/controller/home_controller.dart';
+import '../../spin_wheel/controller/spin_wheel_controller.dart';
 
 class FloatingHeart {
   final double id;
@@ -201,6 +202,17 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   final RxString customBid = "".obs;
   final RxBool isLiked = false.obs;
 
+  // Giveaway / Spin-Wheel Winner System
+  final RxBool showGiveawayWinnerOverlay = false.obs;
+  final RxString giveawayWinnerName = "".obs;
+  final RxString giveawayPrizeName = "".obs;
+  final RxDouble giveawayDegreeIndex = 0.0.obs;
+
+  // Stream Inventory & Bookmarks
+  final RxList<Map<String, dynamic>> streamInventoryItems = <Map<String, dynamic>>[].obs;
+  final RxBool isInventoryLoading = false.obs;
+  final RxBool isBookmarked = false.obs;
+
   // Live streams list (for Discover)
   final RxList<Map<String, dynamic>> liveStreamsList = <Map<String, dynamic>>[].obs;
   final RxBool loadingStreams = false.obs;
@@ -350,6 +362,9 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.on('auction-won', _handleAuctionWonEvent);
       socketService.on('auction-payment-received', _handleAuctionPaymentReceivedEvent);
       socketService.on('new-reaction', _handleNewReactionEvent);
+      socketService.on('spin-result', _handleSpinResultEvent);
+      socketService.on('spin_result', _handleSpinResultEvent);
+      socketService.on('giveaway-winner', _handleSpinResultEvent);
       socketService.on('messageReceived', _handleSocketMessage);
       socketService.on('newMessage', _handleSocketMessage);
       socketService.on('new message', _handleSocketMessage);
@@ -594,6 +609,34 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  void _handleSpinResultEvent(dynamic data) {
+    if (data == null) return;
+    try {
+      final Map<String, dynamic> resMap = (data is String)
+          ? Map<String, dynamic>.from(jsonDecode(data))
+          : Map<String, dynamic>.from(data as Map);
+
+      final winnerObj = resMap['winner'];
+      final String winnerName = (winnerObj is Map)
+          ? (winnerObj['name'] ?? winnerObj['fullName'] ?? 'Lucky Winner').toString()
+          : (resMap['winnerName'] ?? 'Lucky Winner').toString();
+      final String prize = resMap['prizeName']?.toString() ?? 'Giveaway Prize';
+      final double degree = double.tryParse(resMap['degreeIndex']?.toString() ?? '0') ?? 0.0;
+
+      giveawayWinnerName.value = winnerName;
+      giveawayPrizeName.value = prize;
+      giveawayDegreeIndex.value = degree;
+      showGiveawayWinnerOverlay.value = true;
+
+      // Also trigger SpinWheelController if active in memory
+      if (Get.isRegistered<SpinWheelController>()) {
+        Get.find<SpinWheelController>().spinToDegree(degree, prizeName: prize);
+      }
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] _handleSpinResultEvent error: $e");
+    }
+  }
+
   void broadcastJoin() {
     String usernameStr = "Viewer";
     String avatarUrl = "";
@@ -662,6 +705,9 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.off('auction-won', _handleAuctionWonEvent);
       socketService.off('auction-payment-received', _handleAuctionPaymentReceivedEvent);
       socketService.off('new-reaction', _handleNewReactionEvent);
+      socketService.off('spin-result', _handleSpinResultEvent);
+      socketService.off('spin_result', _handleSpinResultEvent);
+      socketService.off('giveaway-winner', _handleSpinResultEvent);
       socketService.off('messageReceived', _handleSocketMessage);
       socketService.off('newMessage', _handleSocketMessage);
       socketService.off('new message', _handleSocketMessage);
@@ -1415,6 +1461,14 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     return false;
   }
 
+  // FAST 1-TAP $1 BID (Fixed $1 increment without custom typing)
+  Future<void> placeFastBid() async {
+    final nextAmount = currentBidPrice.value > 0
+        ? (currentBidPrice.value + 1.0)
+        : 1.0;
+    await placeBid(nextAmount);
+  }
+
   // PLACE BID
   Future<void> placeBid(double amount) async {
     if (isPlacingBid.value) return;
@@ -2087,6 +2141,181 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  // ─── 1-CLICK QUICK-START ACTIVE AUCTION (Feature 5) ───
+  Future<bool> quickStartAuctionItem({
+    required String productId,
+    required double startingBid,
+    int timerDuration = 60,
+    int bidIncrement = 1,
+    String productTitle = "",
+    String productImage = "",
+  }) async {
+    if (streamId.value.isEmpty || productId.isEmpty) return false;
+    isLoading.value = true;
+    try {
+      final payload = {
+        "streamId": streamId.value,
+        "productId": productId,
+        "startingBid": startingBid,
+        "timerDuration": timerDuration,
+        "bidIncrement": bidIncrement,
+      };
+      final res = await _apiClient.postData(ApiUrl.quickStartAuction, payload);
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        final itemData = body['data'] is Map ? body['data'] : body;
+        auctionItemId.value = (itemData['_id'] ?? itemData['id'] ?? "").toString();
+        currentProductTitle.value = productTitle;
+        currentProductImage.value = productImage;
+        currentBidPrice.value = startingBid;
+        this.bidIncrement.value = bidIncrement.toDouble();
+        auctionActive.value = true;
+        showWinnerOverlay.value = false;
+        lastBidderId.value = "";
+        lastBidderName.value = "";
+        startCountdown(timerDuration);
+
+        // Notify room via socket
+        try {
+          final s = Get.find<SocketService>();
+          s.emitEvent('trigger-quick-auction', {
+            "streamId": streamId.value,
+            "auctionItemId": auctionItemId.value,
+            "productId": productId,
+            "productTitle": productTitle,
+            "productImage": productImage,
+            "startingBid": startingBid,
+            "timerDuration": timerDuration,
+          });
+        } catch (_) {}
+
+        Get.snackbar(
+          "Auction Started! 🚀",
+          "1-Click Auction live for $productTitle",
+          backgroundColor: const Color(0xFF22C55E),
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+        );
+        return true;
+      } else {
+        Get.snackbar("Error", "Could not start 1-click auction (${res.statusCode})", snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] quickStartAuctionItem error: $e");
+    } finally {
+      isLoading.value = false;
+    }
+    return false;
+  }
+
+  // ─── LIVE STREAM INVENTORY (Feature 5) ───
+  Future<void> fetchStreamInventory() async {
+    if (streamId.value.isEmpty) return;
+    isInventoryLoading.value = true;
+    try {
+      final res = await _apiClient.getData(ApiUrl.streamInventory(streamId.value));
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final raw = body['data'];
+        if (raw is List) {
+          streamInventoryItems.assignAll(raw.map((e) => Map<String, dynamic>.from(e as Map)).toList());
+        }
+      }
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] fetchStreamInventory error: $e");
+    } finally {
+      isInventoryLoading.value = false;
+    }
+  }
+
+  Future<bool> updateStreamInventory(List<String> inventoryIds) async {
+    if (streamId.value.isEmpty) return false;
+    try {
+      final res = await _apiClient.patchData(ApiUrl.streamInventory(streamId.value), {
+        "inventoryIds": inventoryIds,
+      });
+      if (res.statusCode == 200) {
+        fetchStreamInventory();
+        Get.snackbar("Inventory Updated", "Stream inventory synced successfully.", backgroundColor: const Color(0xFF161622), colorText: Colors.white);
+        return true;
+      }
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] updateStreamInventory error: $e");
+    }
+    return false;
+  }
+
+  // ─── GIVEAWAY / SPIN-WHEEL SYSTEM (Feature 2) ───
+  Future<void> drawGiveawayWinner() async {
+    if (streamId.value.isEmpty) return;
+    try {
+      // 1. Trigger via Socket
+      try {
+        final s = Get.find<SocketService>();
+        s.emitEvent('trigger-spin', {
+          "streamId": streamId.value,
+          "sellerId": SharePrefsHelper.getString(SharePrefsHelper.userIdKey),
+        });
+      } catch (_) {}
+
+      // 2. Call Giveaway Winner API
+      final res = await _apiClient.postData(ApiUrl.drawGiveawayWinner, {
+        "streamId": streamId.value,
+      });
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        final wData = body['data'] is Map ? body['data'] : body;
+        final name = wData['name'] ?? wData['winnerName'] ?? "Lucky Participant";
+        giveawayWinnerName.value = name.toString();
+        showGiveawayWinnerOverlay.value = true;
+      }
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] drawGiveawayWinner error: $e");
+    }
+  }
+
+  // ─── BOOKMARK & SCHEDULED SHOW ACTIONS (Feature 3 & 4) ───
+  Future<bool> toggleBookmark(String targetStreamId) async {
+    final sId = targetStreamId.isNotEmpty ? targetStreamId : streamId.value;
+    if (sId.isEmpty) return false;
+    try {
+      final res = await _apiClient.postData(ApiUrl.bookmarkStream(sId), {});
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        final bookmarked = body['data']?['isBookmarked'] ?? !isBookmarked.value;
+        isBookmarked.value = bookmarked == true;
+        Get.snackbar(
+          isBookmarked.value ? "Show Bookmarked! 🔔" : "Bookmark Removed",
+          isBookmarked.value ? "We'll remind you 15 minutes before showtime!" : "Reminder cancelled.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFF161622),
+          colorText: Colors.white,
+        );
+        return true;
+      }
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] toggleBookmark error: $e");
+    }
+    return false;
+  }
+
+  Future<bool> startScheduledStream(String sId) async {
+    if (sId.isEmpty) return false;
+    isLoading.value = true;
+    try {
+      final res = await _apiClient.postData(ApiUrl.startScheduledStream(sId), {});
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        Get.snackbar("Show Started! 🚀", "Your scheduled stream is now live!", backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
+        return true;
+      }
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] startScheduledStream error: $e");
+    } finally {
+      isLoading.value = false;
+    }
+    return false;
   }
 
   // ─────────────────────────────────────────────

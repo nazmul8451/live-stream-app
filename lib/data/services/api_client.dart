@@ -10,6 +10,7 @@ import 'package:get/get.dart';
 import '../../core/app_route.dart';
 
 import '../helpers/shared_prefe.dart';
+import '../../global/controllers/safety_controller.dart';
 
 class ApiClient {
   final String baseUrl = ApiUrl.baseUrl;
@@ -375,6 +376,13 @@ class ApiClient {
     }
 
     if ((response.statusCode == 401 || (response.statusCode == 403 && (uri.contains("/users/profile") || uri == ApiUrl.profile))) && uri != "/auth/refresh-token") {
+      final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
+      if (token.isEmpty) {
+        // Guest user attempting a protected action
+        SafetyController.showAuthRequiredDialog();
+        return response;
+      }
+
       final success = await _refreshToken();
       if (success) {
         // Token refresh succeeded, retry request with new token

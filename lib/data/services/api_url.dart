@@ -58,9 +58,20 @@ class ApiUrl {
   static const String category = "/category";
   static const String popularCategories = "/category/popular-categories";
 
+  // Safety & Compliance Disclaimer
+  static const String safetyDisclaimer = "/public/safety-disclaimer";
+
+  // Giveaway / Spin Wheel
+  static const String drawGiveawayWinner = "/giveaway/draw-winner";
+
   // Auctions / Live Streams
   static const String liveStreams = "/auctions/streams";
   static const String startStream = "/auctions/stream";
+  static String startScheduledStream(String streamId) => "/auctions/stream/start-scheduled/$streamId";
+  static String bookmarkStream(String streamId) => "/auctions/stream/$streamId/bookmark";
+  static const String savedShows = "/auctions/saved-shows";
+  static String streamInventory(String streamId) => "/auctions/stream/$streamId/inventory";
+  static const String quickStartAuction = "/auctions/item/quick-start";
   static const String addAuctionItem = "/auctions/item";
   static const String placeBid = "/auctions/bid";
   static const String agoraToken = "/auctions/token";

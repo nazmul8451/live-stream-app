@@ -459,12 +459,60 @@ class HomeController extends GetxController {
     fetchProducts(showLoading: true);
   }
 
+  // ─── SAVED SHOWS & BOOKMARKS (Feature 4) ───
+  final RxList<Map<String, dynamic>> savedShows = <Map<String, dynamic>>[].obs;
+  final RxBool isSavedShowsLoading = false.obs;
+
+  Future<void> fetchSavedShows() async {
+    final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
+    if (token.isEmpty) return; // Guest user
+    isSavedShowsLoading.value = true;
+    try {
+      final res = await _apiClient.getData(ApiUrl.savedShows);
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final raw = body['data'];
+        if (raw is List) {
+          savedShows.assignAll(raw.map((e) => Map<String, dynamic>.from(e as Map)).toList());
+        }
+      }
+    } catch (e) {
+      Get.log("❌ [HomeController] fetchSavedShows error: $e");
+    } finally {
+      isSavedShowsLoading.value = false;
+    }
+  }
+
+  Future<bool> toggleBookmarkShow(String streamId) async {
+    if (streamId.isEmpty) return false;
+    try {
+      final res = await _apiClient.postData(ApiUrl.bookmarkStream(streamId), {});
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        final isBookmarked = body['data']?['isBookmarked'] ?? true;
+        fetchSavedShows();
+        Get.snackbar(
+          isBookmarked ? "Show Saved! 🔔" : "Show Removed",
+          isBookmarked ? "You will receive a notification 15 mins before showtime." : "Bookmark removed.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFF161622),
+          colorText: Colors.white,
+        );
+        return true;
+      }
+    } catch (e) {
+      Get.log("❌ [HomeController] toggleBookmarkShow error: $e");
+    }
+    return false;
+  }
+
   Future<void> refreshHome() async {
     _categoryProductsCache.clear();
     await Future.wait([
       fetchProfileData(),
       fetchLiveStreams(),
       fetchCategories(),
+      fetchSavedShows(),
     ]);
     await fetchProducts(showLoading: true);
   }

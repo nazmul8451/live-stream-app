@@ -681,4 +681,222 @@ class SafetyController extends GetxController {
       ),
     );
   }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SAFETY & COMPLIANCE DISCLAIMER & GUEST AUTH MODAL
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  final RxString safetyDisclaimerText = "".obs;
+  final RxBool isDisclaimerLoading = false.obs;
+
+  /// Fetch Safety & Compliance Disclaimer (Public)
+  Future<String> fetchSafetyDisclaimer() async {
+    if (safetyDisclaimerText.isNotEmpty) return safetyDisclaimerText.value;
+    isDisclaimerLoading.value = true;
+    try {
+      final response = await _apiClient.getData(ApiUrl.safetyDisclaimer);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final content = data['data']?['content'] ?? data['data'] ?? "";
+        safetyDisclaimerText.value = content.toString();
+        return safetyDisclaimerText.value;
+      }
+    } catch (e) {
+      Get.log("❌ [SafetyController] fetchSafetyDisclaimer error: $e");
+    } finally {
+      isDisclaimerLoading.value = false;
+    }
+    return "Welcome to CultureCards LLC! Enjoy browsing sports cards, trading cards, and live stream auctions safely. Registration and payment methods are only required when you decide to place a bid or complete a purchase. Please trade responsibly.";
+  }
+
+  /// Show Safety Disclaimer Modal / Bottom Sheet
+  static void showSafetyDisclaimerDialog(BuildContext context) async {
+    final controller = SafetyController.instance;
+    final disclaimer = await controller.fetchSafetyDisclaimer();
+
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 32.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161622),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 44.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 20.h),
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(10.r),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.verified_user_rounded, color: const Color(0xFF8B9BFF), size: 24.sp),
+                ),
+                SizedBox(width: 14.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Safety & Compliance",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        "CultureCards LLC Transparency Notice",
+                        style: TextStyle(color: Colors.white54, fontSize: 12.sp),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20.h),
+            Container(
+              padding: EdgeInsets.all(16.r),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F0B1E),
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+              ),
+              child: Text(
+                disclaimer,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 13.sp,
+                  height: 1.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            SizedBox(height: 24.h),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Get.back(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF8B9BFF),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                  elevation: 0,
+                ),
+                child: Text(
+                  "I Understand & Agree",
+                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  /// Show Guest Auth Modal when a 401 or protected action is triggered
+  static void showAuthRequiredDialog({String? message}) {
+    if (Get.isDialogOpen ?? false) return;
+
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        backgroundColor: const Color(0xFF161626),
+        child: Padding(
+          padding: EdgeInsets.all(24.r),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(16.r),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF8B9BFF), Color(0xFF5B6BFF)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF8B9BFF).withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.lock_open_rounded, color: Colors.white, size: 32.sp),
+              ),
+              SizedBox(height: 18.h),
+              Text(
+                "Sign In Required",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 10.h),
+              Text(
+                message ?? "You can browse freely as a guest, but placing bids, making purchases, and bookmarking require an active account.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: 13.sp,
+                  height: 1.4,
+                ),
+              ),
+              SizedBox(height: 24.h),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Get.back();
+                    Get.toNamed(AppRoute.login);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8B9BFF),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    "Log In / Sign Up",
+                    style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+              SizedBox(height: 10.h),
+              TextButton(
+                onPressed: () => Get.back(),
+                child: Text(
+                  "Continue Browsing",
+                  style: TextStyle(color: Colors.white54, fontSize: 13.sp, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
