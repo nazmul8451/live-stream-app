@@ -325,6 +325,9 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
     if (_thumbnailUrlController.text.trim().isNotEmpty) {
       return _thumbnailUrlController.text.trim();
     }
+    if (_thumbnailBase64 != null && _thumbnailBase64!.isNotEmpty) {
+      return _thumbnailBase64!;
+    }
     if (_selectedProduct != null) {
       final rawImgs = _selectedProduct?['images'] ?? _selectedProduct?['image'] ?? _selectedProduct?['coverImage'];
       String? rawUrl;
@@ -334,11 +337,29 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
         rawUrl = rawImgs.toString();
       }
       if (rawUrl != null && rawUrl.isNotEmpty) {
-        if (rawUrl.startsWith('http')) return rawUrl;
+        if (rawUrl.startsWith('http') || rawUrl.startsWith('data:image/')) return rawUrl;
         return "${ApiUrl.imageBaseUrl}${rawUrl.startsWith('/') ? rawUrl : '/$rawUrl'}";
       }
     }
-    return "https://s3.amazonaws.com/culturecards/cover1.jpg";
+    if (_selectedInventoryIds.isNotEmpty && _myProducts.isNotEmpty) {
+      for (final p in _myProducts) {
+        final pId = p['_id']?.toString() ?? "";
+        if (_selectedInventoryIds.contains(pId)) {
+          final rawImgs = p['images'] ?? p['image'] ?? p['coverImage'];
+          String? rawUrl;
+          if (rawImgs is List && rawImgs.isNotEmpty) {
+            rawUrl = rawImgs[0]?.toString();
+          } else if (rawImgs != null) {
+            rawUrl = rawImgs.toString();
+          }
+          if (rawUrl != null && rawUrl.isNotEmpty) {
+            if (rawUrl.startsWith('http') || rawUrl.startsWith('data:image/')) return rawUrl;
+            return "${ApiUrl.imageBaseUrl}${rawUrl.startsWith('/') ? rawUrl : '/$rawUrl'}";
+          }
+        }
+      }
+    }
+    return "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800";
   }
 
   Future<void> _handleSubmit() async {
@@ -354,12 +375,14 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
 
     setState(() => _isStarting = true);
 
-    // If a thumbnail was picked from device, upload directly to S3
+    // If a thumbnail was picked from device, attempt upload to S3 first; fallback to base64
     String coverImage = _getResolvedCoverImage();
     if (_pickedThumbnailFile != null) {
       final uploadedUrl = await _uploadImageToS3(_pickedThumbnailFile!);
       if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
         coverImage = uploadedUrl;
+      } else if (_thumbnailBase64 != null && _thumbnailBase64!.isNotEmpty) {
+        coverImage = _thumbnailBase64!;
       }
     }
 

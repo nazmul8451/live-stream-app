@@ -774,9 +774,6 @@ class HomeScreen extends StatelessWidget {
     final double price = (product['buyNowPrice'] ?? product['price'] ?? 0).toDouble();
     final List images = product['images'] ?? [];
     final String rawImg = images.isNotEmpty ? images[0].toString() : '';
-    final String img = (rawImg.isNotEmpty && !rawImg.startsWith('http') && !rawImg.startsWith('data:image/'))
-        ? "${ApiUrl.imageBaseUrl}${rawImg.startsWith('/') ? rawImg : '/$rawImg'}"
-        : rawImg;
     final bool allowTrade = product['allowTrade'] == true;
     final bool isSold = (product['status'] ?? '') == 'sold';
     final String productId = product['_id'] ?? product['id'] ?? '';
@@ -1619,54 +1616,70 @@ class HomeScreen extends StatelessWidget {
     });
   }
 
+  Widget _buildUpcomingCoverImage(String rawImg) {
+    final trimmed = rawImg.trim();
+    if (trimmed.isEmpty) {
+      return Image.network(
+        "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
+        fit: BoxFit.cover,
+      );
+    }
+
+    // 1. If Base64 image
+    if (trimmed.startsWith('data:image/') && trimmed.contains('base64,')) {
+      try {
+        final bytes = base64Decode(trimmed.split('base64,').last);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Image.network(
+            "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
+            fit: BoxFit.cover,
+          ),
+        );
+      } catch (_) {}
+    }
+
+    // 2. If Network image (full or relative)
+    final cleanUrl = trimmed.startsWith('http')
+        ? trimmed
+        : "${ApiUrl.imageBaseUrl}${trimmed.startsWith('/') ? trimmed : '/$trimmed'}";
+
+    return Image.network(
+      cleanUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Image.network(
+        "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+
   Widget _buildUpcomingShowCard(HomeController controller, Map<String, dynamic> show, int index) {
     final title = (show['title'] ?? 'Upcoming Live Auction').toString();
 
-    // High-reliability thumbnail resolution
-    String imageUrl = "";
-    final rawImg = (show['coverImage'] ?? show['image'] ?? show['thumbnail'] ?? '').toString();
-    if (rawImg.isNotEmpty && !rawImg.contains('culturecards/cover')) {
-      imageUrl = rawImg.startsWith('http')
-          ? rawImg
-          : "${ApiUrl.imageBaseUrl}${rawImg.startsWith('/') ? rawImg : '/$rawImg'}";
-    }
-
-    if (imageUrl.isEmpty && show['productId'] is Map) {
+    // High-reliability thumbnail resolution from show, product, or inventory
+    String rawImg = (show['coverImage'] ?? show['image'] ?? show['thumbnail'] ?? '').toString().trim();
+    if (rawImg.isEmpty && show['productId'] is Map) {
       final p = show['productId'];
       final rawP = p['images'] ?? p['image'] ?? p['coverImage'];
       if (rawP is List && rawP.isNotEmpty) {
-        imageUrl = rawP[0].toString();
+        rawImg = rawP[0].toString().trim();
       } else if (rawP != null) {
-        imageUrl = rawP.toString();
-      }
-      if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
-        imageUrl = "${ApiUrl.imageBaseUrl}${imageUrl.startsWith('/') ? imageUrl : '/$imageUrl'}";
+        rawImg = rawP.toString().trim();
       }
     }
 
-    if (imageUrl.isEmpty && show['inventoryIds'] is List && (show['inventoryIds'] as List).isNotEmpty) {
+    if (rawImg.isEmpty && show['inventoryIds'] is List && (show['inventoryIds'] as List).isNotEmpty) {
       final firstItem = (show['inventoryIds'] as List).first;
       if (firstItem is Map) {
         final rawI = firstItem['images'] ?? firstItem['image'];
         if (rawI is List && rawI.isNotEmpty) {
-          imageUrl = rawI[0].toString();
+          rawImg = rawI[0].toString().trim();
         } else if (rawI != null) {
-          imageUrl = rawI.toString();
-        }
-        if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
-          imageUrl = "${ApiUrl.imageBaseUrl}${imageUrl.startsWith('/') ? imageUrl : '/$imageUrl'}";
+          rawImg = rawI.toString().trim();
         }
       }
-    }
-
-    // Curated high-res fallback so card never looks like an empty black box
-    if (imageUrl.isEmpty || imageUrl.contains('culturecards/cover')) {
-      const fallbackList = [
-        "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
-        "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800",
-        "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?q=80&w=800",
-      ];
-      imageUrl = fallbackList[index % fallbackList.length];
     }
 
     // Resolve date/time
@@ -1737,16 +1750,9 @@ class HomeScreen extends StatelessWidget {
             width: double.infinity,
             child: Stack(
               children: [
-                // Cover Image
+                // Cover Image (handles base64, s3, relative url, and graceful fallback)
                 Positioned.fill(
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Image.network(
-                      "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+                  child: _buildUpcomingCoverImage(rawImg),
                 ),
 
                 // Multi-Stop Vignette & Gradient

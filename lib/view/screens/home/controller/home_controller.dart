@@ -476,6 +476,9 @@ class HomeController extends GetxController {
         if (raw is List) {
           scheduledShows.assignAll(raw.where((e) => e is Map).map((e) => Map<String, dynamic>.from(e as Map)).toList());
           Get.log("📅 [HomeController] Loaded ${scheduledShows.length} scheduled shows");
+          for (var s in scheduledShows) {
+            Get.log("📸 [Scheduled Show] '${s['title']}' coverImage: '${s['coverImage']}' | image: '${s['image']}'");
+          }
         }
       }
     } catch (e) {
