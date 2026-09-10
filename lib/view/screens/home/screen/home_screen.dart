@@ -1598,7 +1598,7 @@ class HomeScreen extends StatelessWidget {
 
           // Horizontal Carousel
           SizedBox(
-            height: 335.h,
+            height: 270.h,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
@@ -1723,11 +1723,11 @@ class HomeScreen extends StatelessWidget {
     }
 
     return Container(
-      width: 285.w,
-      margin: EdgeInsets.only(right: 18.w),
+      width: 230.w,
+      margin: EdgeInsets.only(right: 14.w),
       decoration: BoxDecoration(
         color: const Color(0xFF130F26),
-        borderRadius: BorderRadius.circular(26.r),
+        borderRadius: BorderRadius.circular(20.r),
         border: Border.all(
           color: isMine ? const Color(0xFF8B9BFF).withValues(alpha: 0.5) : const Color(0xFF2E2452),
           width: isMine ? 1.5 : 1,
@@ -1735,8 +1735,8 @@ class HomeScreen extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.45),
-            blurRadius: 18.r,
-            offset: const Offset(0, 8),
+            blurRadius: 14.r,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -1746,7 +1746,7 @@ class HomeScreen extends StatelessWidget {
         children: [
           // ─── TOP IMAGE AREA WITH OVERLAYS ───
           SizedBox(
-            height: 175.h,
+            height: 140.h,
             width: double.infinity,
             child: Stack(
               children: [
@@ -1775,16 +1775,16 @@ class HomeScreen extends StatelessWidget {
 
                 // Top Badge Row
                 Positioned(
-                  top: 12.h,
-                  left: 12.w,
-                  right: 12.w,
+                  top: 10.h,
+                  left: 10.w,
+                  right: 10.w,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       // Status Badge
                       if (isMine)
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [Color(0xFF8B9BFF), Color(0xFF6C5CE7)],
@@ -1800,13 +1800,13 @@ class HomeScreen extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.star_rounded, color: Colors.white, size: 12.sp),
-                              SizedBox(width: 4.w),
+                              Icon(Icons.star_rounded, color: Colors.white, size: 11.sp),
+                              SizedBox(width: 3.w),
                               Text(
                                 "YOUR SHOW",
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 10.sp,
+                                  fontSize: 9.5.sp,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 0.5,
                                 ),
@@ -1816,7 +1816,7 @@ class HomeScreen extends StatelessWidget {
                         )
                       else
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.65),
                             borderRadius: BorderRadius.circular(20.r),
@@ -1829,19 +1829,19 @@ class HomeScreen extends StatelessWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
-                                width: 6.r,
-                                height: 6.r,
+                                width: 5.r,
+                                height: 5.r,
                                 decoration: const BoxDecoration(
                                   color: Color(0xFF8B9BFF),
                                   shape: BoxShape.circle,
                                 ),
                               ),
-                              SizedBox(width: 6.w),
+                              SizedBox(width: 5.w),
                               Text(
                                 "SCHEDULED",
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 10.sp,
+                                  fontSize: 9.5.sp,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: 0.5,
                                 ),
@@ -1861,13 +1861,13 @@ class HomeScreen extends StatelessWidget {
                             );
                           },
                           child: Container(
-                            padding: EdgeInsets.all(7.r),
+                            padding: EdgeInsets.all(6.r),
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.6),
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white24),
                             ),
-                            child: Icon(Icons.bookmark_border_rounded, color: Colors.white, size: 16.sp),
+                            child: Icon(Icons.bookmark_border_rounded, color: Colors.white, size: 15.sp),
                           ),
                         ),
                     ],
@@ -1876,10 +1876,10 @@ class HomeScreen extends StatelessWidget {
 
                 // Bottom Left Time Chip
                 Positioned(
-                  bottom: 10.h,
-                  left: 12.w,
+                  bottom: 8.h,
+                  left: 10.w,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.5.h),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F0B1E).withValues(alpha: 0.88),
                       borderRadius: BorderRadius.circular(12.r),
@@ -1897,13 +1897,13 @@ class HomeScreen extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.schedule_rounded, color: const Color(0xFF8B9BFF), size: 13.sp),
-                        SizedBox(width: 5.w),
+                        Icon(Icons.schedule_rounded, color: const Color(0xFF8B9BFF), size: 12.sp),
+                        SizedBox(width: 4.w),
                         Text(
                           formattedTime,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 11.5.sp,
+                            fontSize: 10.5.sp,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -1918,7 +1918,7 @@ class HomeScreen extends StatelessWidget {
           // ─── BOTTOM DETAILS & ACTION AREA ───
           Expanded(
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1933,20 +1933,20 @@ class HomeScreen extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 16.sp,
+                          fontSize: 14.5.sp,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.2,
                         ),
                       ),
 
-                      SizedBox(height: 6.h),
+                      SizedBox(height: 4.h),
 
                       // Host Row
                       Row(
                         children: [
                           Container(
-                            width: 20.r,
-                            height: 20.r,
+                            width: 18.r,
+                            height: 18.r,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(color: const Color(0xFF8B9BFF).withValues(alpha: 0.5)),
@@ -1956,7 +1956,7 @@ class HomeScreen extends StatelessWidget {
                                 ? Image.network(hostAvatar, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildFallbackAvatar(hostName))
                                 : _buildFallbackAvatar(hostName),
                           ),
-                          SizedBox(width: 8.w),
+                          SizedBox(width: 6.w),
                           Expanded(
                             child: Text(
                               hostName,
@@ -1964,12 +1964,12 @@ class HomeScreen extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: Colors.white70,
-                                fontSize: 12.5.sp,
+                                fontSize: 11.5.sp,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                          Icon(Icons.verified_rounded, color: const Color(0xFF8B9BFF), size: 14.sp),
+                          Icon(Icons.verified_rounded, color: const Color(0xFF8B9BFF), size: 13.sp),
                         ],
                       ),
                     ],
@@ -1986,32 +1986,32 @@ class HomeScreen extends StatelessWidget {
                       },
                       child: Container(
                         width: double.infinity,
-                        height: 44.h,
+                        height: 38.h,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
                           ),
-                          borderRadius: BorderRadius.circular(14.r),
+                          borderRadius: BorderRadius.circular(12.r),
                           boxShadow: [
                             BoxShadow(
                               color: const Color(0xFF22C55E).withValues(alpha: 0.35),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.videocam_rounded, color: Colors.white, size: 18.sp),
-                            SizedBox(width: 8.w),
+                            Icon(Icons.videocam_rounded, color: Colors.white, size: 16.sp),
+                            SizedBox(width: 6.w),
                             Text(
                               "START LIVE NOW 🚀",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 12.5.sp,
+                                fontSize: 11.5.sp,
                                 fontWeight: FontWeight.w900,
-                                letterSpacing: 0.5,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ],
@@ -2029,10 +2029,10 @@ class HomeScreen extends StatelessWidget {
                       },
                       child: Container(
                         width: double.infinity,
-                        height: 44.h,
+                        height: 38.h,
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E1E2C).withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(14.r),
+                          borderRadius: BorderRadius.circular(12.r),
                           border: Border.all(
                             color: const Color(0xFF8B9BFF).withValues(alpha: 0.35),
                           ),
@@ -2040,15 +2040,15 @@ class HomeScreen extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.notifications_active_outlined, color: const Color(0xFF8B9BFF), size: 16.sp),
-                            SizedBox(width: 8.w),
+                            Icon(Icons.notifications_active_outlined, color: const Color(0xFF8B9BFF), size: 15.sp),
+                            SizedBox(width: 6.w),
                             Text(
                               "REMIND ME 🔔",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 12.sp,
+                                fontSize: 11.5.sp,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: 0.5,
+                                letterSpacing: 0.3,
                               ),
                             ),
                           ],
