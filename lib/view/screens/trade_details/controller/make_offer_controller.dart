@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
@@ -9,6 +8,7 @@ import '../../../../data/helpers/image_helper.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
+import '../../../../data/services/socket_service.dart';
 import '../../../../core/app_route.dart';
 import '../../messages/controller/messages_controller.dart';
 
@@ -18,34 +18,44 @@ class MakeOfferController extends GetxController {
   final RxMap<String, dynamic> sellerProduct = <String, dynamic>{}.obs;
   final RxList<dynamic> userProducts = <dynamic>[].obs;
   final Rxn<Map<String, dynamic>> selectedUserProduct = Rxn<Map<String, dynamic>>();
+
+  // Mode: "cash" (Price Counter-Offer) or "trade" (Card-for-Card Swap)
+  final RxString offerMode = "cash".obs;
+
+  // Cash Offer State
+  final TextEditingController cashOfferController = TextEditingController();
+  final RxDouble cashOfferAmount = 0.0.obs;
+  final TextEditingController offerNoteController = TextEditingController();
+  final RxString selectedPercentagePreset = "".obs;
+
+  // Trade Swap State
   final RxDouble cashSupplement = 0.0.obs;
-  
+  final RxBool isCustomOffer = false.obs;
+
+  // Loading States
   final RxBool isLoading = false.obs;
   final RxBool isSubmitting = false.obs;
 
   final ImagePicker _picker = ImagePicker();
-  final RxBool isCustomOffer = false.obs;
 
-  // Custom offer categories
+  // Custom Offer Form Fields
   final RxList<String> categories = <String>[].obs;
   final RxMap<String, String> categoryNameToId = <String, String>{}.obs;
-
-  // Custom offer form fields
   final customTitleController = TextEditingController();
   final customValueController = TextEditingController();
   final RxDouble customValue = 0.0.obs;
-  final RxString customCategory = "Streetwear".obs;
+  final RxString customCategory = "Sports Cards".obs;
   final RxString customCondition = "Mint".obs;
   final Rxn<File> customImageFile = Rxn<File>();
 
   final categoriesList = [
-    "Fine Art",
     "Sports Cards",
+    "TCG",
+    "Streetwear",
+    "Fine Art",
+    "Electronics",
     "Rare Spirits",
     "Luxury Cars",
-    "Electronics",
-    "Streetwear",
-    "TCG",
     "Digital Assets",
   ];
   final conditionsList = ["Mint", "Near Mint", "Excellent", "Good", "Fair"];
@@ -56,8 +66,82 @@ class MakeOfferController extends GetxController {
     if (Get.arguments != null && Get.arguments is Map) {
       sellerProduct.assignAll(Map<String, dynamic>.from(Get.arguments));
     }
+
+    // Initialize default cash offer: 10% off listed price if available
+    final basePrice = sellerProductValue;
+    if (basePrice > 0) {
+      final defaultOffer = (basePrice * 0.90).roundToDouble();
+      cashOfferAmount.value = defaultOffer;
+      cashOfferController.text = defaultOffer.toInt().toString();
+      selectedPercentagePreset.value = "10%";
+    }
+
+    // Default mode: If item has no buyNow price or is trade-only, default to "trade"
+    final hasBuyNow = sellerProduct['buyNowPrice'] != null &&
+        (double.tryParse(sellerProduct['buyNowPrice'].toString()) ?? 0) > 0;
+    if (!hasBuyNow && (sellerProduct['allowTrade'] == true)) {
+      offerMode.value = "trade";
+    }
+
     fetchUserProducts();
     fetchCategories();
+  }
+
+  double get sellerProductValue {
+    final val = sellerProduct['estValue'] ?? sellerProduct['buyNowPrice'] ?? '0';
+    return double.tryParse(val.toString()) ?? 0.0;
+  }
+
+  double get minOfferAmount {
+    final val = sellerProduct['minOfferAmount'];
+    if (val != null) {
+      return double.tryParse(val.toString()) ?? 0.0;
+    }
+    return 0.0;
+  }
+
+  double get userProductValue {
+    if (isCustomOffer.value) {
+      return customValue.value;
+    }
+    if (selectedUserProduct.value == null) return 0.0;
+    final val = selectedUserProduct.value!['estValue'] ?? selectedUserProduct.value!['buyNowPrice'] ?? '0';
+    return double.tryParse(val.toString()) ?? 0.0;
+  }
+
+  double get valueDelta {
+    // Delta = (User Product Value + Cash Supplement) - Seller Product Value
+    return (userProductValue + cashSupplement.value) - sellerProductValue;
+  }
+
+  bool get isCashOfferValid {
+    if (cashOfferAmount.value <= 0) return false;
+    if (minOfferAmount > 0 && cashOfferAmount.value < minOfferAmount) return false;
+    return true;
+  }
+
+  void setPercentagePreset(double discountFraction, String label) {
+    selectedPercentagePreset.value = label;
+    final base = sellerProductValue;
+    if (base <= 0) return;
+
+    final computed = (base * (1.0 - discountFraction)).roundToDouble();
+    cashOfferAmount.value = computed;
+    cashOfferController.text = computed.toInt().toString();
+  }
+
+  void onCashOfferChanged(String val) {
+    selectedPercentagePreset.value = "";
+    final parsed = double.tryParse(val.trim()) ?? 0.0;
+    cashOfferAmount.value = parsed;
+  }
+
+  void updateCashSupplement(double val) {
+    cashSupplement.value = val;
+  }
+
+  void selectProduct(Map<String, dynamic> product) {
+    selectedUserProduct.value = product;
   }
 
   Future<void> fetchUserProducts() async {
@@ -82,33 +166,6 @@ class MakeOfferController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  void selectProduct(Map<String, dynamic> product) {
-    selectedUserProduct.value = product;
-  }
-
-  void updateCashSupplement(double val) {
-    cashSupplement.value = val;
-  }
-
-  double get sellerProductValue {
-    final val = sellerProduct['estValue'] ?? sellerProduct['buyNowPrice'] ?? '0';
-    return double.tryParse(val.toString()) ?? 0.0;
-  }
-
-  double get userProductValue {
-    if (isCustomOffer.value) {
-      return customValue.value;
-    }
-    if (selectedUserProduct.value == null) return 0.0;
-    final val = selectedUserProduct.value!['estValue'] ?? selectedUserProduct.value!['buyNowPrice'] ?? '0';
-    return double.tryParse(val.toString()) ?? 0.0;
-  }
-
-  double get valueDelta {
-    // Delta = (User Product Value + Cash Supplement) - Seller Product Value
-    return (userProductValue + cashSupplement.value) - sellerProductValue;
   }
 
   Future<void> pickCustomImage() async {
@@ -144,19 +201,15 @@ class MakeOfferController extends GetxController {
         final body = jsonDecode(response.body);
         if (body['success'] == true && body['data'] != null) {
           final uploadUrl = body['data']['url'].toString();
-
           final fileBytes = await file.readAsBytes();
           final s3Response = await http.put(
             Uri.parse(uploadUrl),
-            headers: {
-              "Content-Type": contentType,
-            },
+            headers: {"Content-Type": contentType},
             body: fileBytes,
           );
 
           if (s3Response.statusCode == 200 || s3Response.statusCode == 201) {
-            final s3Url = uploadUrl.split('?').first;
-            return s3Url;
+            return uploadUrl.split('?').first;
           }
         }
       }
@@ -179,90 +232,142 @@ class MakeOfferController extends GetxController {
 
     isSubmitting.value = true;
     try {
-      String senderProductId = "";
+      Map<String, dynamic> payload = {};
 
-      if (isCustomOffer.value) {
-        final title = customTitleController.text.trim();
-        final valueStr = customValueController.text.trim();
-        final estVal = double.tryParse(valueStr) ?? 0.0;
-
-        if (title.isEmpty) {
-          Get.snackbar("Error", "Please enter a title for your custom offer.", snackPosition: SnackPosition.BOTTOM);
-          isSubmitting.value = false;
-          return;
-        }
-
-        String imageUrl = "";
-        if (customImageFile.value != null) {
-          final s3Url = await _uploadImageToS3(customImageFile.value!);
-          if (s3Url != null && s3Url.isNotEmpty) {
-            imageUrl = s3Url;
+      if (offerMode.value == "cash") {
+        // Direct Cash Price Offer
+        if (!isCashOfferValid) {
+          if (minOfferAmount > 0 && cashOfferAmount.value < minOfferAmount) {
+            Get.snackbar(
+              "Offer Too Low",
+              "Seller accepts offers of at least \$${minOfferAmount.toStringAsFixed(0)}.",
+              snackPosition: SnackPosition.BOTTOM,
+            );
           } else {
-            final bytes = await customImageFile.value!.readAsBytes();
-            final base64Str = base64Encode(bytes);
-            final mimeType = customImageFile.value!.path.split('.').last.toLowerCase();
-            imageUrl = "data:image/$mimeType;base64,$base64Str";
+            Get.snackbar("Invalid Offer", "Please enter a valid offer amount.", snackPosition: SnackPosition.BOTTOM);
           }
+          isSubmitting.value = false;
+          return;
         }
 
-        final String categoryId = categoryNameToId[customCategory.value] ?? customCategory.value;
-
-        final requestBody = {
-          "title": title,
-          "description": "Custom trade offer item.",
-          "category": categoryId,
-          "condition": customCondition.value,
-          "estValue": estVal,
-          "buyNowPrice": estVal,
-          "allowTrade": true,
-          "sellerId": senderId,
-          "images": imageUrl.isNotEmpty ? [imageUrl] : [],
+        payload = {
+          "senderId": senderId,
+          "receiverId": receiverId,
+          "receiverProductId": receiverProductId,
+          "offerAmount": cashOfferAmount.value,
+          "cashSupplement": cashOfferAmount.value,
+          "offerType": "price_offer",
+          "note": offerNoteController.text.trim(),
         };
-
-        final prodResponse = await _apiClient.postData(ApiUrl.products, requestBody);
-        if (prodResponse.statusCode == 200 || prodResponse.statusCode == 201) {
-          final prodBody = jsonDecode(prodResponse.body);
-          final newProd = prodBody['data'] ?? prodBody;
-          senderProductId = (newProd['_id'] ?? newProd['id'] ?? "").toString();
-        } else {
-          Get.snackbar("Error", "Failed to create custom product. Status: ${prodResponse.statusCode}", snackPosition: SnackPosition.BOTTOM);
-          isSubmitting.value = false;
-          return;
-        }
       } else {
-        if (selectedUserProduct.value == null) {
-          Get.snackbar("Error", "Please select a product from your inventory to offer.", snackPosition: SnackPosition.BOTTOM);
-          isSubmitting.value = false;
-          return;
+        // Card-for-Card Trade Swap
+        String senderProductId = "";
+
+        if (isCustomOffer.value) {
+          final title = customTitleController.text.trim();
+          final valueStr = customValueController.text.trim();
+          final estVal = double.tryParse(valueStr) ?? 0.0;
+
+          if (title.isEmpty) {
+            Get.snackbar("Error", "Please enter a title for your custom offer item.", snackPosition: SnackPosition.BOTTOM);
+            isSubmitting.value = false;
+            return;
+          }
+
+          String imageUrl = "";
+          if (customImageFile.value != null) {
+            final s3Url = await _uploadImageToS3(customImageFile.value!);
+            if (s3Url != null && s3Url.isNotEmpty) {
+              imageUrl = s3Url;
+            } else {
+              final bytes = await customImageFile.value!.readAsBytes();
+              final base64Str = base64Encode(bytes);
+              final mimeType = customImageFile.value!.path.split('.').last.toLowerCase();
+              imageUrl = "data:image/$mimeType;base64,$base64Str";
+            }
+          }
+
+          final String categoryId = categoryNameToId[customCategory.value] ?? customCategory.value;
+
+          final requestBody = {
+            "title": title,
+            "description": "Custom trade offer item.",
+            "category": categoryId,
+            "condition": customCondition.value,
+            "estValue": estVal,
+            "buyNowPrice": estVal,
+            "allowTrade": true,
+            "sellerId": senderId,
+            "images": imageUrl.isNotEmpty ? [imageUrl] : [],
+          };
+
+          final prodResponse = await _apiClient.postData(ApiUrl.products, requestBody);
+          if (prodResponse.statusCode == 200 || prodResponse.statusCode == 201) {
+            final prodBody = jsonDecode(prodResponse.body);
+            final newProd = prodBody['data'] ?? prodBody;
+            senderProductId = (newProd['_id'] ?? newProd['id'] ?? "").toString();
+          } else {
+            Get.snackbar("Error", "Failed to create custom item for offer.", snackPosition: SnackPosition.BOTTOM);
+            isSubmitting.value = false;
+            return;
+          }
+        } else {
+          if (selectedUserProduct.value == null) {
+            Get.snackbar("Error", "Please select an item from your collection to swap.", snackPosition: SnackPosition.BOTTOM);
+            isSubmitting.value = false;
+            return;
+          }
+          senderProductId = selectedUserProduct.value!['_id'] ?? selectedUserProduct.value!['id'] ?? "";
         }
-        senderProductId = selectedUserProduct.value!['_id'] ?? selectedUserProduct.value!['id'] ?? "";
-      }
 
-      if (senderProductId.isEmpty) {
-        Get.snackbar("Error", "Failed to retrieve offer product ID.", snackPosition: SnackPosition.BOTTOM);
-        isSubmitting.value = false;
-        return;
+        payload = {
+          "senderId": senderId,
+          "receiverId": receiverId,
+          "senderProductId": senderProductId,
+          "receiverProductId": receiverProductId,
+          "cashSupplement": cashSupplement.value,
+          "offerType": "trade_swap",
+          "note": offerNoteController.text.trim(),
+        };
       }
-
-      final payload = {
-        "receiverId": receiverId,
-        "senderProductId": senderProductId,
-        "receiverProductId": receiverProductId,
-        "cashSupplement": cashSupplement.value,
-      };
 
       final response = await _apiClient.postData("/trades/offer", payload);
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true || response.statusCode == 200 || response.statusCode == 201) {
-          final sellerName = (seller is Map) ? (seller['fullName'] ?? seller['name'] ?? seller['username'] ?? "Trader") : "Trader";
-          final sellerAvatar = (seller is Map) ? (seller['profile'] ?? seller['profileImage'] ?? seller['avatar'] ?? "") : "";
-          _showSuccessDialog(receiverId, sellerName, sellerAvatar);
-        } else {
-          Get.snackbar("Error", body['message'] ?? "Failed to send trade offer", snackPosition: SnackPosition.BOTTOM);
+
+      // Emit real-time socket notification to seller
+      try {
+        if (Get.isRegistered<SocketService>()) {
+          final socket = Get.find<SocketService>();
+          final itemTitle = sellerProduct['title'] ?? 'Card';
+          final offerSummary = offerMode.value == "cash"
+              ? "\$${cashOfferAmount.value.toStringAsFixed(0)} Cash"
+              : "Trade Swap${cashSupplement.value > 0 ? ' + \$${cashSupplement.value.toInt()}' : ''}";
+
+          socket.emitEvent('trade_offer', {
+            "senderId": senderId,
+            "receiverId": receiverId,
+            "productId": receiverProductId,
+            "offerAmount": offerMode.value == "cash" ? cashOfferAmount.value : cashSupplement.value,
+            "productTitle": itemTitle,
+            "message": "NEW OFFER RECEIVED 🎁: $offerSummary on $itemTitle",
+          });
         }
+      } catch (_) {}
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final sellerName = (seller is Map)
+            ? (seller['fullName'] ?? seller['name'] ?? seller['username'] ?? "Seller")
+            : "Seller";
+        final sellerAvatar = (seller is Map)
+            ? (seller['profile'] ?? seller['profileImage'] ?? seller['avatar'] ?? "")
+            : "";
+        _showSuccessDialog(receiverId, sellerName.toString(), sellerAvatar.toString());
       } else {
-        Get.snackbar("Error", "Failed to send trade offer. Status: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
+        String errMsg = "Failed to send offer.";
+        try {
+          final body = jsonDecode(response.body);
+          errMsg = body['message'] ?? errMsg;
+        } catch (_) {}
+        Get.snackbar("Offer Failed", errMsg, snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       Get.snackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
@@ -275,57 +380,66 @@ class MakeOfferController extends GetxController {
     Get.dialog(
       Dialog(
         backgroundColor: const Color(0xFF161622),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32.r)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         child: Padding(
-          padding: EdgeInsets.all(28.r),
+          padding: const EdgeInsets.all(28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                height: 80.r,
-                width: 80.r,
+                height: 76,
+                width: 76,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF22C55E).withOpacity(0.1),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF22C55E).withValues(alpha: 0.35),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
-                child: Icon(Icons.check_circle_rounded, color: const Color(0xFF22C55E), size: 48.sp),
+                child: const Icon(Icons.check_rounded, color: Colors.white, size: 44),
               ),
-              SizedBox(height: 24.h),
-              Text(
-                "Offer Sent! 🚀",
-                style: TextStyle(color: Colors.white, fontSize: 22.sp, fontWeight: FontWeight.w900),
-              ),
-              SizedBox(height: 12.h),
-              Text(
-                "Your trade proposal has been sent to $receiverName. You can discuss the details in your inbox.",
+              const SizedBox(height: 22),
+              const Text(
+                "Offer Sent Successfully! 🚀",
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900),
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white54, fontSize: 13.sp, height: 1.5),
               ),
-              SizedBox(height: 32.h),
+              const SizedBox(height: 10),
+              Text(
+                "Your proposal has been submitted to $receiverName. You can track this offer and chat directly in your messages.",
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white60, fontSize: 13, height: 1.5),
+              ),
+              const SizedBox(height: 28),
               Row(
                 children: [
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () {
+                    child: OutlinedButton(
+                      onPressed: () {
                         Get.back(); // close dialog
                         Get.back(); // close make offer screen
                       },
-                      child: Container(
-                        height: 52.h,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(26.r),
-                          border: Border.all(color: Colors.white.withOpacity(0.05)),
-                        ),
-                        child: Text("Done", style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w900)),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
+                      child: const Text("Done", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ),
                   ),
-                  SizedBox(width: 12.w),
+
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () async {
+                    child: ElevatedButton(
+                      onPressed: () async {
                         Get.back(); // close dialog
                         Get.back(); // close make offer screen
                         try {
@@ -342,10 +456,7 @@ class MakeOfferController extends GetxController {
                             );
                             return;
                           }
-                        } catch (e) {
-                          Get.log("Error creating chat room: $e");
-                        }
-                        // Fallback to mock room
+                        } catch (_) {}
                         Get.toNamed(
                           AppRoute.messageDetails,
                           arguments: {
@@ -355,26 +466,13 @@ class MakeOfferController extends GetxController {
                           },
                         );
                       },
-                      child: Container(
-                        height: 52.h,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF8B9BFF), Color(0xFFBD8BFF)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(26.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF8B9BFF).withOpacity(0.3),
-                              blurRadius: 12.r,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Text("Go to Inbox", style: TextStyle(color: Colors.black, fontSize: 14.sp, fontWeight: FontWeight.w900)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B9BFF),
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
+                      child: const Text("Open Chat", style: TextStyle(fontWeight: FontWeight.w900)),
                     ),
                   ),
                 ],
@@ -397,7 +495,7 @@ class MakeOfferController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         var decoded = jsonDecode(response.body);
         List<dynamic> dataList = [];
-        
+
         if (decoded is List) {
           dataList = decoded;
         } else if (decoded is Map) {
@@ -425,9 +523,7 @@ class MakeOfferController extends GetxController {
 
         if (parsed.isNotEmpty) {
           categories.assignAll(parsed);
-          if (categories.contains(customCategory.value)) {
-            // Keep default
-          } else {
+          if (!categories.contains(customCategory.value)) {
             customCategory.value = parsed[0];
           }
         }
@@ -439,8 +535,11 @@ class MakeOfferController extends GetxController {
 
   @override
   void onClose() {
+    cashOfferController.dispose();
+    offerNoteController.dispose();
     customTitleController.dispose();
     customValueController.dispose();
     super.onClose();
   }
 }
+
