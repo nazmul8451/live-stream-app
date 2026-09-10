@@ -204,50 +204,67 @@ class HomeScreen extends StatelessWidget {
 
               SizedBox(height: 28.h),
 
-              // Category Chips
-              SizedBox(
-                height: 48.h,
-                child: Obx(
-                  () => ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: controller.categories.length,
-                    itemBuilder: (context, index) {
-                      return Obx(() {
-                        final isSelected =
-                            controller.selectedCategoryIndex.value == index;
-                        return GestureDetector(
-                          onTap: () => controller.onCategorySelected(index),
-                          child: Container(
-                            margin: EdgeInsets.only(right: 12.w),
-                            padding: EdgeInsets.symmetric(horizontal: 28.w),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? const Color(0xFF8B9BFF)
-                                  : const Color(0xFF1E1E2C).withOpacity(0.4),
-                              borderRadius: BorderRadius.circular(30.r),
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.transparent
-                                    : Colors.white.withOpacity(0.05),
-                              ),
-                            ),
-                            child: Text(
-                              controller.categories[index],
-                              style: TextStyle(
-                                color: isSelected
-                                    ? const Color(0xFF0F0B1E)
-                                    : Colors.white60,
-                                fontSize: 15.sp,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+              // Category Chips (Edge-to-edge scrolling without clipping at padding)
+              Builder(
+                builder: (context) {
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  return SizedBox(
+                    height: 48.h,
+                    child: OverflowBox(
+                      minWidth: 0.0,
+                      maxWidth: screenWidth,
+                      alignment: Alignment.center,
+                      child: SizedBox(
+                        width: screenWidth,
+                        child: Obx(
+                          () => ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            clipBehavior: Clip.none,
+                            padding: EdgeInsets.symmetric(horizontal: 24.w),
+                            itemCount: controller.categories.length,
+                            itemBuilder: (context, index) {
+                              final isLast = index == controller.categories.length - 1;
+                              return Obx(() {
+                                final isSelected =
+                                    controller.selectedCategoryIndex.value == index;
+                                return GestureDetector(
+                                  onTap: () => controller.onCategorySelected(index),
+                                  child: Container(
+                                    margin: EdgeInsets.only(right: isLast ? 0 : 12.w),
+                                    padding: EdgeInsets.symmetric(horizontal: 28.w),
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFF8B9BFF)
+                                          : const Color(0xFF1E1E2C).withValues(alpha: 0.4),
+                                      borderRadius: BorderRadius.circular(30.r),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? Colors.transparent
+                                            : Colors.white.withValues(alpha: 0.05),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      controller.categories[index],
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? const Color(0xFF0F0B1E)
+                                            : Colors.white60,
+                                        fontSize: 15.sp,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              });
+                            },
                           ),
-                        );
-                      });
-                    },
-                  ),
-                ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
 
               // Dynamic spacing between Category Chips and content (prevents clutter when live shows are hidden)

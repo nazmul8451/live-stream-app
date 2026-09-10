@@ -542,34 +542,57 @@ class DiscoverScreen extends GetView<DiscoverController> {
   }
 
   Widget _buildFilterBar() {
-    return Obx(() => SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: List.generate(controller.filters.length, (index) {
-          final isSelected = controller.selectedFilter.value == index;
-          return GestureDetector(
-            onTap: () => controller.changeFilter(index),
-            child: Container(
-              margin: EdgeInsets.only(right: 12.w),
-              padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 14.h),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF8B9BFF) : const Color(0xFF161622).withOpacity(0.6),
-                borderRadius: BorderRadius.circular(26.r),
-              ),
-              child: Text(
-                controller.filters[index],
-                style: TextStyle(
-                  color: isSelected ? Colors.black : Colors.white24,
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w900,
+    return Builder(
+      builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        return SizedBox(
+          height: 48.h,
+          child: OverflowBox(
+            minWidth: 0.0,
+            maxWidth: screenWidth,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: screenWidth,
+              child: Obx(
+                () => ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  clipBehavior: Clip.none,
+                  padding: EdgeInsets.symmetric(horizontal: 20.w),
+                  itemCount: controller.filters.length,
+                  itemBuilder: (context, index) {
+                    final isLast = index == controller.filters.length - 1;
+                    return Obx(() {
+                      final isSelected = controller.selectedFilter.value == index;
+                      return GestureDetector(
+                        onTap: () => controller.changeFilter(index),
+                        child: Container(
+                          margin: EdgeInsets.only(right: isLast ? 0 : 12.w),
+                          padding: EdgeInsets.symmetric(horizontal: 28.w),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isSelected ? const Color(0xFF8B9BFF) : const Color(0xFF161622).withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(26.r),
+                          ),
+                          child: Text(
+                            controller.filters[index],
+                            style: TextStyle(
+                              color: isSelected ? Colors.black : Colors.white24,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      );
+                    });
+                  },
                 ),
               ),
             ),
-          );
-        }),
-      ),
-    ));
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildLiveCard(String title, String host, String viewers, String imgUrl, String hostAvatar) {
