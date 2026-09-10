@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import '../../../../core/app_route.dart';
 import '../../../../global/widgets/custom_background.dart';
@@ -964,12 +965,28 @@ class ProfileScreen extends GetView<ProfileController> {
           ),
         ]),
         SizedBox(height: 32.h),
-        _buildSettingsSection("SUPPORT", [
+        _buildSettingsSection("SUPPORT & LEGAL", [
           _buildSettingsTile(
             svgPath: "assets/icons/Terms & Conditions.svg",
             title: "Terms & Conditions",
             showArrow: true,
-            onTap: () => Get.toNamed(AppRoute.terms),
+            onTap: () async {
+              final uri = Uri.parse(ApiUrl.termsAndConditionsUrl);
+              if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+          ),
+          _buildSettingsTile(
+            svgPath: "assets/icons/Terms & Conditions.svg",
+            title: "Privacy Policy",
+            showArrow: true,
+            onTap: () async {
+              final uri = Uri.parse(ApiUrl.privacyPolicyUrl);
+              if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
           ),
         ]),
         SizedBox(height: 48.h),
@@ -1889,7 +1906,24 @@ class ProfileScreen extends GetView<ProfileController> {
                   leading: const Icon(Icons.description_outlined, color: Color(0xFF8B9BFF)),
                   title: const Text("Terms & Conditions", style: TextStyle(color: Colors.white)),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white38, size: 14),
-                  onTap: () => Get.toNamed(AppRoute.terms),
+                  onTap: () async {
+                    final uri = Uri.parse(ApiUrl.termsAndConditionsUrl);
+                    if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                ),
+                Divider(color: Colors.white.withOpacity(0.06), height: 1),
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip_outlined, color: Color(0xFF8B9BFF)),
+                  title: const Text("Privacy Policy", style: TextStyle(color: Colors.white)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white38, size: 14),
+                  onTap: () async {
+                    final uri = Uri.parse(ApiUrl.privacyPolicyUrl);
+                    if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
                 ),
               ],
             ),

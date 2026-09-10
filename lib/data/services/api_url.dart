@@ -91,4 +91,8 @@ class ApiUrl {
   static const String createCheckoutSession = "/payment/create-checkout-session";
   static const String paymentCheckoutSession = "/payment/create-checkout-session";
   static const String subscriptionCheckoutSession = "/subscription/checkout-session";
+
+  // Legal & Compliance
+  static const String termsAndConditionsUrl = "https://api.areisco.com/terms-and-conditions";
+  static const String privacyPolicyUrl = "https://api.areisco.com/privacy-policy";
 }

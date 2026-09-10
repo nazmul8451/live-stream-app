@@ -2,7 +2,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/app_route.dart';
+import '../../../../data/services/api_url.dart';
 import '../controller/sign_up_controller.dart';
 
 class SignUpScreen extends StatelessWidget {
@@ -183,14 +185,24 @@ class SignUpScreen extends StatelessWidget {
                               text: "Terms of Service",
                               style: const TextStyle(color: Color(0xFF8B9BFF), fontWeight: FontWeight.bold),
                               recognizer: TapGestureRecognizer()
-                                ..onTap = () => Get.toNamed(AppRoute.terms),
+                                ..onTap = () async {
+                                  final uri = Uri.parse(ApiUrl.termsAndConditionsUrl);
+                                  if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  }
+                                },
                             ),
                             const TextSpan(text: " and "),
                             TextSpan(
                               text: "Privacy Policy",
                               style: const TextStyle(color: Color(0xFF8B9BFF), fontWeight: FontWeight.bold),
                               recognizer: TapGestureRecognizer()
-                                ..onTap = () => Get.toNamed(AppRoute.terms),
+                                ..onTap = () async {
+                                  final uri = Uri.parse(ApiUrl.privacyPolicyUrl);
+                                  if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  }
+                                },
                             ),
                             const TextSpan(text: "."),
                           ],
