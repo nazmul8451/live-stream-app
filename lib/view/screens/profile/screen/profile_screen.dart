@@ -970,22 +970,22 @@ class ProfileScreen extends GetView<ProfileController> {
             svgPath: "assets/icons/Terms & Conditions.svg",
             title: "Terms & Conditions",
             showArrow: true,
-            onTap: () async {
-              final uri = Uri.parse(ApiUrl.termsAndConditionsUrl);
-              if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
+            onTap: () {
+              Get.toNamed(AppRoute.inAppWebView, arguments: {
+                "title": "Terms & Conditions",
+                "url": ApiUrl.termsAndConditionsUrl,
+              });
             },
           ),
           _buildSettingsTile(
             svgPath: "assets/icons/Terms & Conditions.svg",
             title: "Privacy Policy",
             showArrow: true,
-            onTap: () async {
-              final uri = Uri.parse(ApiUrl.privacyPolicyUrl);
-              if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
+            onTap: () {
+              Get.toNamed(AppRoute.inAppWebView, arguments: {
+                "title": "Privacy Policy",
+                "url": ApiUrl.privacyPolicyUrl,
+              });
             },
           ),
         ]),
@@ -1906,11 +1906,11 @@ class ProfileScreen extends GetView<ProfileController> {
                   leading: const Icon(Icons.description_outlined, color: Color(0xFF8B9BFF)),
                   title: const Text("Terms & Conditions", style: TextStyle(color: Colors.white)),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white38, size: 14),
-                  onTap: () async {
-                    final uri = Uri.parse(ApiUrl.termsAndConditionsUrl);
-                    if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    }
+                  onTap: () {
+                    Get.toNamed(AppRoute.inAppWebView, arguments: {
+                      "title": "Terms & Conditions",
+                      "url": ApiUrl.termsAndConditionsUrl,
+                    });
                   },
                 ),
                 Divider(color: Colors.white.withOpacity(0.06), height: 1),
@@ -1918,11 +1918,11 @@ class ProfileScreen extends GetView<ProfileController> {
                   leading: const Icon(Icons.privacy_tip_outlined, color: Color(0xFF8B9BFF)),
                   title: const Text("Privacy Policy", style: TextStyle(color: Colors.white)),
                   trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white38, size: 14),
-                  onTap: () async {
-                    final uri = Uri.parse(ApiUrl.privacyPolicyUrl);
-                    if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    }
+                  onTap: () {
+                    Get.toNamed(AppRoute.inAppWebView, arguments: {
+                      "title": "Privacy Policy",
+                      "url": ApiUrl.privacyPolicyUrl,
+                    });
                   },
                 ),
               ],

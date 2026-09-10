@@ -21,6 +21,7 @@ import '../view/screens/profile/screen/profile_information_screen.dart';
 import '../view/screens/profile/screen/change_password_screen.dart';
 import '../view/screens/profile/screen/user_preferences_screen.dart';
 import '../view/screens/profile/screen/terms_conditions_screen.dart';
+import '../global/widgets/in_app_webview_screen.dart';
 import '../view/screens/notifications/screen/notifications_screen.dart';
 import '../view/screens/notifications/screen/trade_offer_screen.dart';
 import '../view/screens/trade_market/screen/create_trade_screen.dart';
@@ -71,6 +72,7 @@ class AppRoute {
   static const String soldItems = "/sold_items";
   static const String shippingLabel = "/shipping_label";
   static const String spinWheel = "/spin_wheel";
+  static const String inAppWebView = "/in_app_web_view";
 
   static List<GetPage> routes = [
     GetPage(name: forgotPassword, page: () => const ForgotPasswordScreen()),
@@ -115,5 +117,6 @@ class AppRoute {
     GetPage(name: shippingLabel, page: () => const ShippingLabelViewerScreen()),
     GetPage(name: spinWheel, page: () => const SpinWheelScreen()),
     GetPage(name: checkout, page: () => const OrderCheckoutScreen()),
+    GetPage(name: inAppWebView, page: () => const InAppWebViewScreen()),
   ];
 }

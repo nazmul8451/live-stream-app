@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/app_route.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../global/widgets/custom_background.dart';
 
@@ -33,11 +33,11 @@ class TermsConditionsScreen extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.open_in_browser_rounded, color: Color(0xFF8B9BFF)),
               tooltip: "Open Official Terms",
-              onPressed: () async {
-                final uri = Uri.parse(ApiUrl.termsAndConditionsUrl);
-                if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
-                  await launchUrl(uri, mode: LaunchMode.externalApplication);
-                }
+              onPressed: () {
+                Get.toNamed(AppRoute.inAppWebView, arguments: {
+                  "title": "Terms & Conditions",
+                  "url": ApiUrl.termsAndConditionsUrl,
+                });
               },
             ),
           ],
