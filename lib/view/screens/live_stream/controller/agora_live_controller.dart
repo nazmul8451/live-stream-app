@@ -2331,7 +2331,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         _setupSocket();
 
         Get.snackbar("Show Started! 🚀", "Your scheduled stream is now live!", backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
-        Get.to(() => const HostLiveScreen());
+        Get.toNamed(AppRoute.hostLive);
         return true;
       } else {
         Get.snackbar("Error", "Could not start show (${res.statusCode})", snackPosition: SnackPosition.BOTTOM);
