@@ -1596,12 +1596,15 @@ class HomeScreen extends StatelessWidget {
 
           SizedBox(height: 18.h),
 
-          // Horizontal Carousel
-          SizedBox(
+          // Horizontal Carousel (Full edge-to-edge scrolling)
+          Container(
             height: 270.h,
+            margin: EdgeInsets.symmetric(horizontal: -24.w),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
+              clipBehavior: Clip.none,
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
               itemCount: controller.scheduledShows.length,
               itemBuilder: (context, index) {
                 final show = controller.scheduledShows[index];
@@ -1722,9 +1725,11 @@ class HomeScreen extends StatelessWidget {
       }
     }
 
+    final bool isLast = index == controller.scheduledShows.length - 1;
+
     return Container(
       width: 230.w,
-      margin: EdgeInsets.only(right: 14.w),
+      margin: EdgeInsets.only(right: isLast ? 0 : 14.w),
       decoration: BoxDecoration(
         color: const Color(0xFF130F26),
         borderRadius: BorderRadius.circular(20.r),
