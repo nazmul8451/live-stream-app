@@ -1540,52 +1540,56 @@ class HomeScreen extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 10.h),
-          // Section Header
+          SizedBox(height: 12.h),
+
+          // Premium Section Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF8B9BFF), Color(0xFF53389E)],
+                  Row(
+                    children: [
+                      Text(
+                        "Upcoming Shows",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.4,
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.calendar_month_rounded, color: Colors.white, size: 14.sp),
-                        SizedBox(width: 6.w),
-                        Text(
-                          "UPCOMING SHOWS",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.8,
+                      SizedBox(width: 10.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(
+                            color: const Color(0xFF8B9BFF).withValues(alpha: 0.35),
+                            width: 1,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Text(
-                      "${controller.scheduledShows.length}",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w800,
+                        child: Text(
+                          "${controller.scheduledShows.length} Scheduled",
+                          style: TextStyle(
+                            color: const Color(0xFF8B9BFF),
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                       ),
+                    ],
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    "Tune in or set reminders for upcoming live auctions",
+                    style: TextStyle(
+                      color: Colors.white54,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -1597,7 +1601,7 @@ class HomeScreen extends StatelessWidget {
 
           // Horizontal Carousel
           SizedBox(
-            height: 250.h,
+            height: 335.h,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
@@ -1609,30 +1613,65 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
-          SizedBox(height: 36.h),
+          SizedBox(height: 32.h),
         ],
       );
     });
   }
 
   Widget _buildUpcomingShowCard(HomeController controller, Map<String, dynamic> show, int index) {
-    final title = (show['title'] ?? 'Upcoming Stream').toString();
+    final title = (show['title'] ?? 'Upcoming Live Auction').toString();
 
-    // Resolve thumbnail
+    // High-reliability thumbnail resolution
     String imageUrl = "";
     final rawImg = (show['coverImage'] ?? show['image'] ?? show['thumbnail'] ?? '').toString();
-    if (rawImg.isNotEmpty) {
+    if (rawImg.isNotEmpty && !rawImg.contains('culturecards/cover')) {
       imageUrl = rawImg.startsWith('http')
           ? rawImg
           : "${ApiUrl.imageBaseUrl}${rawImg.startsWith('/') ? rawImg : '/$rawImg'}";
     }
-    if (imageUrl.isEmpty) {
-      imageUrl = "https://s3.amazonaws.com/culturecards/cover1.jpg";
+
+    if (imageUrl.isEmpty && show['productId'] is Map) {
+      final p = show['productId'];
+      final rawP = p['images'] ?? p['image'] ?? p['coverImage'];
+      if (rawP is List && rawP.isNotEmpty) {
+        imageUrl = rawP[0].toString();
+      } else if (rawP != null) {
+        imageUrl = rawP.toString();
+      }
+      if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+        imageUrl = "${ApiUrl.imageBaseUrl}${imageUrl.startsWith('/') ? imageUrl : '/$imageUrl'}";
+      }
+    }
+
+    if (imageUrl.isEmpty && show['inventoryIds'] is List && (show['inventoryIds'] as List).isNotEmpty) {
+      final firstItem = (show['inventoryIds'] as List).first;
+      if (firstItem is Map) {
+        final rawI = firstItem['images'] ?? firstItem['image'];
+        if (rawI is List && rawI.isNotEmpty) {
+          imageUrl = rawI[0].toString();
+        } else if (rawI != null) {
+          imageUrl = rawI.toString();
+        }
+        if (imageUrl.isNotEmpty && !imageUrl.startsWith('http')) {
+          imageUrl = "${ApiUrl.imageBaseUrl}${imageUrl.startsWith('/') ? imageUrl : '/$imageUrl'}";
+        }
+      }
+    }
+
+    // Curated high-res fallback so card never looks like an empty black box
+    if (imageUrl.isEmpty || imageUrl.contains('culturecards/cover')) {
+      const fallbackList = [
+        "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
+        "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?q=80&w=800",
+        "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?q=80&w=800",
+      ];
+      imageUrl = fallbackList[index % fallbackList.length];
     }
 
     // Resolve date/time
     final rawTime = (show['scheduledStartTime'] ?? show['scheduledTime'] ?? show['scheduledAt'] ?? '').toString();
-    String formattedTime = "Soon";
+    String formattedTime = "Upcoming Soon";
     if (rawTime.isNotEmpty) {
       try {
         final dt = DateTime.parse(rawTime).toLocal();
@@ -1661,257 +1700,357 @@ class HomeScreen extends StatelessWidget {
     final isMine = controller.isMyShow(show);
     final streamId = (show['_id'] ?? show['id'] ?? '').toString();
 
+    // Seller avatar
+    String hostAvatar = "";
+    if (seller != null) {
+      final rawAv = (seller['profile'] ?? seller['profileImage'] ?? seller['image'] ?? seller['avatar'] ?? '').toString();
+      if (rawAv.isNotEmpty) {
+        hostAvatar = rawAv.startsWith('http') ? rawAv : "${ApiUrl.imageBaseUrl}${rawAv.startsWith('/') ? rawAv : '/$rawAv'}";
+      }
+    }
+
     return Container(
-      width: 250.w,
-      margin: EdgeInsets.only(right: 16.w),
+      width: 285.w,
+      margin: EdgeInsets.only(right: 18.w),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24.r),
-        color: const Color(0xFF141420),
+        color: const Color(0xFF130F26),
+        borderRadius: BorderRadius.circular(26.r),
         border: Border.all(
-          color: isMine ? const Color(0xFF8B9BFF).withOpacity(0.5) : Colors.white.withOpacity(0.08),
+          color: isMine ? const Color(0xFF8B9BFF).withValues(alpha: 0.5) : const Color(0xFF2E2452),
           width: isMine ? 1.5 : 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.35),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 18.r,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Background Cover Image
-          Positioned.fill(
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: const Color(0xFF1E1E2C),
-                child: Center(
-                  child: Icon(Icons.videocam_outlined, color: Colors.white24, size: 40.sp),
-                ),
-              ),
-            ),
-          ),
-
-          // Gradient Overlay
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.2),
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.85),
-                    Colors.black.withOpacity(0.98),
-                  ],
-                  stops: const [0.0, 0.3, 0.7, 1.0],
-                ),
-              ),
-            ),
-          ),
-
-          // Top Badges Row
-          Positioned(
-            top: 12.h,
-            left: 12.w,
-            right: 12.w,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          // ─── TOP IMAGE AREA WITH OVERLAYS ───
+          SizedBox(
+            height: 175.h,
+            width: double.infinity,
+            child: Stack(
               children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.65),
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(color: const Color(0xFF8B9BFF).withOpacity(0.5)),
+                // Cover Image
+                Positioned.fill(
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Image.network(
+                      "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.schedule_rounded, color: const Color(0xFF8B9BFF), size: 12.sp),
-                      SizedBox(width: 4.w),
-                      Text(
-                        isMine ? "MY SHOW" : "SCHEDULED",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
+                ),
+
+                // Multi-Stop Vignette & Gradient
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.45),
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.75),
+                        ],
+                        stops: const [0.0, 0.45, 1.0],
                       ),
+                    ),
+                  ),
+                ),
+
+                // Top Badge Row
+                Positioned(
+                  top: 12.h,
+                  left: 12.w,
+                  right: 12.w,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Status Badge
+                      if (isMine)
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF8B9BFF), Color(0xFF6C5CE7)],
+                            ),
+                            borderRadius: BorderRadius.circular(20.r),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF8B9BFF).withValues(alpha: 0.4),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.star_rounded, color: Colors.white, size: 12.sp),
+                              SizedBox(width: 4.w),
+                              Text(
+                                "YOUR SHOW",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(20.r),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 6.r,
+                                height: 6.r,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF8B9BFF),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              SizedBox(width: 6.w),
+                              Text(
+                                "SCHEDULED",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      // Bookmark button (for buyers)
+                      if (!isMine)
+                        GestureDetector(
+                          onTap: () {
+                            AuthGuard.check(
+                              title: "Save Show",
+                              message: "Sign in to bookmark this show and get reminded before it starts.",
+                              onAuthorized: () => controller.toggleBookmarkShow(streamId),
+                            );
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(7.r),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white24),
+                            ),
+                            child: Icon(Icons.bookmark_border_rounded, color: Colors.white, size: 16.sp),
+                          ),
+                        ),
                     ],
                   ),
                 ),
 
-                if (!isMine)
-                  GestureDetector(
-                    onTap: () {
-                      AuthGuard.check(
-                        title: "Save Show",
-                        message: "Sign in to bookmark this show and get reminded before it starts.",
-                        onAuthorized: () => controller.toggleBookmarkShow(streamId),
-                      );
-                    },
-                    child: Container(
-                      padding: EdgeInsets.all(7.r),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white24),
+                // Bottom Left Time Chip
+                Positioned(
+                  bottom: 10.h,
+                  left: 12.w,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.5.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F0B1E).withValues(alpha: 0.88),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.4),
+                        width: 1,
                       ),
-                      child: Icon(Icons.bookmark_border_rounded, color: Colors.white, size: 16.sp),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          blurRadius: 6,
+                        ),
+                      ],
                     ),
-                  ),
-              ],
-            ),
-          ),
-
-          // Bottom Info Area
-          Positioned(
-            bottom: 12.h,
-            left: 14.w,
-            right: 14.w,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Date & Time Pill
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B9BFF).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.access_time_rounded, color: const Color(0xFF8B9BFF), size: 11.sp),
-                      SizedBox(width: 4.w),
-                      Flexible(
-                        child: Text(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.schedule_rounded, color: const Color(0xFF8B9BFF), size: 13.sp),
+                        SizedBox(width: 5.w),
+                        Text(
                           formattedTime,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: const Color(0xFF8B9BFF),
-                            fontSize: 11.sp,
+                            color: Colors.white,
+                            fontSize: 11.5.sp,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ─── BOTTOM DETAILS & ACTION AREA ───
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Show Title
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+
+                      SizedBox(height: 6.h),
+
+                      // Host Row
+                      Row(
+                        children: [
+                          Container(
+                            width: 20.r,
+                            height: 20.r,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFF8B9BFF).withValues(alpha: 0.5)),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: hostAvatar.isNotEmpty
+                                ? Image.network(hostAvatar, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildFallbackAvatar(hostName))
+                                : _buildFallbackAvatar(hostName),
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              hostName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12.5.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          Icon(Icons.verified_rounded, color: const Color(0xFF8B9BFF), size: 14.sp),
+                        ],
                       ),
                     ],
                   ),
-                ),
 
-                SizedBox(height: 6.h),
-
-                // Show Title
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-
-                SizedBox(height: 4.h),
-
-                // Host Name
-                Row(
-                  children: [
-                    Icon(Icons.person_rounded, color: Colors.white54, size: 12.sp),
-                    SizedBox(width: 4.w),
-                    Expanded(
-                      child: Text(
-                        hostName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Colors.white60, fontSize: 12.sp, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 10.h),
-
-                // Action Button (Start Live if Host, else Remind Me)
-                if (isMine)
-                  GestureDetector(
-                    onTap: () {
-                      if (Get.isRegistered<AgoraLiveController>()) {
-                        final agoraCtrl = Get.find<AgoraLiveController>();
-                        agoraCtrl.startScheduledStream(streamId, showData: show);
-                      }
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 8.h),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+                  // Action Button
+                  if (isMine)
+                    GestureDetector(
+                      onTap: () {
+                        if (Get.isRegistered<AgoraLiveController>()) {
+                          final agoraCtrl = Get.find<AgoraLiveController>();
+                          agoraCtrl.startScheduledStream(streamId, showData: show);
+                        }
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        height: 44.h,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+                          ),
+                          borderRadius: BorderRadius.circular(14.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF22C55E).withValues(alpha: 0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        borderRadius: BorderRadius.circular(12.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF22C55E).withOpacity(0.4),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.videocam_rounded, color: Colors.white, size: 18.sp),
+                            SizedBox(width: 8.w),
+                            Text(
+                              "START LIVE NOW 🚀",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.5.sp,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.videocam_rounded, color: Colors.white, size: 14.sp),
-                          SizedBox(width: 6.w),
-                          Text(
-                            "Start Live Now 🚀",
-                            style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w900),
+                    )
+                  else
+                    GestureDetector(
+                      onTap: () {
+                        AuthGuard.check(
+                          title: "Save Show",
+                          message: "Sign in to bookmark this show and get reminded before it starts.",
+                          onAuthorized: () => controller.toggleBookmarkShow(streamId),
+                        );
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        height: 44.h,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1E2C).withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(14.r),
+                          border: Border.all(
+                            color: const Color(0xFF8B9BFF).withValues(alpha: 0.35),
                           ),
-                        ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.notifications_active_outlined, color: const Color(0xFF8B9BFF), size: 16.sp),
+                            SizedBox(width: 8.w),
+                            Text(
+                              "REMIND ME 🔔",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  )
-                else
-                  GestureDetector(
-                    onTap: () {
-                      AuthGuard.check(
-                        title: "Save Show",
-                        message: "Sign in to bookmark this show and get reminded before it starts.",
-                        onAuthorized: () => controller.toggleBookmarkShow(streamId),
-                      );
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(vertical: 7.h),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.notifications_active_outlined, color: Colors.white, size: 13.sp),
-                          SizedBox(width: 6.w),
-                          Text(
-                            "Remind Me 🔔",
-                            style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
