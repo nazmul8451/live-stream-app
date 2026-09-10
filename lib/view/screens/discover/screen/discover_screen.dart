@@ -25,36 +25,44 @@ class DiscoverScreen extends GetView<DiscoverController> {
                 onRefresh: () => controller.fetchDiscoverData(),
                 color: const Color(0xFF8B9BFF),
                 backgroundColor: const Color(0xFF11111A),
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(horizontal: 20.w),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 16.h),
-                      _buildHeroText(),
-                      SizedBox(height: 24.h),
-                      _buildSearchBar(),
-                      SizedBox(height: 24.h),
-                      _buildFilterBar(),
-                      SizedBox(height: 32.h),
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (ScrollNotification scrollInfo) {
+                    if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 300) {
+                      controller.loadMoreTradeItems();
+                    }
+                    return false;
+                  },
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 16.h),
+                        _buildHeroText(),
+                        SizedBox(height: 24.h),
+                        _buildSearchBar(),
+                        SizedBox(height: 24.h),
+                        _buildFilterBar(),
+                        SizedBox(height: 32.h),
 
-                      // Tabs or Search Results
-                      Obx(() {
-                        if (controller.isSearching) {
-                          return _buildSearchResultsView();
-                        }
-                        switch (controller.selectedFilter.value) {
-                          case 1:
-                            return _buildLiveShowsTab();
-                          case 2:
-                            return _buildTradeMarketTab();
-                          default:
-                            return _buildAllTab();
-                        }
-                      }),
-                      SizedBox(height: 190.h),
-                    ],
+                        // Tabs or Search Results
+                        Obx(() {
+                          if (controller.isSearching) {
+                            return _buildSearchResultsView();
+                          }
+                          switch (controller.selectedFilter.value) {
+                            case 1:
+                              return _buildLiveShowsTab();
+                            case 2:
+                              return _buildTradeMarketTab();
+                            default:
+                              return _buildAllTab();
+                          }
+                        }),
+                        SizedBox(height: 190.h),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -407,10 +415,60 @@ class DiscoverScreen extends GetView<DiscoverController> {
                 child: _buildTradeListItem(item),
               );
             }).toList(),
+          if (marketList.isNotEmpty)
+            _buildTradeMarketLoadMoreIndicator(controller),
           SizedBox(height: 32.h),
           _buildDiscoverGridSection(),
         ],
       );
+    });
+  }
+
+  Widget _buildTradeMarketLoadMoreIndicator(DiscoverController controller) {
+    return Obx(() {
+      if (controller.isMoreTradesLoading.value) {
+        return Container(
+          padding: EdgeInsets.symmetric(vertical: 20.h),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 18.r,
+                height: 18.r,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B9BFF)),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Text(
+                "Loading more trades...",
+                style: TextStyle(
+                  color: const Color(0xFF8B9BFF),
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      if (!controller.hasMoreTrades.value && controller.tradeMarketItems.length >= controller.tradeLimit) {
+        return Container(
+          padding: EdgeInsets.symmetric(vertical: 16.h),
+          alignment: Alignment.center,
+          child: Text(
+            "All trades loaded ✨",
+            style: TextStyle(
+              color: Colors.white30,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      }
+      return const SizedBox.shrink();
     });
   }
 

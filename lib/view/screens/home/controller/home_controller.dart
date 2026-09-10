@@ -19,6 +19,12 @@ class HomeController extends GetxController {
   final RxList<Map<String, dynamic>> products = <Map<String, dynamic>>[].obs;
   final RxBool isProductsLoading = false.obs;
 
+  // Products Pagination State
+  final RxInt currentProductPage = 1.obs;
+  final RxBool hasMoreProducts = true.obs;
+  final RxBool isMoreProductsLoading = false.obs;
+  final int productLimit = 10;
+
   // Dynamic Category Items & Titles List
   final RxList<HomeCategoryItem> categoriesList = <HomeCategoryItem>[
     HomeCategoryItem(id: "", name: "All"),
@@ -318,23 +324,33 @@ class HomeController extends GetxController {
     }
   }
 
-  // Fetch Products based on selected category & active status
-  Future<void> fetchProducts({bool showLoading = true}) async {
+  // Fetch Products based on selected category & active status with pagination
+  Future<void> fetchProducts({bool showLoading = true, bool isLoadMore = false}) async {
     final int currentIdx = selectedCategoryIndex.value;
     final String currentCacheKey = _getCacheKey(currentIdx);
 
-    // Instant 0ms cache rendering
-    if (_categoryProductsCache.containsKey(currentCacheKey) &&
-        _categoryProductsCache[currentCacheKey]!.isNotEmpty) {
-      if (selectedCategoryIndex.value == currentIdx) {
-        products.assignAll(_categoryProductsCache[currentCacheKey]!);
+    if (isLoadMore) {
+      if (isMoreProductsLoading.value || !hasMoreProducts.value) return;
+      isMoreProductsLoading.value = true;
+    } else {
+      currentProductPage.value = 1;
+      hasMoreProducts.value = true;
+
+      // Instant 0ms cache rendering for initial load
+      if (_categoryProductsCache.containsKey(currentCacheKey) &&
+          _categoryProductsCache[currentCacheKey]!.isNotEmpty) {
+        if (selectedCategoryIndex.value == currentIdx) {
+          products.assignAll(_categoryProductsCache[currentCacheKey]!);
+        }
+        showLoading = false;
       }
-      showLoading = false;
+
+      if (showLoading && products.isEmpty) {
+        isProductsLoading.value = true;
+      }
     }
 
-    if (showLoading && products.isEmpty) {
-      isProductsLoading.value = true;
-    }
+    final int targetPage = isLoadMore ? (currentProductPage.value + 1) : 1;
 
     try {
       final selectedCat = (currentIdx >= 0 && currentIdx < categoriesList.length)
@@ -342,24 +358,26 @@ class HomeController extends GetxController {
           : HomeCategoryItem(id: "", name: "All");
 
       String url;
-      const String statusQuery = "status=active";
+      final String queryParams = "status=active&page=$targetPage&limit=$productLimit";
 
       if (selectedCat.id.isNotEmpty) {
-        url = "${ApiUrl.products}?category=${selectedCat.id}&$statusQuery";
+        url = "${ApiUrl.products}?category=${selectedCat.id}&$queryParams";
       } else if (selectedCat.name.isNotEmpty && selectedCat.name != "All") {
-        url = "${ApiUrl.products}?category=${Uri.encodeComponent(selectedCat.name)}&$statusQuery";
+        url = "${ApiUrl.products}?category=${Uri.encodeComponent(selectedCat.name)}&$queryParams";
       } else {
-        url = "${ApiUrl.products}?$statusQuery";
+        url = "${ApiUrl.products}?$queryParams";
       }
 
-      Get.log("🔄 [Home] Fetching products from: $url");
+      Get.log("🔄 [Home] Fetching products (page $targetPage): $url");
       var response = await _apiClient.getData(url);
 
       if (response.statusCode != 200) {
         String fallbackUrl = selectedCat.id.isNotEmpty
-            ? "${ApiUrl.products}?category=${selectedCat.id}"
-            : (selectedCat.name != "All" ? "${ApiUrl.products}?category=${Uri.encodeComponent(selectedCat.name)}" : ApiUrl.products);
-        Get.log("🔄 [Home] Primary query failed (${response.statusCode}), trying standard endpoint: $fallbackUrl");
+            ? "${ApiUrl.products}?category=${selectedCat.id}&page=$targetPage&limit=$productLimit"
+            : (selectedCat.name != "All"
+                ? "${ApiUrl.products}?category=${Uri.encodeComponent(selectedCat.name)}&page=$targetPage&limit=$productLimit"
+                : "${ApiUrl.products}?page=$targetPage&limit=$productLimit");
+        Get.log("🔄 [Home] Primary query failed (${response.statusCode}), trying fallback: $fallbackUrl");
         response = await _apiClient.getData(fallbackUrl);
       }
 
@@ -384,38 +402,74 @@ class HomeController extends GetxController {
 
         final List<Map<String, dynamic>> parsedList = rawList.map((e) => Map<String, dynamic>.from(e)).toList();
 
-        // Cache the category products for instant future loads
-        _categoryProductsCache[currentCacheKey] = parsedList;
-        if (currentIdx == 0) {
-          _categoryProductsCache["All"] = parsedList;
+        // Check if more items exist
+        if (parsedList.length < productLimit) {
+          hasMoreProducts.value = false;
+        } else {
+          hasMoreProducts.value = true;
         }
 
-        // Only update UI if the user is still on this category
+        final meta = resBody['meta'] ?? (resBody['data'] is Map ? resBody['data']['meta'] : null);
+        if (meta is Map && meta['totalPage'] != null) {
+          final int totalPage = (meta['totalPage'] as num).toInt();
+          if (targetPage >= totalPage) {
+            hasMoreProducts.value = false;
+          }
+        }
+
         if (selectedCategoryIndex.value == currentIdx) {
-          products.assignAll(parsedList);
-          Get.log("✅ [Home] Loaded & cached ${products.length} products for category: ${selectedCat.name}");
+          if (isLoadMore) {
+            final existingIds = products.map((p) => (p['_id'] ?? p['id'] ?? '').toString()).toSet();
+            final uniqueNew = parsedList.where((p) {
+              final id = (p['_id'] ?? p['id'] ?? '').toString();
+              return id.isEmpty || !existingIds.contains(id);
+            }).toList();
+            products.addAll(uniqueNew);
+            currentProductPage.value = targetPage;
+            Get.log("✅ [Home] Appended ${uniqueNew.length} more products. Total: ${products.length}");
+          } else {
+            products.assignAll(parsedList);
+            currentProductPage.value = 1;
+            _categoryProductsCache[currentCacheKey] = parsedList;
+            if (currentIdx == 0) {
+              _categoryProductsCache["All"] = parsedList;
+            }
+            Get.log("✅ [Home] Loaded & cached ${products.length} products for category: ${selectedCat.name}");
+          }
         }
       } else {
         Get.log("⚠️ [Home] Failed to fetch products. Status: ${response.statusCode}");
-        if (selectedCategoryIndex.value == currentIdx && !_categoryProductsCache.containsKey(currentCacheKey)) {
+        if (isLoadMore) {
+          hasMoreProducts.value = false;
+        } else if (selectedCategoryIndex.value == currentIdx && !_categoryProductsCache.containsKey(currentCacheKey)) {
           products.clear();
         }
       }
     } catch (e) {
       Get.log("❌ [Home] Error fetching products: $e");
-      if (selectedCategoryIndex.value == currentIdx && !_categoryProductsCache.containsKey(currentCacheKey)) {
+      if (isLoadMore) {
+        hasMoreProducts.value = false;
+      } else if (selectedCategoryIndex.value == currentIdx && !_categoryProductsCache.containsKey(currentCacheKey)) {
         products.clear();
       }
     } finally {
       if (selectedCategoryIndex.value == currentIdx) {
         isProductsLoading.value = false;
+        isMoreProductsLoading.value = false;
       }
     }
+  }
+
+  Future<void> loadMoreProducts() async {
+    if (!hasMoreProducts.value || isMoreProductsLoading.value || isProductsLoading.value) return;
+    await fetchProducts(showLoading: false, isLoadMore: true);
   }
 
   void onCategorySelected(int index) {
     if (selectedCategoryIndex.value == index && products.isNotEmpty) return;
     selectedCategoryIndex.value = index;
+    currentProductPage.value = 1;
+    hasMoreProducts.value = true;
 
     final String cacheKey = _getCacheKey(index);
 
@@ -547,6 +601,8 @@ class HomeController extends GetxController {
 
   Future<void> refreshHome() async {
     _categoryProductsCache.clear();
+    currentProductPage.value = 1;
+    hasMoreProducts.value = true;
     await Future.wait([
       fetchProfileData(),
       fetchLiveStreams(),

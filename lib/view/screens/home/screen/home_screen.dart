@@ -27,10 +27,17 @@ class HomeScreen extends StatelessWidget {
           onRefresh: () async {
             await controller.refreshHome();
           },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
-            child: Column(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification scrollInfo) {
+              if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 300) {
+                controller.loadMoreProducts();
+              }
+              return false;
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
               // Welcome Header
@@ -567,20 +574,26 @@ class HomeScreen extends StatelessWidget {
                       );
                     }
 
-                    return GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16.w,
-                        mainAxisSpacing: 16.h,
-                        childAspectRatio: 0.75,
-                      ),
-                      itemCount: controller.products.length,
-                      itemBuilder: (context, index) {
-                        final product = controller.products[index];
-                        return _buildProductCard(product);
-                      },
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16.w,
+                            mainAxisSpacing: 16.h,
+                            childAspectRatio: 0.75,
+                          ),
+                          itemCount: controller.products.length,
+                          itemBuilder: (context, index) {
+                            final product = controller.products[index];
+                            return _buildProductCard(product);
+                          },
+                        ),
+                        _buildProductsLoadMoreIndicator(controller),
+                      ],
                     );
                   }),
                 ],
@@ -592,8 +605,57 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     ),
-  );
+  ),
+);
 }
+
+  Widget _buildProductsLoadMoreIndicator(HomeController controller) {
+    return Obx(() {
+      if (controller.isMoreProductsLoading.value) {
+        return Container(
+          padding: EdgeInsets.symmetric(vertical: 24.h),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 18.r,
+                height: 18.r,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B9BFF)),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Text(
+                "Loading more items...",
+                style: TextStyle(
+                  color: const Color(0xFF8B9BFF),
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      if (!controller.hasMoreProducts.value && controller.products.length >= controller.productLimit) {
+        return Container(
+          padding: EdgeInsets.symmetric(vertical: 20.h),
+          alignment: Alignment.center,
+          child: Text(
+            "You've reached the end ✨",
+            style: TextStyle(
+              color: Colors.white30,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        );
+      }
+      return const SizedBox.shrink();
+    });
+  }
 
   Widget _buildSmallBadge(String text, Color bgColor, {IconData? icon}) {
     return Container(

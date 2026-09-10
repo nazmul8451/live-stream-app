@@ -20,6 +20,10 @@ class DiscoverController extends GetxController {
   final featuredLiveItems = <Map<String, dynamic>>[].obs;
   final featuredTrades = <Map<String, dynamic>>[].obs;
   final tradeMarketItems = <Map<String, dynamic>>[].obs;
+  final currentTradePage = 1.obs;
+  final hasMoreTrades = true.obs;
+  final isMoreTradesLoading = false.obs;
+  final int tradeLimit = 10;
   final topSellers = <Map<String, dynamic>>[].obs;
   final RxBool hasError = false.obs;
   final RxString errorMessage = "".obs;
@@ -218,12 +222,28 @@ class DiscoverController extends GetxController {
     }
   }
 
-  Future<void> fetchTradeMarketItems() async {
+  Future<void> fetchTradeMarketItems({bool isLoadMore = false}) async {
+    if (isLoadMore) {
+      if (isMoreTradesLoading.value || !hasMoreTrades.value) return;
+      isMoreTradesLoading.value = true;
+    } else {
+      currentTradePage.value = 1;
+      hasMoreTrades.value = true;
+    }
+
+    final int targetPage = isLoadMore ? (currentTradePage.value + 1) : 1;
+
     try {
-      final response = await _apiClient.getData(ApiUrl.products);
+      final response = await _apiClient.getData("${ApiUrl.products}?page=$targetPage&limit=$tradeLimit");
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body)['data'] ?? [];
         
+        if (data.length < tradeLimit) {
+          hasMoreTrades.value = false;
+        } else {
+          hasMoreTrades.value = true;
+        }
+
         final parsedMarket = data.map((item) {
           final title = item['title'] ?? "Unknown Item";
           final priceVal = item['estValue'] ?? 0;
@@ -250,36 +270,57 @@ class DiscoverController extends GetxController {
             "raw": item,
           };
         }).toList();
-        tradeMarketItems.assignAll(parsedMarket);
 
-        final parsedFeatured = data.take(3).map((item) {
-          final title = item['title'] ?? "Unknown Item";
-          final priceVal = item['estValue'] ?? 0;
-          
-          String imageUrl = "";
-          final imagesList = item['images'];
-          if (imagesList != null && imagesList is List && imagesList.isNotEmpty) {
-            final imagePath = imagesList[0].toString();
-            imageUrl = (imagePath.startsWith('http') || imagePath.startsWith('data:image/'))
-                ? imagePath
-                : "${ApiUrl.imageBaseUrl}${imagePath.startsWith('/') ? imagePath : '/$imagePath'}";
-          }
-          if (imageUrl.isEmpty) {
-            imageUrl = "";
-          }
-          
-          return <String, dynamic>{
-            "title": title,
-            "price": "Starting Est. \$${priceVal.toString()}",
-            "image": imageUrl,
-            "raw": item,
-          };
-        }).toList();
-        featuredTrades.assignAll(parsedFeatured);
+        if (isLoadMore) {
+          final existingIds = tradeMarketItems.map((m) => (m['raw']?['_id'] ?? m['raw']?['id'] ?? m['title']).toString()).toSet();
+          final uniqueNew = parsedMarket.where((m) => !existingIds.contains((m['raw']?['_id'] ?? m['raw']?['id'] ?? m['title']).toString())).toList();
+          tradeMarketItems.addAll(uniqueNew);
+          currentTradePage.value = targetPage;
+        } else {
+          tradeMarketItems.assignAll(parsedMarket);
+          currentTradePage.value = 1;
+
+          final parsedFeatured = data.take(3).map((item) {
+            final title = item['title'] ?? "Unknown Item";
+            final priceVal = item['estValue'] ?? 0;
+            
+            String imageUrl = "";
+            final imagesList = item['images'];
+            if (imagesList != null && imagesList is List && imagesList.isNotEmpty) {
+              final imagePath = imagesList[0].toString();
+              imageUrl = (imagePath.startsWith('http') || imagePath.startsWith('data:image/'))
+                  ? imagePath
+                  : "${ApiUrl.imageBaseUrl}${imagePath.startsWith('/') ? imagePath : '/$imagePath'}";
+            }
+            if (imageUrl.isEmpty) {
+              imageUrl = "";
+            }
+            
+            return <String, dynamic>{
+              "title": title,
+              "price": "Starting Est. \$${priceVal.toString()}",
+              "image": imageUrl,
+              "raw": item,
+            };
+          }).toList();
+          featuredTrades.assignAll(parsedFeatured);
+        }
+      } else {
+        if (isLoadMore) hasMoreTrades.value = false;
       }
     } catch (e) {
       Get.log("Error loading trade market items: $e");
+      if (isLoadMore) hasMoreTrades.value = false;
+    } finally {
+      if (isLoadMore) {
+        isMoreTradesLoading.value = false;
+      }
     }
+  }
+
+  Future<void> loadMoreTradeItems() async {
+    if (!hasMoreTrades.value || isMoreTradesLoading.value || isLoading.value) return;
+    await fetchTradeMarketItems(isLoadMore: true);
   }
 
   bool get isSearching => searchQuery.value.trim().isNotEmpty;
