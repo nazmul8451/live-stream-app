@@ -1596,21 +1596,33 @@ class HomeScreen extends StatelessWidget {
 
           SizedBox(height: 18.h),
 
-          // Horizontal Carousel (Full edge-to-edge scrolling)
-          Container(
-            height: 270.h,
-            margin: EdgeInsets.symmetric(horizontal: -24.w),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              clipBehavior: Clip.none,
-              padding: EdgeInsets.symmetric(horizontal: 24.w),
-              itemCount: controller.scheduledShows.length,
-              itemBuilder: (context, index) {
-                final show = controller.scheduledShows[index];
-                return _buildUpcomingShowCard(controller, show, index);
-              },
-            ),
+          // Horizontal Carousel (Full edge-to-edge scrolling without clipping)
+          Builder(
+            builder: (context) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              return SizedBox(
+                height: 270.h,
+                child: OverflowBox(
+                  minWidth: 0.0,
+                  maxWidth: screenWidth,
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: screenWidth,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      clipBehavior: Clip.none,
+                      padding: EdgeInsets.symmetric(horizontal: 24.w),
+                      itemCount: controller.scheduledShows.length,
+                      itemBuilder: (context, index) {
+                        final show = controller.scheduledShows[index];
+                        return _buildUpcomingShowCard(controller, show, index);
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
 
           SizedBox(height: 32.h),
