@@ -12,6 +12,7 @@ import '../../../../data/services/api_url.dart';
 import '../../../../global/widgets/custom_shimmer.dart';
 import '../../../../global/widgets/custom_empty_state.dart';
 import '../../../../data/helpers/shared_prefe.dart';
+import '../../live_stream/controller/agora_live_controller.dart';
 
 class ProfileScreen extends GetView<ProfileController> {
   const ProfileScreen({super.key});
@@ -79,7 +80,12 @@ class ProfileScreen extends GetView<ProfileController> {
                         // Stats Row
                         _buildStatsRow(),
 
-                        SizedBox(height: 32.h),
+                        SizedBox(height: 24.h),
+
+                        // Upcoming Shows Section (Feature 5)
+                        _buildMyUpcomingShowsSection(context),
+
+                        SizedBox(height: 24.h),
 
                         // Tabs
                         _buildTabBar(),
@@ -1930,6 +1936,557 @@ class ProfileScreen extends GetView<ProfileController> {
           ),
           SizedBox(height: 100.h),
         ],
+      ),
+    );
+  }
+
+  // ─── UPCOMING SHOWS SECTION (Feature 5) ──────────────────────────────────
+  Widget _buildMyUpcomingShowsSection(BuildContext context) {
+    return Obx(() {
+      final isSeller = controller.role.value.toLowerCase() == 'seller';
+      final hasShows = controller.upcomingShows.isNotEmpty;
+      final isLoading = controller.isUpcomingShowsLoading.value && controller.upcomingShows.isEmpty;
+
+      // Only show section if user has scheduled shows or is a registered/approved seller
+      if (!hasShows && !isSeller && !isLoading) {
+        return const SizedBox.shrink();
+      }
+
+      final screenWidth = MediaQuery.of(context).size.width;
+
+      return Padding(
+        padding: EdgeInsets.only(bottom: 8.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 4.w,
+                        height: 16.h,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B9BFF),
+                          borderRadius: BorderRadius.circular(2.r),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        "MY UPCOMING SHOWS",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      if (hasShows) ...[
+                        SizedBox(width: 8.w),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10.r),
+                            border: Border.all(
+                              color: const Color(0xFF8B9BFF).withValues(alpha: 0.35),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            "${controller.upcomingShows.length}",
+                            style: TextStyle(
+                              color: const Color(0xFF8B9BFF),
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  GestureDetector(
+                    onTap: () => Get.toNamed(AppRoute.goLiveSetup),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8B9BFF), Color(0xFF6C5CE7)],
+                        ),
+                        borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF8B9BFF).withValues(alpha: 0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add_rounded, color: Colors.white, size: 14.sp),
+                          SizedBox(width: 4.w),
+                          Text(
+                            "Schedule",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: 14.h),
+
+            // Content: Loading, Empty Banner, or Carousel
+            if (isLoading)
+              SizedBox(
+                height: 270.h,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.symmetric(horizontal: 24.w),
+                  itemCount: 2,
+                  itemBuilder: (context, index) => Container(
+                    width: 230.w,
+                    margin: EdgeInsets.only(right: 14.w),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF130F26),
+                      borderRadius: BorderRadius.circular(20.r),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF8B9BFF),
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else if (!hasShows)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(16.r),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF130F26),
+                    borderRadius: BorderRadius.circular(20.r),
+                    border: Border.all(
+                      color: const Color(0xFF8B9BFF).withValues(alpha: 0.25),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12.r),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.videocam_outlined, color: const Color(0xFF8B9BFF), size: 24.sp),
+                      ),
+                      SizedBox(width: 14.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "No Scheduled Shows",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            SizedBox(height: 3.h),
+                            Text(
+                              "Schedule your next auction break to notify buyers and build excitement!",
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 11.sp,
+                                height: 1.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      ElevatedButton(
+                        onPressed: () => Get.toNamed(AppRoute.goLiveSetup),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF8B9BFF),
+                          foregroundColor: const Color(0xFF0F0B1E),
+                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                        ),
+                        child: Text(
+                          "Go Live",
+                          style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              // Horizontal Edge-to-Edge Carousel without padding cut-off
+              SizedBox(
+                height: 270.h,
+                child: OverflowBox(
+                  minWidth: screenWidth,
+                  maxWidth: screenWidth,
+                  alignment: Alignment.center,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    clipBehavior: Clip.none,
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.symmetric(horizontal: 24.w),
+                    itemCount: controller.upcomingShows.length,
+                    itemBuilder: (context, index) {
+                      final show = controller.upcomingShows[index];
+                      return _buildMyShowCard(show, index);
+                    },
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildMyShowCard(Map<String, dynamic> show, int index) {
+    final title = (show['title'] ?? 'My Scheduled Show').toString();
+
+    // High-reliability thumbnail resolution
+    String rawImg = (show['coverImage'] ?? show['image'] ?? show['thumbnail'] ?? '').toString().trim();
+    if (rawImg.isEmpty && show['productId'] is Map) {
+      final p = show['productId'];
+      final rawP = p['images'] ?? p['image'] ?? p['coverImage'];
+      if (rawP is List && rawP.isNotEmpty) {
+        rawImg = rawP[0].toString().trim();
+      } else if (rawP != null) {
+        rawImg = rawP.toString().trim();
+      }
+    }
+    if (rawImg.isEmpty && show['inventoryIds'] is List && (show['inventoryIds'] as List).isNotEmpty) {
+      final firstItem = (show['inventoryIds'] as List).first;
+      if (firstItem is Map) {
+        final rawI = firstItem['images'] ?? firstItem['image'];
+        if (rawI is List && rawI.isNotEmpty) {
+          rawImg = rawI[0].toString().trim();
+        } else if (rawI != null) {
+          rawImg = rawI.toString().trim();
+        }
+      }
+    }
+
+    // Resolve date/time
+    final rawTime = (show['scheduledStartTime'] ?? show['scheduledTime'] ?? show['scheduledAt'] ?? '').toString();
+    String formattedTime = "Upcoming Soon";
+    if (rawTime.isNotEmpty) {
+      try {
+        final dt = DateTime.parse(rawTime).toLocal();
+        final now = DateTime.now();
+        final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+        final isTomorrow = dt.year == now.year && dt.month == now.month && dt.day == (now.day + 1);
+        final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+        final minute = dt.minute.toString().padLeft(2, '0');
+        final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+        if (isToday) {
+          formattedTime = "Today, $hour:$minute $ampm";
+        } else if (isTomorrow) {
+          formattedTime = "Tomorrow, $hour:$minute $ampm";
+        } else {
+          final months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          formattedTime = "${months[dt.month - 1]} ${dt.day}, $hour:$minute $ampm";
+        }
+      } catch (_) {
+        formattedTime = rawTime;
+      }
+    }
+
+    final isLive = show['status'] == 'live';
+    final streamId = (show['_id'] ?? show['id'] ?? '').toString();
+    final bool isLast = index == controller.upcomingShows.length - 1;
+
+    // Items count
+    int itemsCount = 0;
+    if (show['inventoryIds'] is List) {
+      itemsCount = (show['inventoryIds'] as List).length;
+    } else if (show['totalItems'] != null) {
+      itemsCount = int.tryParse(show['totalItems'].toString()) ?? 0;
+    }
+
+    return Container(
+      width: 230.w,
+      margin: EdgeInsets.only(right: isLast ? 0 : 14.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFF130F26),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: const Color(0xFF8B9BFF).withValues(alpha: 0.5),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 14.r,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ─── COVER IMAGE AREA ───
+          SizedBox(
+            height: 140.h,
+            width: double.infinity,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: _buildUpcomingCoverImage(rawImg),
+                ),
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.45),
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.75),
+                        ],
+                        stops: const [0.0, 0.45, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Top Badge
+                Positioned(
+                  top: 10.h,
+                  left: 10.w,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      color: isLive ? const Color(0xFFFF4B6E) : const Color(0xFF0F0B1E).withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: isLive ? Colors.transparent : Colors.white24,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6.r,
+                          height: 6.r,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isLive ? Colors.white : const Color(0xFF8B9BFF),
+                          ),
+                        ),
+                        SizedBox(width: 5.w),
+                        Text(
+                          isLive ? "LIVE NOW" : "SCHEDULED",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9.5.sp,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Bottom Time Chip
+                Positioned(
+                  bottom: 8.h,
+                  left: 10.w,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F0B1E).withValues(alpha: 0.88),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.4),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.schedule_rounded, color: const Color(0xFF8B9BFF), size: 12.sp),
+                        SizedBox(width: 4.w),
+                        Text(
+                          formattedTime,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.5.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ─── DETAILS & ACTION ───
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Row(
+                        children: [
+                          Icon(Icons.inventory_2_outlined, color: const Color(0xFF8B9BFF), size: 12.sp),
+                          SizedBox(width: 4.w),
+                          Text(
+                            itemsCount > 0 ? "$itemsCount Linked Items" : "Live Auction Break",
+                            style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // START LIVE NOW 🚀 button
+                  GestureDetector(
+                    onTap: () {
+                      if (Get.isRegistered<AgoraLiveController>()) {
+                        final agoraCtrl = Get.find<AgoraLiveController>();
+                        agoraCtrl.startScheduledStream(streamId, showData: show);
+                      } else {
+                        final agoraCtrl = Get.put(AgoraLiveController());
+                        agoraCtrl.startScheduledStream(streamId, showData: show);
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      height: 38.h,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isLive
+                              ? [const Color(0xFFFF4B6E), const Color(0xFFE11D48)]
+                              : [const Color(0xFF22C55E), const Color(0xFF16A34A)],
+                        ),
+                        borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isLive ? const Color(0xFFFF4B6E) : const Color(0xFF22C55E)).withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isLive ? Icons.play_arrow_rounded : Icons.videocam_rounded,
+                            color: Colors.white,
+                            size: 16.sp,
+                          ),
+                          SizedBox(width: 6.w),
+                          Text(
+                            isLive ? "CONTINUE LIVE 🔴" : "START LIVE NOW 🚀",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5.sp,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingCoverImage(String rawImg) {
+    final trimmed = rawImg.trim();
+    if (trimmed.isEmpty) {
+      return Image.network(
+        "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
+        fit: BoxFit.cover,
+      );
+    }
+
+    if (trimmed.startsWith('data:image/') && trimmed.contains('base64,')) {
+      try {
+        final bytes = base64Decode(trimmed.split('base64,').last);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Image.network(
+            "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
+            fit: BoxFit.cover,
+          ),
+        );
+      } catch (_) {}
+    }
+
+    final cleanUrl = trimmed.startsWith('http')
+        ? trimmed
+        : "${ApiUrl.imageBaseUrl}${trimmed.startsWith('/') ? trimmed : '/$trimmed'}";
+
+    return Image.network(
+      cleanUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => Image.network(
+        "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
+        fit: BoxFit.cover,
       ),
     );
   }

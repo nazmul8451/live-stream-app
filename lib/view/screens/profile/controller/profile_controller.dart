@@ -48,6 +48,10 @@ class ProfileController extends GetxController {
   // User listings
   final RxList<dynamic> userListings = <dynamic>[].obs;
 
+  // Upcoming shows for this user / seller (Feature 5)
+  final RxList<Map<String, dynamic>> upcomingShows = <Map<String, dynamic>>[].obs;
+  final RxBool isUpcomingShowsLoading = false.obs;
+
   // Activity data
   final RxList<dynamic> notificationsList = <dynamic>[].obs;
   final RxList<dynamic> purchasesList = <dynamic>[].obs;
@@ -61,6 +65,9 @@ class ProfileController extends GetxController {
     if (userId.isNotEmpty) {
       fetchPurchases(userId);
       fetchNotifications();
+      fetchUpcomingShows(userId);
+    } else {
+      fetchUpcomingShows();
     }
   }
 
@@ -146,13 +153,22 @@ class ProfileController extends GetxController {
         }
         reviewsCount.value = data['reviewsCount'] ?? 0;
 
-        // Fetch products listed by this user and activity logs
+        // Feature 5: Check upcomingShows returned directly inside profile data
+        final rawUpcoming = data['upcomingShows'] ?? data['shows'] ?? data['scheduledShows'];
+        if (rawUpcoming is List && rawUpcoming.isNotEmpty) {
+          upcomingShows.assignAll(rawUpcoming.where((e) => e is Map).map((e) => Map<String, dynamic>.from(e as Map)).toList());
+        }
+
+        // Fetch products listed by this user, activity logs, and upcoming live shows
         final rawUserId = (data['id'] ?? data['_id'] ?? SharePrefsHelper.getString(SharePrefsHelper.userIdKey))?.toString() ?? "";
         if (rawUserId.isNotEmpty) {
           userId.value = rawUserId;
           SharePrefsHelper.setString(SharePrefsHelper.userIdKey, rawUserId);
           await fetchUserListings(rawUserId);
           await fetchActivityData(rawUserId);
+          await fetchUpcomingShows(rawUserId);
+        } else {
+          await fetchUpcomingShows();
         }
       } else {
         if (response.statusCode == 401 || response.statusCode == 403) {
@@ -197,6 +213,72 @@ class ProfileController extends GetxController {
       }
     } catch (e) {
       Get.log("Error fetching user listings: $e");
+    }
+  }
+
+  // ─── UPCOMING SHOWS FOR SELLER (Feature 5) ──────────────────────────────────
+  bool isMyShow(Map<String, dynamic> show) {
+    final currentUserId = userId.value.isNotEmpty
+        ? userId.value
+        : SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+    if (currentUserId.isEmpty) return false;
+    final seller = show['sellerId'] ?? show['seller'];
+    if (seller is Map) {
+      return (seller['_id'] ?? seller['id'])?.toString() == currentUserId;
+    }
+    return seller?.toString() == currentUserId;
+  }
+
+  Future<void> fetchUpcomingShows([String? currentUid]) async {
+    isUpcomingShowsLoading.value = true;
+    try {
+      final uid = (currentUid != null && currentUid.isNotEmpty)
+          ? currentUid
+          : (userId.value.isNotEmpty ? userId.value : SharePrefsHelper.getString(SharePrefsHelper.userIdKey));
+
+      // 1. Fetch from liveStreams with status=scheduled
+      final res = await _apiClient.getData("${ApiUrl.liveStreams}?status=scheduled");
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final raw = body['data'] is List 
+            ? body['data'] 
+            : (body['streams'] is List ? body['streams'] : (body['result'] is List ? body['result'] : []));
+        if (raw is List) {
+          final List<Map<String, dynamic>> allScheduled = raw
+              .where((e) => e is Map)
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+          
+          if (uid.isNotEmpty) {
+            final myScheduled = allScheduled.where((s) => isMyShow(s)).toList();
+            if (myScheduled.isNotEmpty) {
+              upcomingShows.assignAll(myScheduled);
+              Get.log("📅 [ProfileController] Loaded ${upcomingShows.length} upcoming shows for user $uid");
+              return;
+            }
+          }
+        }
+      }
+
+      // 2. Fallback: try /live-stream/user/$uid?status=upcoming if available
+      if (uid.isNotEmpty) {
+        try {
+          final userRes = await _apiClient.getData('/live-stream/user/$uid?status=upcoming');
+          if (userRes.statusCode == 200) {
+            final uBody = jsonDecode(userRes.body);
+            final List uList = uBody['data'] ?? uBody['streams'] ?? [];
+            if (uList.isNotEmpty) {
+              upcomingShows.assignAll(uList.where((e) => e is Map).map((e) => Map<String, dynamic>.from(e as Map)).toList());
+              Get.log("📅 [ProfileController] Loaded ${upcomingShows.length} upcoming shows from user endpoint");
+              return;
+            }
+          }
+        } catch (_) {}
+      }
+    } catch (e) {
+      Get.log("❌ [ProfileController] fetchUpcomingShows error: $e");
+    } finally {
+      isUpcomingShowsLoading.value = false;
     }
   }
 
