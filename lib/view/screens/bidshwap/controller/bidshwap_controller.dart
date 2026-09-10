@@ -16,6 +16,43 @@ class BidShwapController extends GetxController {
   final searchQuery = "".obs;
   final searchController = TextEditingController();
 
+  // Advanced Filter & Sort parameters
+  final RxString selectedSort = "newest".obs; // 'newest', 'price_asc', 'price_desc', 'rating'
+  final RxString selectedListingType = "all".obs; // 'all', 'buy_now', 'trade', 'offers'
+  final RxString selectedCondition = "all".obs; // 'all', 'Mint', 'Near Mint', 'Good'
+  final minPriceController = TextEditingController();
+  final maxPriceController = TextEditingController();
+  final RxDouble minPrice = 0.0.obs;
+  final RxDouble maxPrice = 0.0.obs;
+
+  bool get hasActiveFilter {
+    return selectedSort.value != "newest" ||
+        selectedListingType.value != "all" ||
+        selectedCondition.value != "all" ||
+        minPrice.value > 0 ||
+        maxPrice.value > 0;
+  }
+
+  int get activeFilterCount {
+    int count = 0;
+    if (selectedSort.value != "newest") count++;
+    if (selectedListingType.value != "all") count++;
+    if (selectedCondition.value != "all") count++;
+    if (minPrice.value > 0 || maxPrice.value > 0) count++;
+    return count;
+  }
+
+  void resetFilters() {
+    selectedSort.value = "newest";
+    selectedListingType.value = "all";
+    selectedCondition.value = "all";
+    minPrice.value = 0.0;
+    maxPrice.value = 0.0;
+    minPriceController.clear();
+    maxPriceController.clear();
+    applyFilterAndSearch();
+  }
+
   final allTrades = <TradeModel>[];
   final trades = <TradeModel>[].obs;
   
@@ -171,7 +208,7 @@ class BidShwapController extends GetxController {
     final query = searchQuery.value.toLowerCase().trim();
     final filterIndex = selectedFilter.value;
 
-    List<TradeModel> results = allTrades;
+    List<TradeModel> results = List<TradeModel>.from(allTrades);
 
     // 1. Filter by Category
     if (filterIndex > 0) {
@@ -197,6 +234,70 @@ class BidShwapController extends GetxController {
       }).toList();
     }
 
+    // 3. Filter by Listing Type
+    if (selectedListingType.value != "all") {
+      results = results.where((trade) {
+        final raw = trade.rawProduct ?? {};
+        if (selectedListingType.value == "buy_now") {
+          final buyPrice = (raw['buyNowPrice'] ?? 0) as num;
+          return buyPrice > 0;
+        } else if (selectedListingType.value == "trade") {
+          return raw['allowTrade'] == true || raw['allowTrade'] == 'true';
+        } else if (selectedListingType.value == "offers") {
+          return raw['allowOffers'] == true || raw['allowOffers'] == 'true';
+        }
+        return true;
+      }).toList();
+    }
+
+    // 4. Filter by Condition
+    if (selectedCondition.value != "all") {
+      final condFilter = selectedCondition.value.toLowerCase();
+      results = results.where((trade) {
+        final itemCond = (trade.rawProduct?['condition'] ?? "").toString().toLowerCase();
+        return itemCond.contains(condFilter);
+      }).toList();
+    }
+
+    // 5. Filter by Price / Value Range
+    if (minPrice.value > 0 || maxPrice.value > 0) {
+      results = results.where((trade) {
+        final raw = trade.rawProduct ?? {};
+        final double itemVal = (raw['estValue'] ?? raw['buyNowPrice'] ?? raw['price'] ?? 0).toDouble();
+        if (minPrice.value > 0 && itemVal < minPrice.value) return false;
+        if (maxPrice.value > 0 && itemVal > maxPrice.value) return false;
+        return true;
+      }).toList();
+    }
+
+    // 6. Sort
+    if (selectedSort.value == "price_asc") {
+      results.sort((a, b) {
+        final valA = (a.rawProduct?['estValue'] ?? a.rawProduct?['buyNowPrice'] ?? a.rawProduct?['price'] ?? 0).toDouble();
+        final valB = (b.rawProduct?['estValue'] ?? b.rawProduct?['buyNowPrice'] ?? b.rawProduct?['price'] ?? 0).toDouble();
+        return valA.compareTo(valB);
+      });
+    } else if (selectedSort.value == "price_desc") {
+      results.sort((a, b) {
+        final valA = (a.rawProduct?['estValue'] ?? a.rawProduct?['buyNowPrice'] ?? a.rawProduct?['price'] ?? 0).toDouble();
+        final valB = (b.rawProduct?['estValue'] ?? b.rawProduct?['buyNowPrice'] ?? b.rawProduct?['price'] ?? 0).toDouble();
+        return valB.compareTo(valA);
+      });
+    } else if (selectedSort.value == "rating") {
+      results.sort((a, b) {
+        final rA = double.tryParse(a.userRating) ?? 0.0;
+        final rB = double.tryParse(b.userRating) ?? 0.0;
+        return rB.compareTo(rA);
+      });
+    } else {
+      // Default: Newest first
+      results.sort((a, b) {
+        final aTime = DateTime.tryParse(a.rawProduct?['createdAt']?.toString() ?? '') ?? DateTime(0);
+        final bTime = DateTime.tryParse(b.rawProduct?['createdAt']?.toString() ?? '') ?? DateTime(0);
+        return bTime.compareTo(aTime);
+      });
+    }
+
     trades.assignAll(results);
   }
 
@@ -207,6 +308,8 @@ class BidShwapController extends GetxController {
   @override
   void onClose() {
     searchController.dispose();
+    minPriceController.dispose();
+    maxPriceController.dispose();
     super.onClose();
   }
 }

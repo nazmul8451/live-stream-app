@@ -72,7 +72,7 @@ class BidShwapScreen extends GetView<BidShwapController> {
                     SizedBox(height: 24.h),
                     
                     // Search Bar
-                    _buildSearchBar(),
+                    _buildSearchBar(context),
                     
                     SizedBox(height: 32.h),
                     
@@ -135,7 +135,7 @@ class BidShwapScreen extends GetView<BidShwapController> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
     return Container(
       height: 60.h,
       decoration: BoxDecoration(
@@ -160,7 +160,47 @@ class BidShwapScreen extends GetView<BidShwapController> {
               ),
             ),
           ),
-          Icon(Icons.tune_rounded, color: Colors.white, size: 22.sp),
+          Obx(() {
+            final hasFilter = controller.hasActiveFilter;
+            return GestureDetector(
+              onTap: () => _showFilterBottomSheet(context),
+              child: Container(
+                padding: EdgeInsets.all(8.r),
+                decoration: BoxDecoration(
+                  color: hasFilter
+                      ? const Color(0xFF8B9BFF).withOpacity(0.15)
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: hasFilter
+                      ? Border.all(color: const Color(0xFF8B9BFF), width: 1.2)
+                      : null,
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Icon(
+                      Icons.tune_rounded,
+                      color: hasFilter ? const Color(0xFF8B9BFF) : Colors.white,
+                      size: 22.sp,
+                    ),
+                    if (hasFilter)
+                      Positioned(
+                        top: -2.h,
+                        right: -2.w,
+                        child: Container(
+                          width: 8.r,
+                          height: 8.r,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF8B9BFF),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -740,6 +780,358 @@ class BidShwapScreen extends GetView<BidShwapController> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFilterBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.82,
+          decoration: BoxDecoration(
+            color: const Color(0xFF131127),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(28.r),
+              topRight: Radius.circular(28.r),
+            ),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.8),
+                blurRadius: 30.r,
+                offset: const Offset(0, -10),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  margin: EdgeInsets.only(top: 12.h, bottom: 8.h),
+                  width: 44.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+              ),
+
+              // Header
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(8.r),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8B9BFF).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: Icon(Icons.tune_rounded, color: const Color(0xFF8B9BFF), size: 20.sp),
+                        ),
+                        SizedBox(width: 10.w),
+                        Text(
+                          "Filter Marketplace",
+                          style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold),
+                        ),
+                        Obx(() {
+                          final count = controller.activeFilterCount;
+                          if (count == 0) return const SizedBox.shrink();
+                          return Container(
+                            margin: EdgeInsets.only(left: 8.w),
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF8B9BFF),
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Text(
+                              "$count",
+                              style: TextStyle(color: Colors.black, fontSize: 11.sp, fontWeight: FontWeight.w900),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        controller.resetFilters();
+                        Get.back();
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                        foregroundColor: const Color(0xFFFF5C5C),
+                      ),
+                      child: Text("Reset All", style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Colors.white10, height: 1),
+
+              // Filter Body
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. Sort Options
+                      _buildSectionTitle("SORT BY", Icons.swap_vert_rounded),
+                      SizedBox(height: 10.h),
+                      Obx(() => Wrap(
+                        spacing: 8.w,
+                        runSpacing: 8.h,
+                        children: [
+                          _buildFilterPill(
+                            label: "Newest First",
+                            isSelected: controller.selectedSort.value == "newest",
+                            onTap: () => controller.selectedSort.value = "newest",
+                          ),
+                          _buildFilterPill(
+                            label: "Price: Low to High",
+                            isSelected: controller.selectedSort.value == "price_asc",
+                            onTap: () => controller.selectedSort.value = "price_asc",
+                          ),
+                          _buildFilterPill(
+                            label: "Price: High to Low",
+                            isSelected: controller.selectedSort.value == "price_desc",
+                            onTap: () => controller.selectedSort.value = "price_desc",
+                          ),
+                          _buildFilterPill(
+                            label: "Top Rated Seller",
+                            isSelected: controller.selectedSort.value == "rating",
+                            onTap: () => controller.selectedSort.value = "rating",
+                          ),
+                        ],
+                      )),
+
+                      SizedBox(height: 24.h),
+
+                      // 2. Listing Type
+                      _buildSectionTitle("LISTING TYPE", Icons.shopping_bag_outlined),
+                      SizedBox(height: 10.h),
+                      Obx(() => Wrap(
+                        spacing: 8.w,
+                        runSpacing: 8.h,
+                        children: [
+                          _buildFilterPill(
+                            label: "All Items",
+                            isSelected: controller.selectedListingType.value == "all",
+                            onTap: () => controller.selectedListingType.value = "all",
+                          ),
+                          _buildFilterPill(
+                            label: "Direct Buy Now",
+                            isSelected: controller.selectedListingType.value == "buy_now",
+                            onTap: () => controller.selectedListingType.value = "buy_now",
+                          ),
+                          _buildFilterPill(
+                            label: "Trade Swaps Only",
+                            isSelected: controller.selectedListingType.value == "trade",
+                            onTap: () => controller.selectedListingType.value = "trade",
+                          ),
+                          _buildFilterPill(
+                            label: "Accepts Custom Offers",
+                            isSelected: controller.selectedListingType.value == "offers",
+                            onTap: () => controller.selectedListingType.value = "offers",
+                          ),
+                        ],
+                      )),
+
+                      SizedBox(height: 24.h),
+
+                      // 3. Price / Value Range
+                      _buildSectionTitle("PRICE / VALUE RANGE (\$)", Icons.attach_money_rounded),
+                      SizedBox(height: 10.h),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildPriceInput(
+                              textController: controller.minPriceController,
+                              hint: "Min Price",
+                              onChanged: (val) {
+                                controller.minPrice.value = double.tryParse(val.trim()) ?? 0.0;
+                              },
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12.w),
+                            child: Text("to", style: TextStyle(color: Colors.white38, fontSize: 14.sp)),
+                          ),
+                          Expanded(
+                            child: _buildPriceInput(
+                              textController: controller.maxPriceController,
+                              hint: "Max Price",
+                              onChanged: (val) {
+                                controller.maxPrice.value = double.tryParse(val.trim()) ?? 0.0;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 24.h),
+
+                      // 4. Item Condition
+                      _buildSectionTitle("ITEM CONDITION", Icons.verified_outlined),
+                      SizedBox(height: 10.h),
+                      Obx(() => Wrap(
+                        spacing: 8.w,
+                        runSpacing: 8.h,
+                        children: [
+                          _buildFilterPill(
+                            label: "All Conditions",
+                            isSelected: controller.selectedCondition.value == "all",
+                            onTap: () => controller.selectedCondition.value = "all",
+                          ),
+                          _buildFilterPill(
+                            label: "Mint / Gem Mint",
+                            isSelected: controller.selectedCondition.value == "Mint",
+                            onTap: () => controller.selectedCondition.value = "Mint",
+                          ),
+                          _buildFilterPill(
+                            label: "Near Mint",
+                            isSelected: controller.selectedCondition.value == "Near Mint",
+                            onTap: () => controller.selectedCondition.value = "Near Mint",
+                          ),
+                          _buildFilterPill(
+                            label: "Good / Played",
+                            isSelected: controller.selectedCondition.value == "Good",
+                            onTap: () => controller.selectedCondition.value = "Good",
+                          ),
+                        ],
+                      )),
+
+                      SizedBox(height: 30.h),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Bottom Apply Bar
+              Container(
+                padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 24.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F0B1E),
+                  border: Border(top: BorderSide(color: Colors.white10, width: 1.w)),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52.h,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      controller.applyFilterAndSearch();
+                      Get.back();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B9BFF),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26.r)),
+                      elevation: 4,
+                    ),
+                    child: Text(
+                      "Apply Filters",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xFF8B9BFF), size: 16.sp),
+        SizedBox(width: 6.w),
+        Text(
+          title,
+          style: TextStyle(
+            color: Colors.white70,
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterPill({required String label, required bool isSelected, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 9.h),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF8B9BFF) : const Color(0xFF1E1E2C),
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF8B9BFF) : Colors.white12,
+            width: 1.w,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.black : Colors.white70,
+            fontSize: 13.sp,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPriceInput({
+    required TextEditingController textController,
+    required String hint,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Container(
+      height: 48.h,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1830),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: Colors.white12),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 14.w),
+      child: Row(
+        children: [
+          Text("\$", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 15.sp, fontWeight: FontWeight.bold)),
+          SizedBox(width: 6.w),
+          Expanded(
+            child: TextField(
+              controller: textController,
+              onChanged: onChanged,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(color: Colors.white, fontSize: 14.sp),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: TextStyle(color: Colors.white24, fontSize: 13.sp),
+                border: InputBorder.none,
+                isDense: true,
+              ),
+            ),
           ),
         ],
       ),
