@@ -1015,6 +1015,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     required int timerDuration,
     String productTitle = "",
     String productImage = "",
+    String coverImage = "",
+    List<String>? inventoryIds,
   }) async {
     isLoading.value = true;
     isEnding.value = false;
@@ -1038,23 +1040,35 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       totalSalesRevenue.value = 0.0;
       totalItemsSold.value = 0;
 
+      // Resolve coverImage (required by backend Zod validation)
+      String resolvedCover = coverImage.trim();
+      if (resolvedCover.isEmpty) {
+        resolvedCover = productImage.trim();
+      }
+      if (resolvedCover.isEmpty) {
+        resolvedCover = "https://s3.amazonaws.com/culturecards/cover1.jpg";
+      }
+
       // 1) Create stream on backend per Postman schema
       final streamPayload = {
         "title": title,
         "description": description.isNotEmpty ? description : "Live Auction Stream",
         if (sellerIdVal.isNotEmpty) "sellerId": sellerIdVal,
         "agoraChannelName": channel,
+        "coverImage": resolvedCover,
+        if (inventoryIds != null && inventoryIds.isNotEmpty) "inventoryIds": inventoryIds,
       };
 
       debugPrint("🚀 [AgoraLiveController] Calling startStream with payload: $streamPayload");
       var streamRes = await _apiClient.postData(ApiUrl.startStream, streamPayload);
 
-      // Fallback: If initial call failed, retry with minimal schema per final_streaming_plan.txt
+      // Fallback: If initial call failed, retry with minimal schema per final_streaming_plan.txt (preserving coverImage)
       if (streamRes.statusCode != 200 && streamRes.statusCode != 201) {
-        debugPrint("🔄 [AgoraLiveController] Retrying startStream with minimal schema: {title: $title, agoraChannelName: $channel}");
+        debugPrint("🔄 [AgoraLiveController] Retrying startStream with minimal schema: {title: $title, agoraChannelName: $channel, coverImage: $resolvedCover}");
         final minimalPayload = {
           "title": title,
           "agoraChannelName": channel,
+          "coverImage": resolvedCover,
         };
         final retryRes = await _apiClient.postData(ApiUrl.startStream, minimalPayload);
         if (retryRes.statusCode == 200 || retryRes.statusCode == 201) {
@@ -2301,14 +2315,26 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     return false;
   }
 
-  Future<bool> startScheduledStream(String sId) async {
+  Future<bool> startScheduledStream(String sId, {Map<String, dynamic>? showData}) async {
     if (sId.isEmpty) return false;
     isLoading.value = true;
     try {
       final res = await _apiClient.postData(ApiUrl.startScheduledStream(sId), {});
       if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        final streamData = body['data'] is Map ? body['data'] : (showData ?? {});
+        final chName = (streamData['agoraChannelName'] ?? streamData['channelName'] ?? "stream_$sId").toString();
+        streamId.value = sId;
+        channelName.value = chName;
+        streamTitle.value = (streamData['title'] ?? "Live Show").toString();
+        isLive.value = true;
+        _setupSocket();
+
         Get.snackbar("Show Started! 🚀", "Your scheduled stream is now live!", backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
+        Get.to(() => const HostLiveScreen());
         return true;
+      } else {
+        Get.snackbar("Error", "Could not start show (${res.statusCode})", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       debugPrint("❌ [AgoraLiveController] startScheduledStream error: $e");

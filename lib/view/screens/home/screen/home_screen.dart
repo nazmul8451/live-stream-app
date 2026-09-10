@@ -519,6 +519,9 @@ class HomeScreen extends StatelessWidget {
                 );
               }),
 
+              // Upcoming / Scheduled Shows Section (Feature 3 & 4)
+              _buildUpcomingShowsSection(controller),
+
               // Recent Trades (Who Won The Trade?) Community Voting Section
               _buildRecentTradesVotingSection(controller),
 
@@ -1516,6 +1519,399 @@ class HomeScreen extends StatelessWidget {
               color: const Color(0xFF8B9BFF),
               fontSize: 12.sp,
               fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── UPCOMING / SCHEDULED SHOWS (Feature 3 & 4) ───────────────────────────
+  Widget _buildUpcomingShowsSection(HomeController controller) {
+    return Obx(() {
+      if (controller.isScheduledShowsLoading.value && controller.scheduledShows.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      if (controller.scheduledShows.isEmpty) {
+        return const SizedBox.shrink();
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 10.h),
+          // Section Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF8B9BFF), Color(0xFF53389E)],
+                      ),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.calendar_month_rounded, color: Colors.white, size: 14.sp),
+                        SizedBox(width: 6.w),
+                        Text(
+                          "UPCOMING SHOWS",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Text(
+                      "${controller.scheduledShows.length}",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          SizedBox(height: 18.h),
+
+          // Horizontal Carousel
+          SizedBox(
+            height: 250.h,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: controller.scheduledShows.length,
+              itemBuilder: (context, index) {
+                final show = controller.scheduledShows[index];
+                return _buildUpcomingShowCard(controller, show, index);
+              },
+            ),
+          ),
+
+          SizedBox(height: 36.h),
+        ],
+      );
+    });
+  }
+
+  Widget _buildUpcomingShowCard(HomeController controller, Map<String, dynamic> show, int index) {
+    final title = (show['title'] ?? 'Upcoming Stream').toString();
+
+    // Resolve thumbnail
+    String imageUrl = "";
+    final rawImg = (show['coverImage'] ?? show['image'] ?? show['thumbnail'] ?? '').toString();
+    if (rawImg.isNotEmpty) {
+      imageUrl = rawImg.startsWith('http')
+          ? rawImg
+          : "${ApiUrl.imageBaseUrl}${rawImg.startsWith('/') ? rawImg : '/$rawImg'}";
+    }
+    if (imageUrl.isEmpty) {
+      imageUrl = "https://s3.amazonaws.com/culturecards/cover1.jpg";
+    }
+
+    // Resolve date/time
+    final rawTime = (show['scheduledStartTime'] ?? show['scheduledTime'] ?? show['scheduledAt'] ?? '').toString();
+    String formattedTime = "Soon";
+    if (rawTime.isNotEmpty) {
+      try {
+        final dt = DateTime.parse(rawTime).toLocal();
+        final now = DateTime.now();
+        final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+        final isTomorrow = dt.year == now.year && dt.month == now.month && dt.day == (now.day + 1);
+        final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+        final minute = dt.minute.toString().padLeft(2, '0');
+        final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+        if (isToday) {
+          formattedTime = "Today, $hour:$minute $ampm";
+        } else if (isTomorrow) {
+          formattedTime = "Tomorrow, $hour:$minute $ampm";
+        } else {
+          final months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          formattedTime = "${months[dt.month - 1]} ${dt.day}, $hour:$minute $ampm";
+        }
+      } catch (_) {
+        formattedTime = rawTime;
+      }
+    }
+
+    // Resolve seller info
+    final seller = show['sellerId'] is Map ? show['sellerId'] : (show['seller'] is Map ? show['seller'] : null);
+    final hostName = seller != null ? (seller['fullName'] ?? seller['name'] ?? 'Curator').toString() : 'Curator';
+    final isMine = controller.isMyShow(show);
+    final streamId = (show['_id'] ?? show['id'] ?? '').toString();
+
+    return Container(
+      width: 250.w,
+      margin: EdgeInsets.only(right: 16.w),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24.r),
+        color: const Color(0xFF141420),
+        border: Border.all(
+          color: isMine ? const Color(0xFF8B9BFF).withOpacity(0.5) : Colors.white.withOpacity(0.08),
+          width: isMine ? 1.5 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.35),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          // Background Cover Image
+          Positioned.fill(
+            child: Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: const Color(0xFF1E1E2C),
+                child: Center(
+                  child: Icon(Icons.videocam_outlined, color: Colors.white24, size: 40.sp),
+                ),
+              ),
+            ),
+          ),
+
+          // Gradient Overlay
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.2),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.85),
+                    Colors.black.withOpacity(0.98),
+                  ],
+                  stops: const [0.0, 0.3, 0.7, 1.0],
+                ),
+              ),
+            ),
+          ),
+
+          // Top Badges Row
+          Positioned(
+            top: 12.h,
+            left: 12.w,
+            right: 12.w,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.65),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(color: const Color(0xFF8B9BFF).withOpacity(0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.schedule_rounded, color: const Color(0xFF8B9BFF), size: 12.sp),
+                      SizedBox(width: 4.w),
+                      Text(
+                        isMine ? "MY SHOW" : "SCHEDULED",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                if (!isMine)
+                  GestureDetector(
+                    onTap: () {
+                      AuthGuard.check(
+                        title: "Save Show",
+                        message: "Sign in to bookmark this show and get reminded before it starts.",
+                        onAuthorized: () => controller.toggleBookmarkShow(streamId),
+                      );
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(7.r),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Icon(Icons.bookmark_border_rounded, color: Colors.white, size: 16.sp),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          // Bottom Info Area
+          Positioned(
+            bottom: 12.h,
+            left: 14.w,
+            right: 14.w,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Date & Time Pill
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B9BFF).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.access_time_rounded, color: const Color(0xFF8B9BFF), size: 11.sp),
+                      SizedBox(width: 4.w),
+                      Flexible(
+                        child: Text(
+                          formattedTime,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: const Color(0xFF8B9BFF),
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 6.h),
+
+                // Show Title
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+
+                SizedBox(height: 4.h),
+
+                // Host Name
+                Row(
+                  children: [
+                    Icon(Icons.person_rounded, color: Colors.white54, size: 12.sp),
+                    SizedBox(width: 4.w),
+                    Expanded(
+                      child: Text(
+                        hostName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.white60, fontSize: 12.sp, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+
+                SizedBox(height: 10.h),
+
+                // Action Button (Start Live if Host, else Remind Me)
+                if (isMine)
+                  GestureDetector(
+                    onTap: () {
+                      if (Get.isRegistered<AgoraLiveController>()) {
+                        final agoraCtrl = Get.find<AgoraLiveController>();
+                        agoraCtrl.startScheduledStream(streamId, showData: show);
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(vertical: 8.h),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
+                        ),
+                        borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF22C55E).withOpacity(0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.videocam_rounded, color: Colors.white, size: 14.sp),
+                          SizedBox(width: 6.w),
+                          Text(
+                            "Start Live Now 🚀",
+                            style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  GestureDetector(
+                    onTap: () {
+                      AuthGuard.check(
+                        title: "Save Show",
+                        message: "Sign in to bookmark this show and get reminded before it starts.",
+                        onAuthorized: () => controller.toggleBookmarkShow(streamId),
+                      );
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(vertical: 7.h),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.notifications_active_outlined, color: Colors.white, size: 13.sp),
+                          SizedBox(width: 6.w),
+                          Text(
+                            "Remind Me 🔔",
+                            style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],

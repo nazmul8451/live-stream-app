@@ -141,6 +141,7 @@ class HomeController extends GetxController {
     Future.wait([
       fetchProfileData(),
       fetchLiveStreams(),
+      fetchScheduledShows(),
       fetchCategories(),
       fetchProducts(showLoading: products.isEmpty),
       fetchUnreadNotificationCount(),
@@ -459,6 +460,41 @@ class HomeController extends GetxController {
     fetchProducts(showLoading: true);
   }
 
+  // ─── UPCOMING / SCHEDULED SHOWS (Feature 3 & 4) ───
+  final RxList<Map<String, dynamic>> scheduledShows = <Map<String, dynamic>>[].obs;
+  final RxBool isScheduledShowsLoading = false.obs;
+
+  Future<void> fetchScheduledShows() async {
+    isScheduledShowsLoading.value = true;
+    try {
+      final res = await _apiClient.getData("${ApiUrl.liveStreams}?status=scheduled");
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final raw = body['data'] is List 
+            ? body['data'] 
+            : (body['streams'] is List ? body['streams'] : (body['result'] is List ? body['result'] : []));
+        if (raw is List) {
+          scheduledShows.assignAll(raw.where((e) => e is Map).map((e) => Map<String, dynamic>.from(e as Map)).toList());
+          Get.log("📅 [HomeController] Loaded ${scheduledShows.length} scheduled shows");
+        }
+      }
+    } catch (e) {
+      Get.log("❌ [HomeController] fetchScheduledShows error: $e");
+    } finally {
+      isScheduledShowsLoading.value = false;
+    }
+  }
+
+  bool isMyShow(Map<String, dynamic> show) {
+    final currentUserId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+    if (currentUserId.isEmpty) return false;
+    final seller = show['sellerId'] ?? show['seller'];
+    if (seller is Map) {
+      return (seller['_id'] ?? seller['id']) == currentUserId;
+    }
+    return seller?.toString() == currentUserId;
+  }
+
   // ─── SAVED SHOWS & BOOKMARKS (Feature 4) ───
   final RxList<Map<String, dynamic>> savedShows = <Map<String, dynamic>>[].obs;
   final RxBool isSavedShowsLoading = false.obs;
@@ -511,6 +547,7 @@ class HomeController extends GetxController {
     await Future.wait([
       fetchProfileData(),
       fetchLiveStreams(),
+      fetchScheduledShows(),
       fetchCategories(),
       fetchSavedShows(),
     ]);

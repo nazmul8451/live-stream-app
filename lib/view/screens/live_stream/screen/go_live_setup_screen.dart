@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/helpers/product_cache.dart';
 import '../../../../data/services/api_client.dart';
@@ -286,19 +287,55 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
     }
   }
 
-  String _getResolvedCoverImage() {
-    if (_thumbnailBase64 != null && _thumbnailBase64!.isNotEmpty) {
-      return _thumbnailBase64!;
+  Future<String?> _uploadImageToS3(File file) async {
+    try {
+      final fileName = file.path.split('/').last.split('\\').last;
+      final ext = fileName.split('.').last.toLowerCase();
+      final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
+
+      final apiClient = Get.find<ApiClient>();
+      final response = await apiClient.postData("/upload/presign", {
+        "fileName": fileName,
+        "contentType": contentType,
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true && body['data'] != null) {
+          final uploadUrl = body['data']['url'].toString();
+          final fileBytes = await file.readAsBytes();
+          final s3Response = await http.put(
+            Uri.parse(uploadUrl),
+            headers: {"Content-Type": contentType},
+            body: fileBytes,
+          );
+
+          if (s3Response.statusCode == 200 || s3Response.statusCode == 201) {
+            return uploadUrl.split('?').first;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("S3 upload error: $e");
     }
+    return null;
+  }
+
+  String _getResolvedCoverImage() {
     if (_thumbnailUrlController.text.trim().isNotEmpty) {
       return _thumbnailUrlController.text.trim();
     }
     if (_selectedProduct != null) {
       final rawImgs = _selectedProduct?['images'] ?? _selectedProduct?['image'] ?? _selectedProduct?['coverImage'];
+      String? rawUrl;
       if (rawImgs is List && rawImgs.isNotEmpty) {
-        return rawImgs[0]?.toString() ?? "";
+        rawUrl = rawImgs[0]?.toString();
       } else if (rawImgs != null) {
-        return rawImgs.toString();
+        rawUrl = rawImgs.toString();
+      }
+      if (rawUrl != null && rawUrl.isNotEmpty) {
+        if (rawUrl.startsWith('http')) return rawUrl;
+        return "${ApiUrl.imageBaseUrl}${rawUrl.startsWith('/') ? rawUrl : '/$rawUrl'}";
       }
     }
     return "https://s3.amazonaws.com/culturecards/cover1.jpg";
@@ -315,11 +352,21 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
       return;
     }
 
-    final coverImage = _getResolvedCoverImage();
+    setState(() => _isStarting = true);
+
+    // If a thumbnail was picked from device, upload directly to S3
+    String coverImage = _getResolvedCoverImage();
+    if (_pickedThumbnailFile != null) {
+      final uploadedUrl = await _uploadImageToS3(_pickedThumbnailFile!);
+      if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
+        coverImage = uploadedUrl;
+      }
+    }
 
     if (_selectedModeIndex == 0) {
       // ─── GO LIVE IMMEDIATELY ───
       if (_selectedProduct == null) {
+        setState(() => _isStarting = false);
         Get.snackbar(
           "Product Required",
           "Please select a product item to start the auction for your stream",
@@ -329,13 +376,12 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
         );
         return;
       }
-      setState(() => _isStarting = true);
 
       final pTitle = _selectedProduct?['title']?.toString() ?? "";
 
       final ctrl = Get.put(AgoraLiveController(), permanent: true);
       final success = await ctrl.startStream(
-        title: _titleController.text.trim(),
+        title: title,
         description: _descController.text.trim(),
         productId: _selectedProduct?['_id']?.toString() ?? "",
         startingBid: double.tryParse(_startingBidController.text) ?? 100,
@@ -343,6 +389,10 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
         timerDuration: _timerDuration,
         productTitle: pTitle,
         productImage: coverImage,
+        coverImage: coverImage,
+        inventoryIds: _selectedInventoryIds.isNotEmpty
+            ? _selectedInventoryIds.toList()
+            : (_selectedProduct != null ? [_selectedProduct!['_id'].toString()] : null),
       );
 
       setState(() => _isStarting = false);
@@ -353,6 +403,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
     } else {
       // ─── SCHEDULE SHOW FOR FUTURE ───
       if (_scheduledDateTime == null) {
+        setState(() => _isStarting = false);
         Get.snackbar(
           "Schedule Time Required",
           "Please choose a scheduled start date & time for your show",
@@ -363,7 +414,6 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
         return;
       }
 
-      setState(() => _isStarting = true);
       try {
         final apiClient = Get.find<ApiClient>();
 
@@ -380,7 +430,12 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
           if (inventoryList.isNotEmpty) "inventoryIds": inventoryList,
         };
 
-        final res = await apiClient.postData(ApiUrl.startStream, payload);
+        var res = await apiClient.postData(ApiUrl.startStream, payload);
+        if (res.statusCode != 200 && res.statusCode != 201) {
+          debugPrint("Retrying schedule with /auctions/stream/schedule...");
+          res = await apiClient.postData("/auctions/stream/schedule", payload);
+        }
+
         if (res.statusCode == 200 || res.statusCode == 201) {
           Get.back();
           Get.snackbar(
