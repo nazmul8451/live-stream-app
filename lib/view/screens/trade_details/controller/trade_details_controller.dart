@@ -29,9 +29,30 @@ class TradeDetailsController extends GetxController {
       if (Get.arguments is Map) {
         Future.microtask(() {
           product.assignAll(Map<String, dynamic>.from(Get.arguments));
-          _checkAndFetchSellerDetails();
+          final pId = productId;
+          if (pId.isNotEmpty && product.length <= 2) {
+            _fetchFullProductDetails(pId);
+          } else {
+            _checkAndFetchSellerDetails();
+          }
         });
       }
+    }
+  }
+
+  Future<void> _fetchFullProductDetails(String id) async {
+    try {
+      final response = await _apiClient.getData("${ApiUrl.products}/$id");
+      if (response.statusCode == 200) {
+        final resBody = jsonDecode(response.body);
+        final data = resBody['data'] ?? resBody;
+        if (data is Map) {
+          product.assignAll(Map<String, dynamic>.from(data));
+          _checkAndFetchSellerDetails();
+        }
+      }
+    } catch (e) {
+      Get.log("❌ [TradeDetailsController] Error fetching product by ID: $e");
     }
   }
 

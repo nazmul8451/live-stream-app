@@ -84,6 +84,21 @@
 	<!-- App Store Export Compliance -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- Deep Linking URL Schemes -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.culturecards.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>culturecards</string>
+			</array>
+		</dict>
+	</array>
+
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 </dict>

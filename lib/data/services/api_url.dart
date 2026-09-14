@@ -33,6 +33,10 @@ class ApiUrl {
   static String blockUser(String userId) => "/users/block/$userId";
   static String unblockUser(String userId) => "/users/unblock/$userId";
   static const String blockedList = "/users/blocked-list";
+  static const String applyPromoCode = "/users/promo-code";
+
+  // Partner & Promo Code
+  static String validatePromoCode(String code) => "/partner/validate-code?code=${Uri.encodeComponent(code)}";
 
   // Support / Report
   static const String support = "/support";
@@ -93,6 +97,10 @@ class ApiUrl {
   static const String createCheckoutSession = "/payment/create-checkout-session";
   static const String paymentCheckoutSession = "/payment/create-checkout-session";
   static const String subscriptionCheckoutSession = "/subscription/checkout-session";
+  static const String createSetupIntent = "/payment/create-setup-intent";
+  static const String paymentMethods = "/payment/methods";
+  static String setDefaultPaymentMethod(String id) => "/payment/methods/$id/default";
+  static String deletePaymentMethod(String id) => "/payment/methods/$id";
 
   // Legal & Compliance
   static const String termsAndConditionsUrl = "https://api.areisco.com/terms-and-conditions";

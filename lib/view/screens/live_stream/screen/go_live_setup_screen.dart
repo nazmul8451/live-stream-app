@@ -63,10 +63,6 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
             .map((e) => Map<String, dynamic>.from(e))
             .toList();
         _loadingProducts = false;
-        if (_myProducts.isNotEmpty && _selectedProduct == null) {
-          _selectedProduct = _myProducts.first;
-          _selectedInventoryIds.add(_selectedProduct?['_id']?.toString() ?? "");
-        }
       }
     }
 
@@ -75,10 +71,6 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
     if (cached != null && cached.isNotEmpty && _myProducts.isEmpty) {
       _myProducts = List<Map<String, dynamic>>.from(cached);
       _loadingProducts = false;
-      if (_selectedProduct == null) {
-        _selectedProduct = _myProducts.first;
-        _selectedInventoryIds.add(_selectedProduct?['_id']?.toString() ?? "");
-      }
     }
 
     if (mounted) setState(() {});
@@ -91,10 +83,6 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
         setState(() {
           _myProducts = products;
           _loadingProducts = false;
-          if (_selectedProduct == null) {
-            _selectedProduct = _myProducts.first;
-            _selectedInventoryIds.add(_selectedProduct?['_id']?.toString() ?? "");
-          }
         });
       }
     } catch (e) {
@@ -388,30 +376,21 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
 
     if (_selectedModeIndex == 0) {
       // ─── GO LIVE IMMEDIATELY ───
-      if (_selectedProduct == null) {
-        setState(() => _isStarting = false);
-        Get.snackbar(
-          "Product Required",
-          "Please select a product item to start the auction for your stream",
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.redAccent.withValues(alpha: 0.9),
-          colorText: Colors.white,
-        );
-        return;
-      }
-
       final pTitle = _selectedProduct?['title']?.toString() ?? "";
+      final pId = _selectedProduct?['_id']?.toString() ?? "";
+      final pStartingBid = double.tryParse(_startingBidController.text) ?? 100;
+      final pBidIncrement = double.tryParse(_bidIncrementController.text) ?? 5;
 
       final ctrl = Get.put(AgoraLiveController(), permanent: true);
       final success = await ctrl.startStream(
         title: title,
         description: _descController.text.trim(),
-        productId: _selectedProduct?['_id']?.toString() ?? "",
-        startingBid: double.tryParse(_startingBidController.text) ?? 100,
-        bidIncrement: double.tryParse(_bidIncrementController.text) ?? 5,
+        productId: pId,
+        startingBid: pId.isNotEmpty ? pStartingBid : 0,
+        bidIncrement: pId.isNotEmpty ? pBidIncrement : 5,
         timerDuration: _timerDuration,
         productTitle: pTitle,
-        productImage: coverImage,
+        productImage: pId.isNotEmpty ? coverImage : "",
         coverImage: coverImage,
         inventoryIds: _selectedInventoryIds.isNotEmpty
             ? _selectedInventoryIds.toList()
@@ -632,7 +611,20 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
               ],
 
               // Select Products / Inventory
-              _sectionLabel(isScheduleMode ? "Select Linked Show Inventory" : "Select Product to Auction"),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _sectionLabel(isScheduleMode ? "Linked Show Inventory (Optional)" : "Select Product to Auction (Optional)"),
+                  if (!isScheduleMode && _selectedProduct != null)
+                    GestureDetector(
+                      onTap: () => setState(() => _selectedProduct = null),
+                      child: Text(
+                        "Clear selection",
+                        style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 12.sp, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                ],
+              ),
               SizedBox(height: 10.h),
               _loadingProducts
                   ? const Center(child: CircularProgressIndicator(color: Color(0xFF8B9BFF)))
@@ -649,7 +641,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                               SizedBox(width: 12.w),
                               Expanded(
                                 child: Text(
-                                  "No products found. Create a trade listing first.",
+                                  "No products found. You can still go live to chat and showcase items!",
                                   style: TextStyle(color: Colors.white38, fontSize: 13.sp),
                                 ),
                               ),
@@ -686,7 +678,11 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                                         _selectedInventoryIds.add(pId);
                                       }
                                     } else {
-                                      _selectedProduct = p;
+                                      if (_selectedProduct?['_id'] == p['_id']) {
+                                        _selectedProduct = null;
+                                      } else {
+                                        _selectedProduct = p;
+                                      }
                                     }
                                   });
                                 },
@@ -772,67 +768,108 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                         ),
 
               if (!isScheduleMode) ...[
-                SizedBox(height: 24.h),
+                if (_selectedProduct != null) ...[
+                  SizedBox(height: 24.h),
 
-                // Starting Bid & Bid Increment
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _sectionLabel("Starting Bid (\$)"),
-                          SizedBox(height: 10.h),
-                          _inputField(_startingBidController, "100", keyboardType: TextInputType.number),
-                        ],
+                  // Starting Bid & Bid Increment
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _sectionLabel("Starting Bid (\$)"),
+                            SizedBox(height: 10.h),
+                            _inputField(_startingBidController, "100", keyboardType: TextInputType.number),
+                          ],
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 16.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _sectionLabel("Bid Increment (\$)"),
-                          SizedBox(height: 10.h),
-                          _inputField(_bidIncrementController, "1", keyboardType: TextInputType.number),
-                        ],
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _sectionLabel("Bid Increment (\$)"),
+                            SizedBox(height: 10.h),
+                            _inputField(_bidIncrementController, "1", keyboardType: TextInputType.number),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
 
-                SizedBox(height: 16.h),
+                  SizedBox(height: 16.h),
 
-                // Bid Timer
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _sectionLabel("Bid Timer"),
-                    SizedBox(height: 10.h),
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161622),
-                        borderRadius: BorderRadius.circular(14.r),
-                        border: Border.all(color: Colors.white10),
+                  // Bid Timer
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _sectionLabel("Bid Timer"),
+                      SizedBox(height: 10.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF161622),
+                          borderRadius: BorderRadius.circular(14.r),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: DropdownButton<int>(
+                          value: _timerDuration,
+                          dropdownColor: const Color(0xFF161622),
+                          underline: const SizedBox.shrink(),
+                          isExpanded: true,
+                          style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w700),
+                          items: [5, 10, 15, 30, 60, 120, 180, 300].map((val) {
+                            return DropdownMenuItem(
+                              value: val,
+                              child: Text(val <= 15 ? "${val}s (Fast Auction ⚡)" : "${val}s"),
+                            );
+                          }).toList(),
+                          onChanged: (val) => setState(() => _timerDuration = val ?? 60),
+                        ),
                       ),
-                      child: DropdownButton<int>(
-                        value: _timerDuration,
-                        dropdownColor: const Color(0xFF161622),
-                        underline: const SizedBox.shrink(),
-                        isExpanded: true,
-                        style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w700),
-                        items: [5, 10, 15, 30, 60, 120, 180, 300].map((val) {
-                          return DropdownMenuItem(
-                            value: val,
-                            child: Text(val <= 15 ? "${val}s (Fast Auction ⚡)" : "${val}s"),
-                          );
-                        }).toList(),
-                        onChanged: (val) => setState(() => _timerDuration = val ?? 60),
-                      ),
+                    ],
+                  ),
+                ] else ...[
+                  SizedBox(height: 20.h),
+                  Container(
+                    padding: EdgeInsets.all(16.r),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF161622),
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(color: const Color(0xFF8B9BFF).withValues(alpha: 0.3)),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(10.r),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.videocam_rounded, color: const Color(0xFF8B9BFF), size: 22.sp),
+                        ),
+                        SizedBox(width: 14.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Live Chat & Showcase Mode",
+                                style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold),
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                "Going live without a product card. You can interact with viewers and start an auction anytime during the stream!",
+                                style: TextStyle(color: Colors.white70, fontSize: 12.sp, height: 1.3),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
 
               SizedBox(height: 40.h),

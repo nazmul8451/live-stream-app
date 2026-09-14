@@ -1030,8 +1030,9 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       currentProductTitle.value = productTitle;
       currentProductImage.value = productImage;
       sellerId.value = sellerIdVal;
-      currentProductId.value = productId;
-      await fetchProductReservePrice(productId);
+      if (productId.isNotEmpty) {
+        await fetchProductReservePrice(productId);
+      }
       this.bidIncrement.value = bidIncrement;
 
       // Init analytics

@@ -16,7 +16,9 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
 
   @override
   Widget build(BuildContext context) {
-    Get.put(TraderProfileController());
+    if (!Get.isRegistered<TraderProfileController>()) {
+      Get.put(TraderProfileController());
+    }
     return CustomBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -1160,43 +1162,41 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 4.w,
-                    height: 16.h,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8B9BFF),
-                      borderRadius: BorderRadius.circular(2.r),
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    "UPCOMING SHOWS",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    child: Text(
-                      "${controller.upcomingShows.length}",
-                      style: TextStyle(
-                        color: const Color(0xFF8B9BFF),
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w800,
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        "UPCOMING SHOWS",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.1,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(width: 8.w),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Text(
+                        "${controller.upcomingShows.length}",
+                        style: TextStyle(
+                          color: const Color(0xFF8B9BFF),
+                          fontSize: 11.sp,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               GestureDetector(
                 onTap: () => Get.toNamed(AppRoute.allLiveShows),

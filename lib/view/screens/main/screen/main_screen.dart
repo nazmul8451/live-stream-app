@@ -21,7 +21,6 @@ class MainScreen extends GetView<MainController> {
             right: 0,
             child: CustomBottomNavbar(),
           ),
-          const FloatingLiveStreamOverlay(),
         ],
       ),
     );

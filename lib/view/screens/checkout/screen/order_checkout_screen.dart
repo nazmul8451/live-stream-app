@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'dart:convert';
 import '../../../../global/widgets/custom_background.dart';
 import '../../../../data/services/api_url.dart';
+import '../../../../core/app_route.dart';
 import '../controller/order_checkout_controller.dart';
 
 class OrderCheckoutScreen extends StatelessWidget {
@@ -71,14 +72,21 @@ class OrderCheckoutScreen extends StatelessWidget {
 
                 SizedBox(height: 24.h),
 
-                // 3. Price Breakdown Section
+                // 3. Payment Method Section
+                _buildSectionHeader("PAYMENT METHOD", Icons.credit_card_outlined),
+                SizedBox(height: 12.h),
+                _buildPaymentMethodSelectorCard(controller),
+
+                SizedBox(height: 24.h),
+
+                // 4. Price Breakdown Section
                 _buildSectionHeader("PAYMENT SUMMARY", Icons.receipt_long_outlined),
                 SizedBox(height: 12.h),
                 _buildPriceBreakdownCard(controller),
 
                 SizedBox(height: 20.h),
 
-                // 4. Guarantee / Trust Badge
+                // 5. Guarantee / Trust Badge
                 _buildBuyerProtectionBadge(),
 
                 SizedBox(height: 120.h),
@@ -318,6 +326,167 @@ class OrderCheckoutScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPaymentMethodSelectorCard(OrderCheckoutController controller) {
+    return Container(
+      padding: EdgeInsets.all(18.r),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161622),
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Obx(() {
+        if (controller.savedCards.isNotEmpty) {
+          final selectedId = controller.selectedPaymentMethodId.value;
+          final currentCard = controller.savedCards.firstWhere(
+            (c) => c['id'] == selectedId,
+            orElse: () => controller.savedCards.first,
+          );
+          final brand = (currentCard['brand'] ?? 'Card').toString().toUpperCase();
+          final last4 = currentCard['last4']?.toString() ?? '••••';
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8.r),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: Icon(Icons.credit_card_rounded, color: const Color(0xFF8B9BFF), size: 20.sp),
+                  ),
+                  SizedBox(width: 12.w),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "$brand •••• $last4",
+                        style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w700),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        "Instant 1-Tap Checkout",
+                        style: TextStyle(color: const Color(0xFF22C55E), fontSize: 11.sp, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () => _showCardSelectionDialog(controller),
+                child: Text(
+                  "Change",
+                  style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8.r),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10.r),
+              ),
+              child: Icon(Icons.payment_rounded, color: const Color(0xFF8B9BFF), size: 20.sp),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Credit / Debit Card (Stripe)", style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w700)),
+                  SizedBox(height: 2.h),
+                  Text("Enter details via Stripe PaymentSheet", style: TextStyle(color: Colors.white38, fontSize: 11.sp)),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () async {
+                await Get.toNamed(AppRoute.paymentMethods);
+                controller.loadSavedCards();
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Text(
+                  "+ Add Card",
+                  style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 11.sp, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  void _showCardSelectionDialog(OrderCheckoutController controller) {
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.all(24.r),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E2C),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text("Select Payment Card", style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.bold)),
+                IconButton(icon: const Icon(Icons.close, color: Colors.white38), onPressed: () => Get.back()),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Obx(() => Column(
+              children: [
+                ...controller.savedCards.map((card) {
+                  final id = card['id']?.toString() ?? '';
+                  final isSelected = controller.selectedPaymentMethodId.value == id;
+                  final brand = (card['brand'] ?? 'Card').toString().toUpperCase();
+                  final last4 = card['last4']?.toString() ?? '••••';
+
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.credit_card, color: isSelected ? const Color(0xFF8B9BFF) : Colors.white54),
+                    title: Text("$brand •••• $last4", style: TextStyle(color: Colors.white, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                    trailing: isSelected ? const Icon(Icons.check_circle_rounded, color: Color(0xFF8B9BFF)) : null,
+                    onTap: () {
+                      controller.selectedPaymentMethodId.value = id;
+                      Get.back();
+                    },
+                  );
+                }),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF8B9BFF)),
+                  title: const Text("Manage & Add New Cards", style: TextStyle(color: Color(0xFF8B9BFF), fontWeight: FontWeight.bold)),
+                  onTap: () async {
+                    Get.back();
+                    await Get.toNamed(AppRoute.paymentMethods);
+                    controller.loadSavedCards();
+                  },
+                ),
+              ],
+            )),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
     );
   }
 

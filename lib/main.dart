@@ -17,7 +17,7 @@ void main() async {
   // Catch framework errors gracefully
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
-    debugPrint("🔴 Flutter Error: ${details.exceptionAsString()}");
+    debugPrint("🔴 Flutter Error: ${details.exceptionAsString()}\nSTACK TRACE:\n${details.stack}");
   };
 
   // 1. Load environment variables safely

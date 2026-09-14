@@ -38,9 +38,11 @@ import '../view/screens/trade_voting/screen/trade_voting_feed_screen.dart';
 import '../view/screens/trade_voting/controller/trade_voting_controller.dart';
 
 import '../view/screens/profile/screen/blocked_users_screen.dart';
+import '../view/screens/profile/screen/payment_methods_screen.dart';
 
 class AppRoute {
   static final routeStream = StreamController<String>.broadcast();
+  static const String paymentMethods = "/payment_methods";
   static const String checkout = "/checkout";
   static const String forgotPassword = "/forgotPassword";
   static const String onboarding = "/onboarding";
@@ -121,6 +123,7 @@ class AppRoute {
     GetPage(name: spinWheel, page: () => const SpinWheelScreen()),
     GetPage(name: checkout, page: () => const OrderCheckoutScreen()),
     GetPage(name: inAppWebView, page: () => const InAppWebViewScreen()),
+    GetPage(name: paymentMethods, page: () => const PaymentMethodsScreen()),
     GetPage(
       name: tradeVotingFeed,
       page: () => const TradeVotingFeedScreen(),

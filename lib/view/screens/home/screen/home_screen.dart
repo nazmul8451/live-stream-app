@@ -4,15 +4,19 @@ import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
 import '../../../../core/app_route.dart';
+import '../../../../data/helpers/user_cache.dart';
+import '../../../../data/services/api_url.dart';
+import '../../../../global/helper/auth_guard.dart';
 import '../../../../global/widgets/custom_background.dart';
+import '../../../../global/widgets/custom_shimmer.dart';
+import '../../live_stream/controller/agora_live_controller.dart';
+import '../../main/controller/main_controller.dart';
+import '../../profile/controller/profile_controller.dart';
+import '../../profile/screen/profile_screen.dart';
 import '../../purchases/screen/purchases_screen.dart';
+import '../../trade_voting/widgets/tinder_swipeable_trade_voting.dart';
 import '../controller/home_controller.dart';
 import 'home_live_preview_widget.dart';
-import '../../live_stream/controller/agora_live_controller.dart';
-import '../../../../global/widgets/custom_shimmer.dart';
-import '../../../../global/helper/auth_guard.dart';
-import '../../../../data/services/api_url.dart';
-import '../../trade_voting/widgets/tinder_swipeable_trade_voting.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -950,19 +954,73 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFallbackAvatar(String name) {
-    final initials = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : '?';
+  Widget _buildFallbackAvatar(String name, {double? fontSize}) {
+    final cleanName = name.trim();
+    final initials = cleanName.isNotEmpty ? cleanName.substring(0, 1).toUpperCase() : '?';
     return Container(
       alignment: Alignment.center,
-      color: const Color(0xFF2E2A4F),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF6C5CE7), Color(0xFF8B9BFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Text(
         initials,
         style: TextStyle(
-          color: const Color(0xFF8B9BFF),
-          fontSize: 16.sp,
-          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          fontSize: fontSize ?? 13.sp,
+          fontWeight: FontWeight.w900,
+          letterSpacing: -0.5,
         ),
       ),
+    );
+  }
+
+  Widget _buildHostAvatarWidget(String hostAvatar, String hostName, bool isMine) {
+    Widget imageContent;
+    final trimmed = hostAvatar.trim();
+
+    if (trimmed.isEmpty) {
+      imageContent = _buildFallbackAvatar(hostName, fontSize: 13.sp);
+    } else if (trimmed.startsWith('data:image/') && trimmed.contains('base64,')) {
+      try {
+        final bytes = base64Decode(trimmed.split('base64,').last);
+        imageContent = Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildFallbackAvatar(hostName, fontSize: 13.sp),
+        );
+      } catch (_) {
+        imageContent = _buildFallbackAvatar(hostName, fontSize: 13.sp);
+      }
+    } else {
+      imageContent = Image.network(
+        trimmed,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildFallbackAvatar(hostName, fontSize: 13.sp),
+      );
+    }
+
+    return Container(
+      width: 28.r,
+      height: 28.r,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isMine ? const Color(0xFF8B9BFF) : const Color(0xFFBD8BFF).withValues(alpha: 0.8),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isMine ? const Color(0xFF8B9BFF) : const Color(0xFFBD8BFF)).withValues(alpha: 0.25),
+            blurRadius: 6.r,
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: imageContent,
     );
   }
 
@@ -1271,15 +1329,20 @@ class HomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                "Current & Upcoming Shows",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.3,
+              Expanded(
+                child: Text(
+                  "Current & Upcoming Shows",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                  ),
                 ),
               ),
+              SizedBox(width: 8.w),
               GestureDetector(
                 onTap: () => Get.to(() => PurchasesScreen()),
                 behavior: HitTestBehavior.opaque,
@@ -1305,7 +1368,7 @@ class HomeScreen extends StatelessWidget {
             builder: (context) {
               final screenWidth = MediaQuery.of(context).size.width;
               return SizedBox(
-                height: 185.h,
+                height: 178.h,
                 child: OverflowBox(
                   minWidth: 0.0,
                   maxWidth: screenWidth,
@@ -1375,7 +1438,8 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildUpcomingShowCard(HomeController controller, Map<String, dynamic> show, int index) {
-    final title = (show['title'] ?? 'Upcoming Live Auction').toString();
+    final rawTitle = (show['title'] ?? show['streamTitle'] ?? show['name'] ?? '').toString().trim();
+    final title = rawTitle.isNotEmpty ? rawTitle : 'Upcoming Live Auction';
 
     // High-reliability thumbnail resolution from show, product, or inventory
     String rawImg = (show['coverImage'] ?? show['image'] ?? show['thumbnail'] ?? '').toString().trim();
@@ -1449,9 +1513,13 @@ class HomeScreen extends StatelessWidget {
 
     // Resolve seller info
     final seller = show['sellerId'] is Map ? show['sellerId'] : (show['seller'] is Map ? show['seller'] : null);
-    final hostName = seller != null ? (seller['fullName'] ?? seller['name'] ?? 'Curator').toString() : 'Curator';
     final isMine = controller.isMyShow(show);
     final streamId = (show['_id'] ?? show['id'] ?? '').toString();
+    final String sellerUid = seller != null
+        ? (seller['_id'] ?? seller['id'] ?? '').toString()
+        : (show['sellerId'] is String ? show['sellerId'] as String : (show['seller'] is String ? show['seller'] as String : ''));
+
+    String hostName = seller != null ? (seller['fullName'] ?? seller['name'] ?? 'Curator').toString() : 'Curator';
 
     // Seller avatar
     String hostAvatar = "";
@@ -1459,6 +1527,35 @@ class HomeScreen extends StatelessWidget {
       final rawAv = (seller['profile'] ?? seller['profileImage'] ?? seller['image'] ?? seller['avatar'] ?? '').toString();
       if (rawAv.isNotEmpty) {
         hostAvatar = rawAv.startsWith('http') ? rawAv : "${ApiUrl.imageBaseUrl}${rawAv.startsWith('/') ? rawAv : '/$rawAv'}";
+      }
+    }
+
+    // If it's our show (amader show), show our logged-in user profile avatar & name
+    if (isMine) {
+      if (hostAvatar.isEmpty) {
+        if (controller.userAvatarUrl.value.isNotEmpty) {
+          hostAvatar = controller.userAvatarUrl.value;
+        } else if (Get.isRegistered<ProfileController>() && Get.find<ProfileController>().profileImageUrl.value.isNotEmpty) {
+          hostAvatar = Get.find<ProfileController>().profileImageUrl.value;
+        }
+      }
+      if (hostName == 'Curator') {
+        if (controller.fullName.value.isNotEmpty && controller.fullName.value != 'User') {
+          hostName = controller.fullName.value;
+        } else if (Get.isRegistered<ProfileController>() && Get.find<ProfileController>().name.value.isNotEmpty) {
+          hostName = Get.find<ProfileController>().name.value;
+        }
+      }
+    } else if (hostAvatar.isEmpty && sellerUid.isNotEmpty) {
+      final cached = UserCache.get(sellerUid);
+      if (cached != null) {
+        final av = cached['avatar'] ?? '';
+        if (av.isNotEmpty) {
+          hostAvatar = av.startsWith('http') ? av : "${ApiUrl.imageBaseUrl}${av.startsWith('/') ? av : '/$av'}";
+        }
+        if (hostName == 'Curator' && (cached['name'] ?? '').isNotEmpty) {
+          hostName = cached['name']!;
+        }
       }
     }
 
@@ -1483,7 +1580,7 @@ class HomeScreen extends StatelessWidget {
         width: 215.w,
         margin: EdgeInsets.only(right: isLast ? 0 : 14.w),
         decoration: BoxDecoration(
-          color: const Color(0xFF140F28),
+          color: const Color(0xFF16122E),
           borderRadius: BorderRadius.circular(18.r),
           border: Border.all(
             color: isMine ? const Color(0xFF8B9BFF).withValues(alpha: 0.6) : const Color(0xFF2C224E),
@@ -1579,6 +1676,7 @@ class HomeScreen extends StatelessWidget {
                     top: 8.h,
                     right: 8.w,
                     child: Container(
+                      constraints: BoxConstraints(maxWidth: 110.w),
                       padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.75),
@@ -1590,6 +1688,8 @@ class HomeScreen extends StatelessWidget {
                       ),
                       child: Text(
                         formattedTimeShort,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 9.sp,
@@ -1603,71 +1703,103 @@ class HomeScreen extends StatelessWidget {
             ),
 
             // ─── BOTTOM DETAILS BAR (Avatar & Info) ───
-            Container(
-              height: 48.h,
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-              color: const Color(0xFF181232),
-              child: Row(
-                children: [
-                  // Host Avatar (matches circular user thumbnails)
-                  Container(
-                    width: 24.r,
-                    height: 24.r,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.8),
-                        width: 1.2,
+            Expanded(
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                color: const Color(0xFF16122E),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Host Avatar (matches circular user thumbnails) - Tapping opens profile
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        if (isMine) {
+                          try {
+                            if (Get.isRegistered<MainController>()) {
+                              Get.find<MainController>().currentIndex.value = 3;
+                              return;
+                            }
+                          } catch (_) {}
+                          Get.to(() => const ProfileScreen());
+                        } else if (sellerUid.isNotEmpty) {
+                          Get.toNamed(AppRoute.traderProfile, arguments: {
+                            'id': sellerUid,
+                            '_id': sellerUid,
+                            'name': hostName,
+                            'avatar': hostAvatar,
+                            'seller': seller,
+                          });
+                        }
+                      },
+                      child: _buildHostAvatarWidget(hostAvatar, hostName, isMine),
+                    ),
+                    SizedBox(width: 8.w),
+
+                    // Title / Starts in 2h
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5.sp,
+                              fontWeight: FontWeight.w800,
+                              height: 1.2,
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              if (isMine) {
+                                try {
+                                  if (Get.isRegistered<MainController>()) {
+                                    Get.find<MainController>().currentIndex.value = 3;
+                                    return;
+                                  }
+                                } catch (_) {}
+                                Get.to(() => const ProfileScreen());
+                              } else if (sellerUid.isNotEmpty) {
+                                Get.toNamed(AppRoute.traderProfile, arguments: {
+                                  'id': sellerUid,
+                                  '_id': sellerUid,
+                                  'name': hostName,
+                                  'avatar': hostAvatar,
+                                  'seller': seller,
+                                });
+                              }
+                            },
+                            child: Text(
+                              isMine ? "You • $formattedTime" : "$hostName • $formattedTime",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 9.5.sp,
+                                fontWeight: FontWeight.w600,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    clipBehavior: Clip.antiAlias,
-                    child: hostAvatar.isNotEmpty
-                        ? Image.network(
-                            hostAvatar,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => _buildFallbackAvatar(hostName),
-                          )
-                        : _buildFallbackAvatar(hostName),
-                  ),
-                  SizedBox(width: 8.w),
 
-                  // Title / Starts in 2h
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11.5.sp,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        Text(
-                          formattedTime,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 9.5.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                    // Right side: Bookmark status or Action icon
+                    Icon(
+                      isMine ? Icons.videocam_rounded : Icons.bookmark_border_rounded,
+                      color: const Color(0xFF8B9BFF),
+                      size: 16.sp,
                     ),
-                  ),
-
-                  // Right side: Bookmark status or Action icon
-                  Icon(
-                    isMine ? Icons.videocam_rounded : Icons.bookmark_border_rounded,
-                    color: const Color(0xFF8B9BFF),
-                    size: 16.sp,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

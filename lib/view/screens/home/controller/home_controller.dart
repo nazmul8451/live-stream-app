@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../data/helpers/shared_prefe.dart';
+import '../../../../data/helpers/user_cache.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/socket_service.dart';
@@ -14,6 +15,8 @@ class HomeController extends GetxController {
 
   var selectedCategoryIndex = 0.obs;
   final RxString fullName = "User".obs;
+  final RxString userAvatarUrl = "".obs;
+  final RxString myUserId = "".obs;
   final RxBool isLoading = false.obs;
 
   final RxList<LiveItemModel> liveItems = <LiveItemModel>[].obs;
@@ -402,9 +405,16 @@ class HomeController extends GetxController {
         // Extract only the first name
         fullName.value = full.split(" ").first;
 
+        final rawAv = (data['avatar'] ?? data['profileImage'] ?? data['image'] ?? data['profile'] ?? '').toString();
+        if (rawAv.isNotEmpty) {
+          userAvatarUrl.value = rawAv.startsWith('http') ? rawAv : "${ApiUrl.imageBaseUrl}${rawAv.startsWith('/') ? rawAv : '/$rawAv'}";
+        }
+
         // Save User ID to SharedPreferences
         final String userId = data['id'] ?? data['_id'] ?? "";
         if (userId.isNotEmpty) {
+          myUserId.value = userId;
+          UserCache.set(userId, full, userAvatarUrl.value);
           await SharePrefsHelper.setString(SharePrefsHelper.userIdKey, userId);
           // Initialize Socket.io connection since we have userId now
           try {
@@ -708,11 +718,13 @@ class HomeController extends GetxController {
   }
 
   bool isMyShow(Map<String, dynamic> show) {
-    final currentUserId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+    final currentUserId = myUserId.value.isNotEmpty
+        ? myUserId.value
+        : SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
     if (currentUserId.isEmpty) return false;
     final seller = show['sellerId'] ?? show['seller'];
     if (seller is Map) {
-      return (seller['_id'] ?? seller['id']) == currentUserId;
+      return (seller['_id'] ?? seller['id'])?.toString() == currentUserId;
     }
     return seller?.toString() == currentUserId;
   }

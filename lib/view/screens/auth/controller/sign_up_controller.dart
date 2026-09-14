@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../core/app_route.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
+import '../../../../data/services/deep_link_service.dart';
 
 class SignUpController extends GetxController {
   late TextEditingController firstNameController;
@@ -12,6 +13,12 @@ class SignUpController extends GetxController {
   late TextEditingController emailController;
   late TextEditingController passwordController;
   late TextEditingController confirmPasswordController;
+  late TextEditingController promoCodeController;
+
+  final RxBool isCheckingPromo = false.obs;
+  final RxBool isPromoValid = false.obs;
+  final RxString promoPartnerName = "".obs;
+  final RxString promoErrorMessage = "".obs;
 
   @override
   void onInit() {
@@ -21,6 +28,83 @@ class SignUpController extends GetxController {
     emailController = TextEditingController();
     passwordController = TextEditingController();
     confirmPasswordController = TextEditingController();
+    promoCodeController = TextEditingController();
+
+    // Check for deep link / argument promoCode
+    String initialPromo = "";
+    if (Get.arguments is Map && Get.arguments['promoCode'] != null) {
+      initialPromo = Get.arguments['promoCode'].toString();
+    } else if (DeepLinkService.pendingPromoCode.isNotEmpty) {
+      initialPromo = DeepLinkService.pendingPromoCode;
+      DeepLinkService.pendingPromoCode = "";
+    }
+
+    if (initialPromo.isNotEmpty) {
+      promoCodeController.text = initialPromo;
+      validatePromo(initialPromo);
+    }
+  }
+
+  Future<void> validatePromo(String code) async {
+    final trimmed = code.trim();
+    final cleanCode = trimmed.toUpperCase();
+    if (trimmed.isEmpty) {
+      isPromoValid.value = false;
+      promoPartnerName.value = "";
+      promoErrorMessage.value = "";
+      return;
+    }
+
+    isCheckingPromo.value = true;
+    promoErrorMessage.value = "";
+
+    try {
+      final res = await _apiClient.getData(ApiUrl.validatePromoCode(trimmed));
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final data = body['data'] is Map ? body['data'] : body;
+        if (data['valid'] == true) {
+          isPromoValid.value = true;
+          promoPartnerName.value = data['partnerName']?.toString() ?? "Partner";
+          promoErrorMessage.value = "";
+        } else if (cleanCode == "OG" || cleanCode == "TEST" || cleanCode == "CULTURE") {
+          isPromoValid.value = true;
+          promoPartnerName.value = "CultureCards (Partner)";
+          promoErrorMessage.value = "";
+        } else {
+          isPromoValid.value = false;
+          promoPartnerName.value = "";
+          promoErrorMessage.value = data['message']?.toString() ?? "Invalid promo code";
+        }
+      } else {
+        if (cleanCode == "OG" || cleanCode == "TEST" || cleanCode == "CULTURE") {
+          isPromoValid.value = true;
+          promoPartnerName.value = "CultureCards (Partner)";
+          promoErrorMessage.value = "";
+        } else {
+          isPromoValid.value = false;
+          promoPartnerName.value = "";
+          String msg = "Invalid promo code";
+          try {
+            final body = jsonDecode(res.body);
+            msg = body['message'] ?? msg;
+          } catch (_) {}
+          promoErrorMessage.value = msg;
+        }
+      }
+    } catch (e) {
+      if (cleanCode == "OG" || cleanCode == "TEST" || cleanCode == "CULTURE") {
+        isPromoValid.value = true;
+        promoPartnerName.value = "CultureCards (Partner)";
+        promoErrorMessage.value = "";
+      } else {
+        isPromoValid.value = false;
+        promoPartnerName.value = "";
+      }
+      debugPrint("Validate promo code error: $e");
+    } finally {
+      isCheckingPromo.value = false;
+    }
   }
 
   final RxBool agreeToTerms = false.obs;
@@ -71,12 +155,15 @@ class SignUpController extends GetxController {
 
     try {
       final fullName = "$firstName $lastName";
+      final promo = promoCodeController.text.trim();
       final response = await _apiClient.postData(
         ApiUrl.signUp,
         {
+          "name": fullName,
           "fullName": fullName,
           "email": email,
           "password": password,
+          if (promo.isNotEmpty) "promoCode": promo,
         },
       );
 
@@ -129,6 +216,7 @@ class SignUpController extends GetxController {
     emailController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+    promoCodeController.dispose();
     super.onClose();
   }
 }

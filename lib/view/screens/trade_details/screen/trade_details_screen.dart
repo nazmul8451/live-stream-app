@@ -16,7 +16,9 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
 
   @override
   Widget build(BuildContext context) {
-    final detailsController = Get.put(TradeDetailsController());
+    final detailsController = Get.isRegistered<TradeDetailsController>()
+        ? Get.find<TradeDetailsController>()
+        : Get.put(TradeDetailsController());
     if (Get.arguments != null && Get.arguments is Map) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         detailsController.product.assignAll(Map<String, dynamic>.from(Get.arguments));

@@ -83,6 +83,11 @@ class MainActivity : FlutterFragmentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
     override fun onPictureInPictureModeChanged(isInPiPMode: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPiPMode, newConfig)
         // Notify Flutter about PiP state change

@@ -31,6 +31,11 @@ class OrderCheckoutController extends GetxController {
   final RxDouble estimatedTax = 0.0.obs;
   final RxDouble totalAmount = 0.0.obs;
 
+  // Saved Cards
+  final RxList<Map<String, dynamic>> savedCards = <Map<String, dynamic>>[].obs;
+  final RxString selectedPaymentMethodId = "".obs;
+  final RxBool isLoadingCards = false.obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -39,6 +44,31 @@ class OrderCheckoutController extends GetxController {
       _calculatePricing();
     }
     _loadUserSavedAddress();
+    loadSavedCards();
+  }
+
+  Future<void> loadSavedCards() async {
+    isLoadingCards.value = true;
+    try {
+      final res = await _apiClient.getData(ApiUrl.paymentMethods);
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final rawData = body['data'];
+        List<Map<String, dynamic>> list = [];
+        if (rawData is List) {
+          list = rawData.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        } else if (rawData is Map && rawData['methods'] is List) {
+          list = (rawData['methods'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
+        savedCards.assignAll(list);
+        if (list.isNotEmpty && selectedPaymentMethodId.value.isEmpty) {
+          final def = list.firstWhere((c) => c['isDefault'] == true, orElse: () => list.first);
+          selectedPaymentMethodId.value = def['id']?.toString() ?? "";
+        }
+      }
+    } catch (_) {} finally {
+      isLoadingCards.value = false;
+    }
   }
 
   void _calculatePricing() {
@@ -121,6 +151,36 @@ class OrderCheckoutController extends GetxController {
           "shippingZip": zipCodeController.text.trim(),
         }
       };
+
+      // 0. Pay with Existing Saved Card (1-Tap Charge per Endpoint 8.3)
+      if (selectedPaymentMethodId.value.isNotEmpty) {
+        final payload1Tap = {
+          "amount": totalAmount.value,
+          "paymentMethodId": selectedPaymentMethodId.value,
+          "orderId": productId,
+        };
+        try {
+          final res1Tap = await _apiClient.postData(ApiUrl.createPaymentIntent, payload1Tap);
+          if (res1Tap.statusCode == 200 || res1Tap.statusCode == 201) {
+            final body1Tap = jsonDecode(res1Tap.body);
+            final data1Tap = body1Tap['data'] is Map ? body1Tap['data'] : body1Tap;
+            if (data1Tap['status'] == 'succeeded') {
+              await _createOrderRecordAndNotifySeller();
+              Get.snackbar(
+                "Payment Successful! 🎉",
+                "1-Tap checkout completed with saved card! Redirecting to Purchases...",
+                backgroundColor: const Color(0xFF22C55E),
+                colorText: Colors.white,
+                snackPosition: SnackPosition.BOTTOM,
+                duration: const Duration(seconds: 4),
+              );
+              Get.offAllNamed(AppRoute.main);
+              Get.toNamed(AppRoute.purchases);
+              return;
+            }
+          }
+        } catch (_) {}
+      }
 
       final response = await _apiClient.postData(ApiUrl.createCheckoutSession, payload);
       if (response.statusCode == 200 || response.statusCode == 201) {

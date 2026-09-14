@@ -930,10 +930,45 @@ class ProfileScreen extends GetView<ProfileController> {
         _buildSettingsSection("ACCOUNT", [
           _buildSettingsTile(
             svgPath: "assets/icons/Edit Profile.svg",
-            title: "Edit Profile",
+            title: "Account Settings",
+            subtitle: "Profile info, security, password & preferences",
             showArrow: true,
             onTap: () => Get.toNamed(AppRoute.accountSettings),
           ),
+          Obx(() {
+            final hasPromo = controller.promoCode.value.isNotEmpty;
+            final partner = controller.partnerName.value;
+            return _buildSettingsTile(
+              icon: Icons.local_offer_outlined,
+              title: "Partner / Promo Code",
+              subtitle: hasPromo
+                  ? "Linked to: ${partner.isNotEmpty ? partner : controller.promoCode.value}"
+                  : "Attach referral code or invite friends",
+              showArrow: true,
+              trailing: hasPromo
+                  ? Container(
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.check_circle_rounded, color: const Color(0xFF22C55E), size: 12.sp),
+                          SizedBox(width: 4.w),
+                          Text(
+                            controller.promoCode.value,
+                            style: TextStyle(color: const Color(0xFF22C55E), fontSize: 11.sp, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    )
+                  : null,
+              onTap: () => Get.toNamed(AppRoute.accountSettings),
+            );
+          }),
           _buildSettingsTile(
             svgPath: "assets/icons/Username.svg",
             title: "Username",
@@ -1425,45 +1460,78 @@ class ProfileScreen extends GetView<ProfileController> {
   }
 
   Widget _buildSettingsTile({
-    required String svgPath,
+    String? svgPath,
+    IconData? icon,
     required String title,
+    String? subtitle,
     bool showArrow = false,
     Widget? trailing,
     VoidCallback? onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 22.h),
-        child: Row(
-          children: [
-            SvgPicture.asset(
-              svgPath,
-              width: 24.w,
-              colorFilter: const ColorFilter.mode(
-                Color(0xFF8B9BFF),
-                BlendMode.srcIn,
-              ),
-            ),
-            SizedBox(width: 20.w),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15.sp,
-                  fontWeight: FontWeight.w700,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16.r),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: subtitle != null ? 16.h : 22.h),
+          child: Row(
+            children: [
+              if (icon != null)
+                Container(
+                  width: 24.w,
+                  alignment: Alignment.centerLeft,
+                  child: Icon(icon, color: const Color(0xFF8B9BFF), size: 22.sp),
+                )
+              else if (svgPath != null)
+                SvgPicture.asset(
+                  svgPath,
+                  width: 24.w,
+                  colorFilter: const ColorFilter.mode(
+                    Color(0xFF8B9BFF),
+                    BlendMode.srcIn,
+                  ),
+                ),
+              SizedBox(width: 20.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (subtitle != null) ...[
+                      SizedBox(height: 3.h),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ),
-            if (trailing != null) trailing!,
-            if (showArrow)
-              Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.white24,
-                size: 20.sp,
-              ),
-          ],
+              ?trailing,
+              if (showArrow) ...[
+                if (trailing != null) SizedBox(width: 8.w),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white24,
+                  size: 20.sp,
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -1965,50 +2033,57 @@ class ProfileScreen extends GetView<ProfileController> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 4.w,
-                        height: 16.h,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF8B9BFF),
-                          borderRadius: BorderRadius.circular(2.r),
-                        ),
-                      ),
-                      SizedBox(width: 8.w),
-                      Text(
-                        "MY UPCOMING SHOWS",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                      if (hasShows) ...[
-                        SizedBox(width: 8.w),
+                  Expanded(
+                    child: Row(
+                      children: [
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                          width: 4.w,
+                          height: 16.h,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(10.r),
-                            border: Border.all(
-                              color: const Color(0xFF8B9BFF).withValues(alpha: 0.35),
-                              width: 1,
-                            ),
+                            color: const Color(0xFF8B9BFF),
+                            borderRadius: BorderRadius.circular(2.r),
                           ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Flexible(
                           child: Text(
-                            "${controller.upcomingShows.length}",
+                            "MY UPCOMING SHOWS",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: const Color(0xFF8B9BFF),
-                              fontSize: 11.sp,
+                              color: Colors.white,
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w900,
+                              letterSpacing: 1.1,
                             ),
                           ),
                         ),
+                        if (hasShows) ...[
+                          SizedBox(width: 8.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10.r),
+                              border: Border.all(
+                                color: const Color(0xFF8B9BFF).withValues(alpha: 0.35),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              "${controller.upcomingShows.length}",
+                              style: TextStyle(
+                                color: const Color(0xFF8B9BFF),
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
+                  SizedBox(width: 8.w),
                   GestureDetector(
                     onTap: () => Get.toNamed(AppRoute.goLiveSetup),
                     child: Container(
@@ -2170,7 +2245,8 @@ class ProfileScreen extends GetView<ProfileController> {
   }
 
   Widget _buildMyShowCard(Map<String, dynamic> show, int index) {
-    final title = (show['title'] ?? 'My Scheduled Show').toString();
+    final rawTitle = (show['title'] ?? show['streamTitle'] ?? show['name'] ?? '').toString().trim();
+    final title = rawTitle.isNotEmpty ? rawTitle : 'My Scheduled Show';
 
     // High-reliability thumbnail resolution
     String rawImg = (show['coverImage'] ?? show['image'] ?? show['thumbnail'] ?? '').toString().trim();
@@ -2381,12 +2457,16 @@ class ProfileScreen extends GetView<ProfileController> {
                         children: [
                           Icon(Icons.inventory_2_outlined, color: const Color(0xFF8B9BFF), size: 12.sp),
                           SizedBox(width: 4.w),
-                          Text(
-                            itemsCount > 0 ? "$itemsCount Linked Items" : "Live Auction Break",
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: Text(
+                              itemsCount > 0 ? "$itemsCount Linked Items" : "Live Auction Break",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ],
