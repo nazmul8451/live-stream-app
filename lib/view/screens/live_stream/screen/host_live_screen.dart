@@ -1,9 +1,9 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' show CupertinoSwitch;
 import 'dart:math' as math;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import '../../../../global/widgets/custom_background.dart';
 import '../controller/agora_live_controller.dart';
 import 'dart:convert';
 import '../../../../core/app_route.dart';
@@ -134,22 +134,27 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                           Obx(() {
                             if (!ctrl.auctionActive.value) return const SizedBox.shrink();
                             final isLowTime = ctrl.bidTimer.value <= 10;
+                            final isSudden = ctrl.isSuddenDeath.value;
                             return Container(
                               padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
                               decoration: BoxDecoration(
-                                color: isLowTime ? const Color(0xFFE50914).withValues(alpha: 0.85) : const Color(0xFF8B9BFF).withValues(alpha: 0.25),
+                                color: isSudden
+                                    ? const Color(0xFF7C3AED).withValues(alpha: 0.85)
+                                    : (isLowTime ? const Color(0xFFE50914).withValues(alpha: 0.85) : const Color(0xFF8B9BFF).withValues(alpha: 0.25)),
                                 borderRadius: BorderRadius.circular(16.r),
                                 border: Border.all(
-                                  color: isLowTime ? const Color(0xFFE50914) : const Color(0xFF8B9BFF).withValues(alpha: 0.5),
+                                  color: isSudden
+                                      ? const Color(0xFFB07CFF)
+                                      : (isLowTime ? const Color(0xFFE50914) : const Color(0xFF8B9BFF).withValues(alpha: 0.5)),
                                 ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.timer_outlined, color: Colors.white, size: 11.sp),
+                                  Icon(isSudden ? Icons.bolt_rounded : Icons.timer_outlined, color: Colors.white, size: 11.sp),
                                   SizedBox(width: 3.w),
                                   Text(
-                                    "00:${ctrl.bidTimer.value.toString().padLeft(2, '0')}",
+                                    "00:${ctrl.bidTimer.value.toString().padLeft(2, '0')}${isSudden ? ' ⚡' : ''}",
                                     style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w900),
                                   ),
                                 ],
@@ -819,8 +824,21 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
   void _showStartNewAuctionSheet() {
     final productsList = <Map<String, dynamic>>[].obs;
     final loadingProducts = true.obs;
-    
+    final selectedProduct = Rxn<Map<String, dynamic>>();
+
+    final startingBid = 100.0.obs;
+    final bidIncrement = 5.0.obs;
+    final selectedDuration = 15.obs; // 15s default matching client mockup
+    final suddenDeath = false.obs;
+    final autoExtend = true.obs;
+
     final sellerId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+
+    void updateSelectedIfNull() {
+      if (selectedProduct.value == null && productsList.isNotEmpty) {
+        selectedProduct.value = productsList.first;
+      }
+    }
 
     // 1. Instant Cache from ProfileController (0ms)
     if (Get.isRegistered<ProfileController>()) {
@@ -828,6 +846,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
       if (profileCtrl.userListings.isNotEmpty) {
         productsList.assignAll(profileCtrl.userListings.map((e) => Map<String, dynamic>.from(e)).toList());
         loadingProducts.value = false;
+        updateSelectedIfNull();
       }
     }
 
@@ -836,6 +855,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
     if (cached != null && cached.isNotEmpty && productsList.isEmpty) {
       productsList.assignAll(cached);
       loadingProducts.value = false;
+      updateSelectedIfNull();
     }
 
     // 3. Network Fetch
@@ -843,6 +863,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
       ProductCache.fetchMyProducts(Get.find<ApiClient>(), sellerId).then((products) {
         if (products.isNotEmpty) {
           productsList.assignAll(products);
+          updateSelectedIfNull();
         }
         loadingProducts.value = false;
       }).catchError((_) {
@@ -852,230 +873,991 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
       loadingProducts.value = false;
     }
 
-    final startingBidCtrl = TextEditingController(text: "100");
-    final incrementCtrl = TextEditingController(text: "5");
-    final durationCtrl = TextEditingController(text: "60");
-
     Get.bottomSheet(
       Container(
-        padding: EdgeInsets.all(24.r),
+        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
         decoration: BoxDecoration(
-          color: const Color(0xFF11111A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          color: const Color(0xFF0D0F19),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          border: Border.all(color: const Color(0xFF1E2640)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.7),
+              blurRadius: 30,
+              offset: const Offset(0, -6),
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top drag pill
+              Center(
+                child: Container(
+                  width: 44.w,
+                  height: 4.h,
+                  margin: EdgeInsets.only(bottom: 16.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                ),
+              ),
+
+              // ── 1. Selected Product Card ──
+              Obx(() {
+                if (loadingProducts.value && productsList.isEmpty) {
+                  return Container(
+                    height: 74.h,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF121524),
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(color: const Color(0xFF1F2742)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 18.r,
+                          height: 18.r,
+                          child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B9BFF)),
+                        ),
+                        SizedBox(width: 10.w),
+                        Text("Loading your listings...", style: TextStyle(color: Colors.white54, fontSize: 12.sp)),
+                      ],
+                    ),
+                  );
+                }
+
+                final prod = selectedProduct.value;
+                if (prod == null) {
+                  return GestureDetector(
+                    onTap: () {
+                      if (productsList.isNotEmpty) {
+                        _showProductPickerSheet(productsList, (p) => selectedProduct.value = p);
+                      }
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF121524),
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: const Color(0xFF1F2742)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 54.r,
+                            height: 54.r,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1A223E),
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Icon(Icons.add_photo_alternate_outlined, color: Colors.white38, size: 24.sp),
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("No product selected", style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w700)),
+                                SizedBox(height: 3.h),
+                                Text("Tap to select a listing to auction", style: TextStyle(color: const Color(0xFF707B9E), fontSize: 11.sp)),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded, color: const Color(0xFF707B9E), size: 24.sp),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                final String title = prod['title'] ?? prod['name'] ?? 'Product';
+                final String category = prod['category'] ?? prod['categoryName'] ?? prod['type'] ?? 'Trading Card';
+                final String sport = prod['sport'] ?? prod['brand'] ?? 'Sports Cards';
+                final String condition = prod['condition'] ?? prod['grade'] ?? 'PSA 9.5';
+                final String subtitle = "$sport • $condition";
+                final String image = (prod['images'] is List && (prod['images'] as List).isNotEmpty)
+                    ? prod['images'][0].toString()
+                    : (prod['image'] ?? "");
+
+                return GestureDetector(
+                  onTap: () => _showProductPickerSheet(productsList, (p) => selectedProduct.value = p),
+                  child: Container(
+                    padding: EdgeInsets.all(12.r),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF121524),
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(color: const Color(0xFF1F2742)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 58.r,
+                          height: 58.r,
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1A223E),
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(color: const Color(0xFF28345E)),
+                          ),
+                          child: image.isEmpty
+                              ? Icon(Icons.image, color: Colors.white24, size: 22.sp)
+                              : Image.network(
+                                  image.startsWith('http')
+                                      ? image
+                                      : "${ApiUrl.imageBaseUrl}${image.startsWith('/') ? image : '/$image'}",
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Icon(Icons.image, color: Colors.white24, size: 22.sp),
+                                ),
+                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.5.h),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF16203D),
+                                  borderRadius: BorderRadius.circular(6.r),
+                                  border: Border.all(color: const Color(0xFF263560)),
+                                ),
+                                child: Text(
+                                  category,
+                                  style: TextStyle(
+                                    color: const Color(0xFF8B9BFF),
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 5.h),
+                              Text(
+                                title,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(height: 3.h),
+                              Text(
+                                subtitle,
+                                style: TextStyle(
+                                  color: const Color(0xFF707B9E),
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right_rounded, color: const Color(0xFF707B9E), size: 24.sp),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+
+              SizedBox(height: 12.h),
+
+              // ── 2. Starting Bid & Bid Increment Section ──
+              Row(
+                children: [
+                  // Starting Bid Card
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF121524),
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: const Color(0xFF1F2742)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(4.r),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF1B233D),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.attach_money_rounded, color: const Color(0xFF8B9BFF), size: 14.sp),
+                              ),
+                              SizedBox(width: 6.w),
+                              Text(
+                                "Starting Bid",
+                                style: TextStyle(color: const Color(0xFF8A96BC), fontSize: 11.sp, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8.h),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Obx(() => GestureDetector(
+                                onTap: () => _showEditNumberDialog("Starting Bid", startingBid.value, (val) => startingBid.value = val),
+                                child: Text(
+                                  "\$${startingBid.value.toInt()}",
+                                  style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900),
+                                ),
+                              )),
+                              Row(
+                                children: [
+                                  _buildStepperBtn(Icons.remove, () {
+                                    if (startingBid.value > 5) {
+                                      startingBid.value -= 5;
+                                    } else if (startingBid.value > 1) {
+                                      startingBid.value -= 1;
+                                    }
+                                  }),
+                                  SizedBox(width: 6.w),
+                                  _buildStepperBtn(Icons.add, () {
+                                    startingBid.value += 5;
+                                  }),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  // Bid Increment Card
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF121524),
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: const Color(0xFF1F2742)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(4.r),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF1B233D),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.trending_up_rounded, color: const Color(0xFF8B9BFF), size: 14.sp),
+                              ),
+                              SizedBox(width: 6.w),
+                              Text(
+                                "Bid Increment",
+                                style: TextStyle(color: const Color(0xFF8A96BC), fontSize: 11.sp, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8.h),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Obx(() => GestureDetector(
+                                onTap: () => _showEditNumberDialog("Bid Increment", bidIncrement.value, (val) => bidIncrement.value = val),
+                                child: Text(
+                                  "\$${bidIncrement.value.toInt()}",
+                                  style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900),
+                                ),
+                              )),
+                              Row(
+                                children: [
+                                  _buildStepperBtn(Icons.remove, () {
+                                    if (bidIncrement.value > 1) {
+                                      bidIncrement.value -= 1;
+                                    }
+                                  }),
+                                  SizedBox(width: 6.w),
+                                  _buildStepperBtn(Icons.add, () {
+                                    bidIncrement.value += 1;
+                                  }),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              SizedBox(height: 12.h),
+
+              // ── 3. Auction Duration Section ──
+              Obx(() {
+                final current = selectedDuration.value;
+                const presetDurations = [5, 10, 15, 30, 60];
+                final isCustom = !presetDurations.contains(current);
+
+                return Container(
+                  padding: EdgeInsets.all(12.r),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF121524),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(color: const Color(0xFF1F2742)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.timer_outlined, color: const Color(0xFF8B9BFF), size: 16.sp),
+                          SizedBox(width: 6.w),
+                          Text(
+                            "Auction Duration",
+                            style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w700),
+                          ),
+                          const Spacer(),
+                          Text(
+                            "${current}s",
+                            style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 11.sp, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 10.h),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          children: [
+                            ...presetDurations.map((t) {
+                              final isSelected = current == t;
+                              final isFast = t <= 15;
+                              return GestureDetector(
+                                onTap: () => selectedDuration.value = t,
+                                child: Container(
+                                  margin: EdgeInsets.only(right: 8.w),
+                                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
+                                  decoration: BoxDecoration(
+                                    gradient: isSelected
+                                        ? const LinearGradient(
+                                            colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+                                          )
+                                        : null,
+                                    color: isSelected ? null : const Color(0xFF161B2E),
+                                    borderRadius: BorderRadius.circular(10.r),
+                                    border: Border.all(
+                                      color: isSelected ? const Color(0xFF8B9BFF) : const Color(0xFF232B48),
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : null,
+                                  ),
+                                  child: Text(
+                                    isFast ? "${t}s ⚡" : "${t}s",
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : const Color(0xFF8A96BC),
+                                      fontSize: 12.sp,
+                                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                            // Custom Chip
+                            GestureDetector(
+                              onTap: () => _showCustomDurationDialog(selectedDuration),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 7.h),
+                                decoration: BoxDecoration(
+                                  gradient: isCustom
+                                      ? const LinearGradient(
+                                          colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
+                                        )
+                                      : null,
+                                  color: isCustom ? null : const Color(0xFF161B2E),
+                                  borderRadius: BorderRadius.circular(10.r),
+                                  border: Border.all(
+                                    color: isCustom ? const Color(0xFF8B9BFF) : const Color(0xFF232B48),
+                                  ),
+                                  boxShadow: isCustom
+                                      ? [
+                                          BoxShadow(
+                                            color: const Color(0xFF6366F1).withValues(alpha: 0.4),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                                child: Text(
+                                  isCustom ? "Custom (${current}s)" : "Custom",
+                                  style: TextStyle(
+                                    color: isCustom ? Colors.white : const Color(0xFF8A96BC),
+                                    fontSize: 12.sp,
+                                    fontWeight: isCustom ? FontWeight.w800 : FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+
+              SizedBox(height: 12.h),
+
+              // ── 4. Sudden Death & Auto Extend Section ──
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF121524),
+                  borderRadius: BorderRadius.circular(16.r),
+                  border: Border.all(color: const Color(0xFF1F2742)),
+                ),
+                child: Column(
+                  children: [
+                    // Sudden Death
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(6.r),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF261D40),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.bolt_rounded, color: const Color(0xFFB07CFF), size: 18.sp),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    "Sudden Death",
+                                    style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w700),
+                                  ),
+                                  SizedBox(width: 4.w),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Get.snackbar(
+                                        "Sudden Death",
+                                        "Ends immediately when someone bids in the last 5 seconds.",
+                                        snackPosition: SnackPosition.BOTTOM,
+                                        backgroundColor: const Color(0xFF1F2742),
+                                        colorText: Colors.white,
+                                      );
+                                    },
+                                    child: Icon(Icons.info_outline_rounded, color: const Color(0xFF707B9E), size: 14.sp),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 2.h),
+                              Text(
+                                "Ends immediately when someone bids in the last 5 seconds.",
+                                style: TextStyle(color: const Color(0xFF707B9E), fontSize: 10.5.sp),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Obx(() => CupertinoSwitch(
+                          value: suddenDeath.value,
+                          activeTrackColor: const Color(0xFF7C3AED),
+                          inactiveTrackColor: const Color(0xFF252D47),
+                          onChanged: (val) => suddenDeath.value = val,
+                        )),
+                      ],
+                    ),
+                    Container(
+                      height: 1.h,
+                      color: const Color(0xFF1E2640),
+                      margin: EdgeInsets.symmetric(vertical: 10.h),
+                    ),
+                    // Auto Extend
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(6.r),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF172445),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.replay_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    "Auto Extend",
+                                    style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w700),
+                                  ),
+                                  SizedBox(width: 4.w),
+                                  GestureDetector(
+                                    onTap: () {
+                                      Get.snackbar(
+                                        "Auto Extend",
+                                        "Adds 10 seconds if a bid is placed in the last 10 seconds.",
+                                        snackPosition: SnackPosition.BOTTOM,
+                                        backgroundColor: const Color(0xFF1F2742),
+                                        colorText: Colors.white,
+                                      );
+                                    },
+                                    child: Icon(Icons.info_outline_rounded, color: const Color(0xFF707B9E), size: 14.sp),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 2.h),
+                              Text(
+                                "Adds 10 seconds if a bid is placed in the last 10 seconds.",
+                                style: TextStyle(color: const Color(0xFF707B9E), fontSize: 10.5.sp),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Obx(() => CupertinoSwitch(
+                          value: autoExtend.value,
+                          activeTrackColor: const Color(0xFF7C3AED),
+                          inactiveTrackColor: const Color(0xFF252D47),
+                          onChanged: (val) => autoExtend.value = val,
+                        )),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 18.h),
+
+              // ── 5. START AUCTION Button ──
+              GestureDetector(
+                onTap: () async {
+                  if (selectedProduct.value == null) {
+                    Get.snackbar(
+                      "Select Product",
+                      "Please select a product to auction first.",
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
+                      colorText: Colors.white,
+                    );
+                    return;
+                  }
+                  final prod = selectedProduct.value!;
+                  final String pid = prod['_id'] ?? prod['id'] ?? "";
+                  final String title = prod['title'] ?? prod['name'] ?? 'Product';
+                  final String image = (prod['images'] is List && (prod['images'] as List).isNotEmpty)
+                      ? prod['images'][0].toString()
+                      : (prod['image'] ?? "");
+
+                  Get.back(); // Close bottom sheet
+
+                  final ok = await ctrl.resetAndStartNewAuction(
+                    productId: pid,
+                    startingBid: startingBid.value,
+                    bidIncrement: bidIncrement.value,
+                    timerDuration: selectedDuration.value,
+                    productTitle: title,
+                    productImage: image,
+                    suddenDeath: suddenDeath.value,
+                    autoExtend: autoExtend.value,
+                  );
+                  if (ok) {
+                    Get.snackbar(
+                      "Auction Started!",
+                      "New auction for $title is now live!",
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: const Color(0xFF1E284A),
+                      colorText: Colors.white,
+                    );
+                  } else {
+                    Get.snackbar(
+                      "Error",
+                      "Failed to start new auction.",
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
+                      colorText: Colors.white,
+                    );
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 52.h,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF7A40F2), Color(0xFF3F8CFF)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF3F8CFF).withValues(alpha: 0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Transform.rotate(
+                        angle: -0.4,
+                        child: Icon(Icons.gavel_rounded, color: Colors.white, size: 22.sp),
+                      ),
+                      SizedBox(width: 12.w),
+                      Container(
+                        width: 1.5.w,
+                        height: 18.h,
+                        color: Colors.white30,
+                      ),
+                      SizedBox(width: 12.w),
+                      Text(
+                        "START AUCTION",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildStepperBtn(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 28.r,
+        height: 28.r,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1D243B),
+          shape: BoxShape.circle,
+          border: Border.all(color: const Color(0xFF2A3455)),
+        ),
+        child: Center(
+          child: Icon(icon, color: Colors.white70, size: 14.sp),
+        ),
+      ),
+    );
+  }
+
+  void _showProductPickerSheet(RxList<Map<String, dynamic>> productsList, Function(Map<String, dynamic>) onSelect) {
+    Get.bottomSheet(
+      Container(
+        height: 480.h,
+        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 20.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F111D),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          border: Border.all(color: const Color(0xFF22283F)),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: Container(
-                width: 40.w,
+                width: 44.w,
                 height: 4.h,
-                margin: EdgeInsets.only(bottom: 20.h),
-                decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(2.r)),
+                margin: EdgeInsets.only(bottom: 14.h),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
               ),
             ),
-            Text("Start New Auction", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w900)),
-            SizedBox(height: 16.h),
-            
-            // Starting Bid, Increment & Duration Row
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF161622),
-                      borderRadius: BorderRadius.circular(14.r),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: TextField(
-                      controller: startingBidCtrl,
-                      keyboardType: TextInputType.number,
-                      style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
-                      decoration: InputDecoration(
-                        labelText: "Start Bid (\$)",
-                        labelStyle: const TextStyle(color: Colors.white38),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-                      ),
-                    ),
-                  ),
+                Text(
+                  "Select Product to Auction",
+                  style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w900),
                 ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF161622),
-                      borderRadius: BorderRadius.circular(14.r),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: TextField(
-                      controller: incrementCtrl,
-                      keyboardType: TextInputType.number,
-                      style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
-                      decoration: InputDecoration(
-                        labelText: "Increment (\$)",
-                        labelStyle: const TextStyle(color: Colors.white38),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8.w),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF161622),
-                      borderRadius: BorderRadius.circular(14.r),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: TextField(
-                      controller: durationCtrl,
-                      keyboardType: TextInputType.number,
-                      style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
-                      decoration: InputDecoration(
-                        labelText: "Timer (sec)",
-                        labelStyle: const TextStyle(color: Colors.white38),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
-                      ),
-                    ),
-                  ),
+                IconButton(
+                  onPressed: () => Get.back(),
+                  icon: Icon(Icons.close_rounded, color: Colors.white60, size: 20.sp),
                 ),
               ],
             ),
             SizedBox(height: 10.h),
-            // Quick Timer Selector Chips (Feature 3)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [5, 10, 15, 30, 60].map((t) {
-                  return GestureDetector(
-                    onTap: () => durationCtrl.text = t.toString(),
-                    child: Container(
-                      margin: EdgeInsets.only(right: 8.w),
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                      decoration: BoxDecoration(
-                        color: t <= 15
-                            ? const Color(0xFF8B9BFF).withValues(alpha: 0.15)
-                            : Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(10.r),
-                        border: Border.all(
-                          color: t <= 15
-                              ? const Color(0xFF8B9BFF).withValues(alpha: 0.4)
-                              : Colors.white12,
-                        ),
-                      ),
-                      child: Text(
-                        t <= 15 ? "${t}s ⚡" : "${t}s",
-                        style: TextStyle(
-                          color: t <= 15 ? const Color(0xFF8B9BFF) : Colors.white70,
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            SizedBox(height: 20.h),
-            Text("Select Product to Auction", style: TextStyle(color: Colors.white60, fontSize: 13.sp, fontWeight: FontWeight.w700)),
-            SizedBox(height: 12.h),
-            
-            SizedBox(
-              height: 250.h,
-              child: Obx(() {
-                if (loadingProducts.value) {
-                  return const Center(child: CircularProgressIndicator(color: Color(0xFF8B9BFF)));
-                }
-                if (productsList.isEmpty) {
-                  return Center(
-                    child: Text("No products available to auction.", style: TextStyle(color: Colors.white38, fontSize: 13.sp)),
-                  );
-                }
-                return ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: productsList.length,
-                  itemBuilder: (context, index) {
-                    final prod = productsList[index];
-                    final String title = prod['title'] ?? 'Product';
-                    final String image = (prod['images'] is List && (prod['images'] as List).isNotEmpty)
-                        ? prod['images'][0].toString()
-                        : "";
-                    final String pid = prod['_id'] ?? prod['id'] ?? "";
+            Expanded(
+              child: productsList.isEmpty
+                  ? Center(
+                      child: Text("No products found", style: TextStyle(color: Colors.white38, fontSize: 13.sp)),
+                    )
+                  : ListView.builder(
+                      itemCount: productsList.length,
+                      itemBuilder: (context, index) {
+                        final prod = productsList[index];
+                        final String title = prod['title'] ?? prod['name'] ?? 'Product';
+                        final String category = prod['category'] ?? prod['categoryName'] ?? 'Trading Card';
+                        final String image = (prod['images'] is List && (prod['images'] as List).isNotEmpty)
+                            ? prod['images'][0].toString()
+                            : (prod['image'] ?? "");
+                        final priceVal = prod['buyNowPrice'] ?? prod['estValue'] ?? prod['price'] ?? 0;
 
-                    return GestureDetector(
-                      onTap: () async {
-                        final double startingBid = double.tryParse(startingBidCtrl.text) ?? 100.0;
-                        final double bidIncrement = double.tryParse(incrementCtrl.text) ?? 5.0;
-                        final int duration = int.tryParse(durationCtrl.text) ?? 60;
-                        
-                        Get.back(); // Close bottom sheet
-                        final ok = await ctrl.resetAndStartNewAuction(
-                          productId: pid,
-                          startingBid: startingBid,
-                          bidIncrement: bidIncrement,
-                          timerDuration: duration,
-                          productTitle: title,
-                          productImage: image,
+                        return GestureDetector(
+                          onTap: () {
+                            onSelect(prod);
+                            Get.back();
+                          },
+                          child: Container(
+                            margin: EdgeInsets.only(bottom: 10.h),
+                            padding: EdgeInsets.all(10.r),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF15192A),
+                              borderRadius: BorderRadius.circular(14.r),
+                              border: Border.all(color: const Color(0xFF232B45)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 48.r,
+                                  height: 48.r,
+                                  clipBehavior: Clip.antiAlias,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1E2540),
+                                    borderRadius: BorderRadius.circular(10.r),
+                                  ),
+                                  child: image.isEmpty
+                                      ? Icon(Icons.image, color: Colors.white24, size: 20.sp)
+                                      : Image.network(
+                                          image.startsWith('http')
+                                              ? image
+                                              : "${ApiUrl.imageBaseUrl}${image.startsWith('/') ? image : '/$image'}",
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => Icon(Icons.image, color: Colors.white24, size: 20.sp),
+                                        ),
+                                ),
+                                SizedBox(width: 12.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        title,
+                                        style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w700),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      SizedBox(height: 3.h),
+                                      Text(
+                                        "$category • \$$priceVal",
+                                        style: TextStyle(color: const Color(0xFF707B9E), fontSize: 11.sp),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.check_circle_outline_rounded, color: const Color(0xFF8B9BFF), size: 20.sp),
+                              ],
+                            ),
+                          ),
                         );
-                        if (ok) {
-                          Get.snackbar("Auction Started!", "New auction for $title is now live!", snackPosition: SnackPosition.BOTTOM);
-                        } else {
-                          Get.snackbar("Error", "Failed to start new auction.", snackPosition: SnackPosition.BOTTOM);
-                        }
                       },
-                      child: Container(
-                        margin: EdgeInsets.only(bottom: 12.h),
-                        padding: EdgeInsets.all(12.r),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.04),
-                          borderRadius: BorderRadius.circular(16.r),
-                          border: Border.all(color: Colors.white10),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 44.r,
-                              height: 44.r,
-                              clipBehavior: Clip.antiAlias,
-                              decoration: BoxDecoration(
-                                color: Colors.black26,
-                                borderRadius: BorderRadius.circular(8.r),
-                              ),
-                              child: image.isEmpty
-                                  ? Icon(Icons.image, color: Colors.white24, size: 20.sp)
-                                  : Image.network(
-                                      image.startsWith('http') ? image : "${ApiUrl.imageBaseUrl}$image",
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Icon(Icons.image, color: Colors.white24, size: 20.sp),
-                                    ),
-                            ),
-                            SizedBox(width: 12.w),
-                            Expanded(
-                              child: Text(
-                                title,
-                                style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Icon(Icons.arrow_forward_ios_rounded, color: Colors.white30, size: 14.sp),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              }),
+                    ),
             ),
           ],
         ),
       ),
       isScrollControlled: true,
+    );
+  }
+
+  void _showEditNumberDialog(String title, double currentValue, Function(double) onSave) {
+    final textCtrl = TextEditingController(text: currentValue.toInt().toString());
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(20.r),
+          decoration: BoxDecoration(
+            color: const Color(0xFF141726),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(color: const Color(0xFF2B3454)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Edit $title", style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800)),
+              SizedBox(height: 14.h),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 14.w),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1B2036),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: const Color(0xFF323F6B)),
+                ),
+                child: Row(
+                  children: [
+                    Text("\$ ", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 18.sp, fontWeight: FontWeight.w900)),
+                    Expanded(
+                      child: TextField(
+                        controller: textCtrl,
+                        autofocus: true,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800),
+                        decoration: const InputDecoration(border: InputBorder.none),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 18.h),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: Text("Cancel", style: TextStyle(color: Colors.white54, fontSize: 13.sp)),
+                  ),
+                  SizedBox(width: 8.w),
+                  ElevatedButton(
+                    onPressed: () {
+                      final val = double.tryParse(textCtrl.text.trim());
+                      if (val != null && val > 0) {
+                        onSave(val);
+                      }
+                      Get.back();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6366F1),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                    ),
+                    child: Text("Save", style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCustomDurationDialog(RxInt selectedDuration) {
+    final textCtrl = TextEditingController(text: selectedDuration.value.toString());
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(20.r),
+          decoration: BoxDecoration(
+            color: const Color(0xFF141726),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(color: const Color(0xFF2B3454)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Custom Duration", style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800)),
+              SizedBox(height: 14.h),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 14.w),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1B2036),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: const Color(0xFF323F6B)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: textCtrl,
+                        autofocus: true,
+                        keyboardType: TextInputType.number,
+                        style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800),
+                        decoration: const InputDecoration(
+                          hintText: "Seconds",
+                          hintStyle: TextStyle(color: Colors.white30),
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                    Text("sec", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+              SizedBox(height: 14.h),
+              Wrap(
+                spacing: 8.w,
+                children: [5, 10, 20, 45, 90, 120].map((sec) {
+                  return GestureDetector(
+                    onTap: () => textCtrl.text = sec.toString(),
+                    child: Container(
+                      margin: EdgeInsets.only(bottom: 6.h),
+                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1D243D),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(color: const Color(0xFF2D3B66)),
+                      ),
+                      child: Text("${sec}s", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 11.sp, fontWeight: FontWeight.w700)),
+                    ),
+                  );
+                }).toList(),
+              ),
+              SizedBox(height: 14.h),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: Text("Cancel", style: TextStyle(color: Colors.white54, fontSize: 13.sp)),
+                  ),
+                  SizedBox(width: 8.w),
+                  ElevatedButton(
+                    onPressed: () {
+                      final sec = int.tryParse(textCtrl.text.trim());
+                      if (sec != null && sec > 0) {
+                        selectedDuration.value = sec;
+                      }
+                      Get.back();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6366F1),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                    ),
+                    child: Text("Set", style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

@@ -266,23 +266,28 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                               Obx(() {
                                 if (!ctrl.auctionActive.value) return const SizedBox.shrink();
                                 final isLowTime = ctrl.bidTimer.value <= 10;
+                                final isSudden = ctrl.isSuddenDeath.value;
                                 return Container(
                                   padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                                   decoration: BoxDecoration(
-                                    color: isLowTime ? Colors.redAccent.withOpacity(0.8) : const Color(0xFF8B9BFF).withOpacity(0.12),
+                                    color: isSudden
+                                        ? const Color(0xFF7C3AED).withOpacity(0.8)
+                                        : (isLowTime ? Colors.redAccent.withOpacity(0.8) : const Color(0xFF8B9BFF).withOpacity(0.12)),
                                     borderRadius: BorderRadius.circular(20.r),
                                     border: Border.all(
-                                      color: isLowTime ? Colors.redAccent : const Color(0xFF8B9BFF).withOpacity(0.4),
+                                      color: isSudden
+                                          ? const Color(0xFFB07CFF)
+                                          : (isLowTime ? Colors.redAccent : const Color(0xFF8B9BFF).withOpacity(0.4)),
                                       width: 1,
                                     ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.timer_outlined, color: Colors.white, size: 12.sp),
+                                      Icon(isSudden ? Icons.bolt_rounded : Icons.timer_outlined, color: Colors.white, size: 12.sp),
                                       SizedBox(width: 4.w),
                                       Text(
-                                        "00:${ctrl.bidTimer.value.toString().padLeft(2, '0')}",
+                                        "00:${ctrl.bidTimer.value.toString().padLeft(2, '0')}${isSudden ? ' ⚡' : ''}",
                                         style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w900),
                                       ),
                                     ],

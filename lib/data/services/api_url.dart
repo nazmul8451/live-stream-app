@@ -3,16 +3,16 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class ApiUrl {
   static String get baseUrl {
     if (dotenv.isInitialized) {
-      return dotenv.env['BASE_URL'] ?? "https://mohosin5001.binarybards.online/api/v1";
+      return dotenv.env['BASE_URL'] ?? "https://api.areisco.com/api/v1";
     }
-    return "https://mohosin5001.binarybards.online/api/v1";
+    return "https://api.areisco.com/api/v1";
   }
 
   static String get imageBaseUrl {
     if (dotenv.isInitialized) {
-      return dotenv.env['IMAGE_BASE_URL'] ?? "https://mohosin5001.binarybards.online";
+      return dotenv.env['IMAGE_BASE_URL'] ?? "https://api.areisco.com";
     }
-    return "https://mohosin5001.binarybards.online";
+    return "https://api.areisco.com";
   }
 
 
@@ -105,4 +105,10 @@ class ApiUrl {
   // Legal & Compliance
   static const String termsAndConditionsUrl = "https://api.areisco.com/terms-and-conditions";
   static const String privacyPolicyUrl = "https://api.areisco.com/privacy-policy";
+
+  // Giveaway
+  static const String giveawayConfig = "/giveaway/config";
+  static const String giveawayMyStatus = "/giveaway/my-status";
+  static const String giveawayEnter = "/giveaway/enter";
+  static const String giveawayWinners = "/giveaway/winners";
 }

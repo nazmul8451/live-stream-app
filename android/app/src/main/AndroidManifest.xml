@@ -84,6 +84,18 @@
                     android:pathPrefix="/profile" />
                 <data
                     android:scheme="https"
+                    android:host="api.areisco.com"
+                    android:pathPrefix="/signup" />
+                <data
+                    android:scheme="https"
+                    android:host="api.areisco.com"
+                    android:pathPrefix="/trade" />
+                <data
+                    android:scheme="https"
+                    android:host="api.areisco.com"
+                    android:pathPrefix="/profile" />
+                <data
+                    android:scheme="https"
                     android:host="mohosin5001.binarybards.online"
                     android:pathPrefix="/signup" />
                 <data

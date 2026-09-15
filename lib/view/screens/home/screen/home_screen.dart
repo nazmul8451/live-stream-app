@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
 import '../../../../core/app_route.dart';
@@ -13,7 +12,6 @@ import '../../live_stream/controller/agora_live_controller.dart';
 import '../../main/controller/main_controller.dart';
 import '../../profile/controller/profile_controller.dart';
 import '../../profile/screen/profile_screen.dart';
-import '../../purchases/screen/purchases_screen.dart';
 import '../../trade_voting/widgets/tinder_swipeable_trade_voting.dart';
 import '../controller/home_controller.dart';
 import 'home_live_preview_widget.dart';
@@ -149,477 +147,125 @@ class HomeScreen extends StatelessWidget {
               // Discover Search Bar in Home
               _buildHomeSearchBar(controller),
 
+              SizedBox(height: 16.h),
+
+              // Home Filter Chips ("All", "Live Shows", "Trade Market")
+              Row(
+                children: [
+                  Expanded(
+                    flex: 26,
+                    child: _buildHomeFilterTab(controller, 0, "All"),
+                  ),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    flex: 38,
+                    child: _buildHomeFilterTab(controller, 1, "Live Shows"),
+                  ),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    flex: 42,
+                    child: _buildHomeFilterTab(controller, 2, "Trade Market"),
+                  ),
+                ],
+              ),
+
               SizedBox(height: 18.h),
 
-              // Go Live Button
-              GestureDetector(
-                onTap: () {
-                  AuthGuard.check(
-                    title: "Sign in to Go Live",
-                    message: "Guest mode is browse-only. Sign in or create an account to host streams and auction items.",
-                    onAuthorized: () {
-                      try {
-                        if (Get.isRegistered<AgoraLiveController>()) {
-                          final ctrl = Get.find<AgoraLiveController>();
-                          if (ctrl.isLive.value) {
-                            ctrl.resumeStream();
-                            return;
-                          }
-                        }
-                      } catch (_) {}
-                      Get.toNamed(AppRoute.goLiveSetup);
-                    },
-                  );
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 67.h,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(36.r),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.1),
-                      width: 1,
-                    ),
-                    color: Colors.white.withOpacity(0.01),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SvgPicture.asset(
-                        "assets/icons/Go Live.svg",
-                        width: 36.w,
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFF8B9BFF),
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      SizedBox(width: 14.w),
-                      Text(
-                        "Go Live",
-                        style: TextStyle(
-                          color: const Color(0xFF8B9BFF),
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // Futuristic Sci-Fi Go Live Button
+              _buildSciFiGoLiveButton(context),
 
-              SizedBox(height: 28.h),
+              // Dynamic spacing between Go Live and content
+              Obx(() => SizedBox(height: controller.liveItems.isNotEmpty ? 18.h : 36.h)),
 
-              // Category Chips (Edge-to-edge scrolling without clipping at padding)
-              Builder(
-                builder: (context) {
-                  final screenWidth = MediaQuery.of(context).size.width;
-                  return SizedBox(
-                    height: 48.h,
-                    child: OverflowBox(
-                      minWidth: 0.0,
-                      maxWidth: screenWidth,
-                      alignment: Alignment.center,
-                      child: SizedBox(
-                        width: screenWidth,
-                        child: Obx(
-                          () => ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            clipBehavior: Clip.none,
-                            padding: EdgeInsets.symmetric(horizontal: 24.w),
-                            itemCount: controller.categories.length,
-                            itemBuilder: (context, index) {
-                              final isLast = index == controller.categories.length - 1;
-                              return Obx(() {
-                                final isSelected =
-                                    controller.selectedCategoryIndex.value == index;
-                                return GestureDetector(
-                                  onTap: () => controller.onCategorySelected(index),
-                                  child: Container(
-                                    margin: EdgeInsets.only(right: isLast ? 0 : 12.w),
-                                    padding: EdgeInsets.symmetric(horizontal: 28.w),
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? const Color(0xFF8B9BFF)
-                                          : const Color(0xFF1E1E2C).withValues(alpha: 0.4),
-                                      borderRadius: BorderRadius.circular(30.r),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? Colors.transparent
-                                            : Colors.white.withValues(alpha: 0.05),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      controller.categories[index],
-                                      style: TextStyle(
-                                        color: isSelected
-                                            ? const Color(0xFF0F0B1E)
-                                            : Colors.white60,
-                                        fontSize: 15.sp,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              });
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              // Dynamic spacing between Category Chips and content (prevents clutter when live shows are hidden)
-              Obx(() => SizedBox(height: controller.liveItems.isNotEmpty ? 0 : 36.h)),
-
-              // Conditional Live Sections (Featured Card & Live Now Grid) or Shimmer
+              // Dynamic Live Stream (Shows dynamically when a broadcaster is live)
               Obx(() {
-                if (controller.isLoading.value && controller.liveItems.isEmpty) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildFeaturedLiveShimmer(),
-                      SizedBox(height: 40.h),
-                    ],
-                  );
-                }
+                if (controller.selectedHomeFilter.value == 2) return const SizedBox.shrink();
+                return _buildDynamicLiveSection(controller);
+              }),
 
-                final hasLive = controller.liveItems.isNotEmpty;
-                if (!hasLive) return const SizedBox.shrink();
+              // Upcoming / Scheduled Shows Section (Featured at top)
+              Obx(() {
+                if (controller.selectedHomeFilter.value == 2) return const SizedBox.shrink();
+                return _buildUpcomingShowsSection(controller);
+              }),
 
-                final liveShow = controller.liveItems.first;
-                final String image = liveShow.image;
-                final String title = liveShow.title;
-                final String curator = liveShow.curator;
-                final String viewers = liveShow.viewers;
+              // Exclusive Giveaway Card (Placed below Upcoming Shows)
+              _buildExclusiveGiveawayCard(controller, context),
 
+              // Recent Trades (Who Won The Trade?) Community Voting Section
+              Obx(() {
+                if (controller.selectedHomeFilter.value == 1) return const SizedBox.shrink();
+                return _buildRecentTradesVotingSection(controller);
+              }),
+
+              // Collectibles & Streetwear Products Section (Dynamic from Database)
+              Obx(() {
+                if (controller.selectedHomeFilter.value == 1) return const SizedBox.shrink();
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 20.h),
-                    // Featured Card
-                    Container(
-                      height: 440.h,
-                      width: double.infinity,
-                      clipBehavior: Clip.antiAlias,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(32.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
-                            blurRadius: 20.r,
-                            offset: Offset(0, 10.h),
-                          ),
-                        ],
-                      ),
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: HomeLivePreviewWidget(
-                              channelName: liveShow.raw?['agoraChannelName'] ?? '',
-                              fallbackImageUrl: image,
-                            ),
-                          ),
-                          Positioned.fill(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withOpacity(0.9),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.all(28.r),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    _buildSmallBadge("LIVE", const Color(0xFFFF5252)),
-                                    SizedBox(width: 10.w),
-                                    _buildSmallBadge(
-                                      viewers,
-                                      Colors.black.withOpacity(0.4),
-                                      icon: Icons.visibility_outlined,
-                                    ),
-                                  ],
-                                ),
-                                const Spacer(),
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 44.w,
-                                      height: 44.w,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12.r),
-                                        border: Border.all(
-                                          color: Colors.white24,
-                                          width: 1.5.w,
-                                        ),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(10.r),
-                                        child: liveShow.curatorAvatar.isNotEmpty
-                                            ? Image.network(
-                                                liveShow.curatorAvatar,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) => _buildFallbackAvatar(curator),
-                                              )
-                                            : _buildFallbackAvatar(curator),
-                                      ),
-                                    ),
-                                    SizedBox(width: 12.w),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          "CURATED BY",
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 10.sp,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
-                                        Text(
-                                          curator,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 16.sp,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 18.h),
-                                Text(
-                                  title,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28.sp,
-                                    fontWeight: FontWeight.w900,
-                                    height: 1.1,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                SizedBox(height: 24.h),
-                                SizedBox(
-                                   width: double.infinity,
-                                   height: 60.h,
-                                   child: Obx(() {
-                                     AgoraLiveController? agoraCtrl;
-                                     try {
-                                       if (Get.isRegistered<AgoraLiveController>()) {
-                                         agoraCtrl = Get.find<AgoraLiveController>();
-                                       }
-                                     } catch (_) {}
-
-                                     final String sId = liveShow.raw?['_id']?.toString() ?? '';
-                                     final bool isLiveActive = agoraCtrl != null && agoraCtrl.isLive.value && (agoraCtrl.streamId.value == sId || sId.isEmpty || (agoraCtrl.isHost.value && agoraCtrl.isLive.value));
-                                     final bool isHost = agoraCtrl?.isHost.value ?? false;
-
-                                     String btnText = "Join Stream";
-                                     IconData btnIcon = Icons.play_circle_fill_rounded;
-                                     if (isLiveActive) {
-                                       btnText = isHost ? "Return to My Stream" : "Return to Stream";
-                                       btnIcon = isHost ? Icons.videocam_rounded : Icons.play_circle_fill_rounded;
-                                     }
-
-                                     return ElevatedButton(
-                                       onPressed: () {
-                                         AuthGuard.check(
-                                           title: "Sign in to Watch Stream",
-                                           message: "Guest mode is browse-only. Sign in or create an account to watch live streams.",
-                                           onAuthorized: () {
-                                             if (isLiveActive && agoraCtrl != null) {
-                                               agoraCtrl.resumeStream();
-                                             } else if (liveShow.raw != null) {
-                                               Get.toNamed(AppRoute.viewerLive, arguments: liveShow.raw);
-                                             }
-                                           },
-                                         );
-                                       },
-                                       style: ElevatedButton.styleFrom(
-                                         backgroundColor: isLiveActive ? const Color(0xFFFF4B4B) : const Color(0xFF8B9BFF),
-                                         foregroundColor: isLiveActive ? Colors.white : const Color(0xFF0F0B1E),
-                                         shape: RoundedRectangleBorder(
-                                           borderRadius: BorderRadius.circular(30.r),
-                                         ),
-                                         elevation: 0,
-                                       ),
-                                       child: Row(
-                                         mainAxisAlignment: MainAxisAlignment.center,
-                                         children: [
-                                           Icon(
-                                             btnIcon,
-                                             size: 28.sp,
-                                             color: isLiveActive ? Colors.white : const Color(0xFF0F0B1E),
-                                           ),
-                                           SizedBox(width: 10.w),
-                                           Text(
-                                             btnText,
-                                             style: TextStyle(
-                                               fontWeight: FontWeight.w900,
-                                               fontSize: 18.sp,
-                                               color: isLiveActive ? Colors.white : const Color(0xFF0F0B1E),
-                                             ),
-                                           ),
-                                         ],
-                                       ),
-                                     );
-                                   }),
-                                 ),
-                              ],
-                            ),
-                          ),
-                        ],
+                    SizedBox(height: 36.h),
+                    Text(
+                      "Featured Collectibles",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    SizedBox(height: 40.h),
+                    Text(
+                      "Explore items verified by experts",
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 13.sp,
+                      ),
+                    ),
+                    SizedBox(height: 20.h),
+                    Obx(() {
+                      if (controller.isProductsLoading.value) {
+                        return _buildProductGridShimmer();
+                      }
 
-                    // Live Now Grid Section
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Live Now",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24.sp,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            Text(
-                              "Bidding wars in progress",
-                              style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 13.sp,
-                              ),
-                            ),
-                          ],
-                        ),
-                        TextButton(
-                          onPressed: () => Get.to(() => PurchasesScreen()),
+                      if (controller.products.isEmpty) {
+                        return Container(
+                          padding: EdgeInsets.symmetric(vertical: 40.h),
+                          alignment: Alignment.center,
                           child: Text(
-                            "SEE ALL",
+                            "No products found in this category.",
                             style: TextStyle(
-                              color: const Color(0xFF8B9BFF),
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1,
+                              color: Colors.white38,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 20.h),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 18.w,
-                        mainAxisSpacing: 18.h,
-                        childAspectRatio: 0.85,
-                      ),
-                      itemCount: controller.liveItems.length,
-                      itemBuilder: (context, index) {
-                        final item = controller.liveItems[index];
-                        return _buildLiveCard(item, index);
-                      },
-                    ),
-                    SizedBox(height: 40.h),
+                        );
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16.w,
+                              mainAxisSpacing: 16.h,
+                              childAspectRatio: 0.75,
+                            ),
+                            itemCount: controller.products.length,
+                            itemBuilder: (context, index) {
+                              final product = controller.products[index];
+                              return _buildProductCard(product);
+                            },
+                          ),
+                          _buildProductsLoadMoreIndicator(controller),
+                        ],
+                      );
+                    }),
                   ],
                 );
               }),
-
-              // Upcoming / Scheduled Shows Section (Feature 3 & 4)
-              _buildUpcomingShowsSection(controller),
-
-              // Recent Trades (Who Won The Trade?) Community Voting Section
-              _buildRecentTradesVotingSection(controller),
-
-              SizedBox(height: 36.h),
-
-              // Collectibles & Streetwear Products Section (Dynamic from Database)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Featured Collectibles",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  Text(
-                    "Explore items verified by experts",
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 13.sp,
-                    ),
-                  ),
-                  SizedBox(height: 20.h),
-                  Obx(() {
-                    if (controller.isProductsLoading.value) {
-                      return _buildProductGridShimmer();
-                    }
-
-                    if (controller.products.isEmpty) {
-                      return Container(
-                        padding: EdgeInsets.symmetric(vertical: 40.h),
-                        alignment: Alignment.center,
-                        child: Text(
-                          "No products found in this category.",
-                          style: TextStyle(
-                            color: Colors.white38,
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      );
-                    }
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 16.w,
-                            mainAxisSpacing: 16.h,
-                            childAspectRatio: 0.75,
-                          ),
-                          itemCount: controller.products.length,
-                          itemBuilder: (context, index) {
-                            final product = controller.products[index];
-                            return _buildProductCard(product);
-                          },
-                        ),
-                        _buildProductsLoadMoreIndicator(controller),
-                      ],
-                    );
-                  }),
-                ],
-              ),
 
               SizedBox(height: 120.h), // Bottom padding for compact navigation bar
             ],
@@ -679,177 +325,786 @@ class HomeScreen extends StatelessWidget {
     });
   }
 
-  Widget _buildSmallBadge(String text, Color bgColor, {IconData? icon}) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(10.r),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (text == "LIVE")
-            Padding(
-              padding: EdgeInsets.only(right: 6.w),
-              child: Icon(Icons.circle, color: Colors.white, size: 8.sp),
-            ),
-          if (icon != null)
-            Padding(
-              padding: EdgeInsets.only(right: 4.w),
-              child: Icon(icon, color: Colors.white, size: 12.sp),
-            ),
-          Text(
-            text,
-            maxLines: 1,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildDynamicLiveSection(HomeController controller) {
+    return Obx(() {
+      if (controller.liveItems.isEmpty) return const SizedBox.shrink();
 
-  Widget _buildLiveCard(LiveItemModel item, int index) {
-    return GestureDetector(
-      onTap: () {
-        AuthGuard.check(
-          title: "Sign in to Watch Stream",
-          message: "Guest mode is browse-only. Sign in or create an account to watch live streams.",
-          onAuthorized: () {
-            try {
-              if (Get.isRegistered<AgoraLiveController>()) {
-                final ctrl = Get.find<AgoraLiveController>();
-                final String sId = item.raw?['_id']?.toString() ?? '';
-                if (ctrl.isLive.value && (ctrl.streamId.value == sId || (ctrl.isHost.value && ctrl.isLive.value))) {
-                  ctrl.resumeStream();
-                  return;
-                }
-              }
-            } catch (_) {}
-            if (item.raw != null) {
-              Get.toNamed(AppRoute.viewerLive, arguments: item.raw);
-            } else {
-              Get.snackbar("Cannot Join", "Stream data is not available.", snackPosition: SnackPosition.BOTTOM);
-            }
-          },
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 10.r,
-              offset: Offset(0, 5.h),
+      final liveShow = controller.liveItems.first;
+      final String image = liveShow.image;
+      final String title = liveShow.title;
+      final String curator = liveShow.curator;
+      final String viewers = liveShow.viewers;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(height: 18.h),
+          Container(
+            height: 440.h,
+            width: double.infinity,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(32.r),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 20.r,
+                  offset: Offset(0, 10.h),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28.r),
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: _buildProductImage(item.image, fit: BoxFit.cover, fallbackIcon: Icons.videocam_outlined),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.85),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: HomeLivePreviewWidget(
+                    channelName: liveShow.raw?['agoraChannelName'] ?? '',
+                    fallbackImageUrl: image,
+                  ),
+                ),
+                Positioned.fill(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.9),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(28.r),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF5252),
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.only(right: 6.w),
+                                  child: Icon(Icons.circle, color: Colors.white, size: 8.sp),
+                                ),
+                                Text(
+                                  "LIVE",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.only(right: 4.w),
+                                  child: Icon(Icons.visibility_outlined, color: Colors.white, size: 12.sp),
+                                ),
+                                Text(
+                                  viewers,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 22.r,
+                            backgroundColor: const Color(0xFF1E2644),
+                            child: Icon(Icons.person_rounded, color: const Color(0xFF8B9BFF), size: 24.sp),
+                          ),
+                          SizedBox(width: 12.w),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Curated by",
+                                style: TextStyle(
+                                  color: Colors.white60,
+                                  fontSize: 10.sp,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              Text(
+                                curator,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 18.h),
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24.sp,
+                          fontWeight: FontWeight.w900,
+                          height: 1.15,
+                        ),
+                      ),
+                      SizedBox(height: 24.h),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 60.h,
+                        child: Obx(() {
+                          AgoraLiveController? agoraCtrl;
+                          try {
+                            if (Get.isRegistered<AgoraLiveController>()) {
+                              agoraCtrl = Get.find<AgoraLiveController>();
+                            }
+                          } catch (_) {}
+
+                          final String sId = liveShow.raw?['_id']?.toString() ?? '';
+                          final bool isLiveActive = agoraCtrl != null &&
+                              agoraCtrl.isLive.value &&
+                              (agoraCtrl.streamId.value == sId ||
+                                  sId.isEmpty ||
+                                  (agoraCtrl.isHost.value && agoraCtrl.isLive.value));
+                          final bool isHost = agoraCtrl?.isHost.value ?? false;
+
+                          String btnText = "Join Stream";
+                          IconData btnIcon = Icons.play_circle_fill_rounded;
+                          if (isLiveActive) {
+                            btnText = isHost ? "Return to My Stream" : "Return to Stream";
+                            btnIcon = isHost ? Icons.videocam_rounded : Icons.play_circle_fill_rounded;
+                          }
+
+                          return ElevatedButton(
+                            onPressed: () {
+                              AuthGuard.check(
+                                title: "Sign in to Watch Stream",
+                                message: "Guest mode is browse-only. Sign in or create an account to watch live streams.",
+                                onAuthorized: () {
+                                  if (isLiveActive && agoraCtrl != null) {
+                                    agoraCtrl.resumeStream();
+                                  } else if (liveShow.raw != null) {
+                                    Get.toNamed(AppRoute.viewerLive, arguments: liveShow.raw);
+                                  }
+                                },
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isLiveActive ? const Color(0xFFFF4B4B) : const Color(0xFF8B9BFF),
+                              foregroundColor: isLiveActive ? Colors.white : const Color(0xFF0F0B1E),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30.r),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  btnIcon,
+                                  size: 28.sp,
+                                  color: isLiveActive ? Colors.white : const Color(0xFF0F0B1E),
+                                ),
+                                SizedBox(width: 10.w),
+                                Text(
+                                  btnText,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 18.sp,
+                                    color: isLiveActive ? Colors.white : const Color(0xFF0F0B1E),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ),
                     ],
                   ),
                 ),
+              ],
+            ),
+          ),
+          SizedBox(height: 24.h),
+        ],
+      );
+    });
+  }
+
+  // ─── DYNAMIC EXCLUSIVE GIVEAWAY CARD (Matching Client Mockup Exactly) ───
+  Widget _buildExclusiveGiveawayCard(HomeController controller, BuildContext context) {
+    return Obx(() {
+      final isEntered = controller.isGiveawayEntered.value;
+      final isEntering = controller.isEnteringGiveaway.value;
+      final title = controller.giveawayTitle;
+      final subtitle = "Draw: ${controller.giveawayDrawDateFormatted}\nFree Entry for all members!";
+      final prizeImage = controller.giveawayPrizeImage;
+
+      return GestureDetector(
+        onTap: () => _showGiveawayDetailsSheet(controller, context),
+        child: Container(
+          width: double.infinity,
+          margin: EdgeInsets.only(top: 14.h, bottom: 28.h),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF130E29),
+                Color(0xFF1B1238),
+                Color(0xFF0D091F),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(22.r),
+            border: Border.all(
+              color: isEntered
+                  ? const Color(0xFF10B981).withValues(alpha: 0.8)
+                  : const Color(0xFF6B46C1).withValues(alpha: 0.6),
+              width: isEntered ? 1.5 : 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isEntered
+                    ? const Color(0xFF10B981).withValues(alpha: 0.25)
+                    : const Color(0xFF7A40F2).withValues(alpha: 0.22),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
-              Padding(
-                padding: EdgeInsets.all(12.r),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        _buildSmallBadge("LIVE", const Color(0xFFFF4B67)),
-                        const Spacer(),
-                        _buildSmallBadge(
-                          item.viewers,
-                          Colors.black.withOpacity(0.4),
-                          icon: Icons.visibility_outlined,
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    if (index == 0)
-                      Center(
-                        child: Container(
-                          margin: EdgeInsets.only(bottom: 20.h),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 16.w,
-                            vertical: 8.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E1E2C).withOpacity(0.8),
-                            borderRadius: BorderRadius.circular(20.r),
-                            border: Border.all(color: Colors.white10),
-                          ),
-                          child: Text(
-                            "LIVE PREVIEW",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ),
-                    Text(
-                      item.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 6.h),
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 10.r,
-                          backgroundImage: const NetworkImage(
-                            "https://i.pravatar.cc/150?u=avatar",
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
-                        Expanded(
-                          child: Text(
-                            item.curator,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Cyber glowing streaks in the background
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _GiveawayCyberLinesPainter(),
                 ),
+              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Left Content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Gift Tag (Scaled safely)
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                          decoration: BoxDecoration(
+                            color: isEntered
+                                ? const Color(0xFF10B981).withValues(alpha: 0.18)
+                                : const Color(0xFF8B9BFF).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6.r),
+                            border: Border.all(
+                              color: isEntered
+                                  ? const Color(0xFF10B981).withValues(alpha: 0.5)
+                                  : const Color(0xFF8B9BFF).withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isEntered ? Icons.verified_rounded : Icons.card_giftcard_rounded,
+                                color: isEntered ? const Color(0xFF10B981) : const Color(0xFF8B9BFF),
+                                size: 14.sp,
+                              ),
+                              SizedBox(width: 4.w),
+                              Text(
+                                isEntered ? "YOU'RE ENTERED! 🎉" : "EXCLUSIVE GIVEAWAY",
+                                style: TextStyle(
+                                  color: isEntered ? const Color(0xFF10B981) : const Color(0xFF8B9BFF),
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        // Title
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14.5.sp,
+                            fontWeight: FontWeight.w900,
+                            height: 1.15,
+                          ),
+                        ),
+                        SizedBox(height: 5.h),
+                        // Subtitle
+                        Text(
+                          subtitle,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: const Color(0xFF8A96BC),
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w500,
+                            height: 1.2,
+                          ),
+                        ),
+                        if (isEntered) ...[
+                          SizedBox(height: 4.h),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle_rounded, color: const Color(0xFF10B981), size: 11.sp),
+                              SizedBox(width: 4.w),
+                              Flexible(
+                                child: Text(
+                                  controller.giveawayEnteredAtFormatted.isNotEmpty
+                                      ? "Entered: ${controller.giveawayEnteredAtFormatted}"
+                                      : "Entry Confirmed in Draw",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: const Color(0xFF34D399),
+                                    fontSize: 9.5.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        SizedBox(height: 10.h),
+                        // ENTER HERE / YOU'RE ENTERED Action Button
+                        GestureDetector(
+                          onTap: () {
+                            if (!isEntered) {
+                              controller.enterGiveaway();
+                            } else {
+                              _showGiveawayDetailsSheet(controller, context);
+                            }
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 13.w, vertical: 6.h),
+                            decoration: BoxDecoration(
+                              color: isEntered ? const Color(0xFF0F2E22) : const Color(0xFF14102B),
+                              borderRadius: BorderRadius.circular(20.r),
+                              border: Border.all(
+                                color: isEntered ? const Color(0xFF10B981) : const Color(0xFF6366F1),
+                                width: 1.2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (isEntered ? const Color(0xFF10B981) : const Color(0xFF6366F1)).withValues(alpha: 0.35),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: isEntering
+                                ? SizedBox(
+                                    width: 14.r,
+                                    height: 14.r,
+                                    child: const CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        isEntered ? "YOU'RE ENTERED! 🎉" : "ENTER HERE",
+                                        style: TextStyle(
+                                          color: isEntered ? const Color(0xFF6EE7B7) : Colors.white,
+                                          fontSize: 10.5.sp,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.0,
+                                        ),
+                                      ),
+                                      SizedBox(width: 5.w),
+                                      Icon(
+                                        isEntered ? Icons.check_rounded : Icons.arrow_forward_rounded,
+                                        color: isEntered ? const Color(0xFF6EE7B7) : Colors.white,
+                                        size: 12.sp,
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  // Right Jersey Image Container
+                  Container(
+                    width: 112.w,
+                    height: 134.h,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1B1538),
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(
+                        color: const Color(0xFF483A7E).withValues(alpha: 0.6),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: prizeImage.isNotEmpty
+                        ? Image.network(
+                            prizeImage.startsWith('http')
+                                ? prizeImage
+                                : "${ApiUrl.imageBaseUrl}${prizeImage.startsWith('/') ? prizeImage : '/$prizeImage'}",
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                            errorBuilder: (_, __, ___) => Image.asset(
+                              "assets/images/obj_jersey_giveaway.jpg",
+                              fit: BoxFit.cover,
+                              alignment: Alignment.topCenter,
+                            ),
+                          )
+                        : Image.asset(
+                            "assets/images/obj_jersey_giveaway.jpg",
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                          ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
+      );
+    });
+  }
+
+  void _showGiveawayDetailsSheet(HomeController controller, BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 24.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F0C22),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          border: Border.all(color: const Color(0xFF2E2452)),
+        ),
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Obx(() {
+            final isEntered = controller.isGiveawayEntered.value;
+            final isEntering = controller.isEnteringGiveaway.value;
+            final prizeTitle = controller.giveawayPrizeTitle;
+            final desc = controller.giveawayDescription;
+            final drawDate = controller.giveawayDrawDateFormatted;
+            final prizeImg = controller.giveawayPrizeImage;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44.w,
+                    height: 4.h,
+                    margin: EdgeInsets.only(bottom: 16.h),
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Icon(
+                      isEntered ? Icons.check_circle_rounded : Icons.card_giftcard_rounded,
+                      color: isEntered ? const Color(0xFF10B981) : const Color(0xFF8B9BFF),
+                      size: 22.sp,
+                    ),
+                    SizedBox(width: 8.w),
+                    Expanded(
+                      child: Text(
+                        isEntered ? "GIVEAWAY ENTRY CONFIRMED" : "EXCLUSIVE GIVEAWAY",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: isEntered ? const Color(0xFF10B981) : const Color(0xFF8B9BFF),
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Get.back(),
+                      icon: Icon(Icons.close_rounded, color: Colors.white60, size: 20.sp),
+                    ),
+                  ],
+                ),
+                if (isEntered) ...[
+                  SizedBox(height: 12.h),
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF064E3B), Color(0xFF0F3A2B)],
+                      ),
+                      borderRadius: BorderRadius.circular(14.r),
+                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.7), width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(6.r),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF10B981),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.check_rounded, color: Colors.white, size: 16.sp),
+                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "You're in the Official Draw!",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12.5.sp,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              SizedBox(height: 2.h),
+                              Text(
+                                controller.giveawayEnteredAtFormatted.isNotEmpty
+                                    ? "Registered: ${controller.giveawayEnteredAtFormatted} • Status: Active"
+                                    : "Status: Active • Verified Entry Confirmed",
+                                style: TextStyle(
+                                  color: const Color(0xFFD1FAE5),
+                                  fontSize: 10.5.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                SizedBox(height: 12.h),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 95.w,
+                      height: 115.h,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14.r),
+                        border: Border.all(
+                          color: isEntered
+                              ? const Color(0xFF10B981).withValues(alpha: 0.6)
+                              : const Color(0xFF483A7E),
+                        ),
+                      ),
+                      child: prizeImg.isNotEmpty
+                          ? Image.network(
+                              prizeImg.startsWith('http')
+                                  ? prizeImg
+                                  : "${ApiUrl.imageBaseUrl}${prizeImg.startsWith('/') ? prizeImg : '/$prizeImg'}",
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Image.asset(
+                                "assets/images/obj_jersey_giveaway.jpg",
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Image.asset(
+                              "assets/images/obj_jersey_giveaway.jpg",
+                              fit: BoxFit.cover,
+                            ),
+                    ),
+                    SizedBox(width: 14.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            prizeTitle,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            desc,
+                            style: TextStyle(
+                              color: const Color(0xFF8A96BC),
+                              fontSize: 11.sp,
+                              height: 1.3,
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Wrap(
+                            spacing: 6.w,
+                            runSpacing: 4.h,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6.r),
+                                ),
+                                child: Text(
+                                  "FREE ENTRY • VERIFIED",
+                                  style: TextStyle(
+                                    color: const Color(0xFF22C55E),
+                                    fontSize: 9.5.sp,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6.r),
+                                ),
+                                child: Text(
+                                  "DRAW: $drawDate",
+                                  style: TextStyle(
+                                    color: const Color(0xFF8B9BFF),
+                                    fontSize: 9.5.sp,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16.h),
+                // Info Box (as requested in Integration Guide)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(12.r),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF141028),
+                    borderRadius: BorderRadius.circular(14.r),
+                    border: Border.all(color: const Color(0xFF2A2045)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: Text(
+                          "Winner will be drawn on $drawDate. Completely random & fair selection.",
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11.sp,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                // Enter / Confirmed Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50.h,
+                  child: ElevatedButton(
+                    onPressed: isEntering
+                        ? null
+                        : () {
+                            if (isEntered) {
+                              Get.back();
+                            } else {
+                              controller.enterGiveaway();
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isEntered ? const Color(0xFF10B981) : const Color(0xFF6366F1),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                      elevation: 0,
+                    ),
+                    child: isEntering
+                        ? SizedBox(
+                            width: 20.r,
+                            height: 20.r,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            isEntered ? "YOU'RE ENTERED! 🎉" : "ENTER GIVEAWAY NOW",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            );
+          }),
+        ),
       ),
+      isScrollControlled: true,
     );
   }
 
@@ -1098,64 +1353,6 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFeaturedLiveShimmer() {
-    return Container(
-      height: 440.h,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFF161622),
-        borderRadius: BorderRadius.circular(32.r),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(32.r),
-              child: const CustomShimmer.rectangular(height: double.infinity),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(28.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CustomShimmer.rectangular(height: 24.h, width: 60.w),
-                    SizedBox(width: 10.w),
-                    CustomShimmer.rectangular(height: 24.h, width: 50.w),
-                  ],
-                ),
-                const Spacer(),
-                Row(
-                  children: [
-                    CustomShimmer.circular(width: 44.w, height: 44.w),
-                    SizedBox(width: 12.w),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CustomShimmer.rectangular(height: 10.h, width: 70.w),
-                        SizedBox(height: 6.h),
-                        CustomShimmer.rectangular(height: 14.h, width: 110.w),
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(height: 18.h),
-                CustomShimmer.rectangular(height: 24.h, width: 220.w),
-                SizedBox(height: 8.h),
-                CustomShimmer.rectangular(height: 20.h, width: 140.w),
-                SizedBox(height: 24.h),
-                CustomShimmer.rectangular(height: 60.h, width: double.infinity),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildProductGridShimmer() {
     return GridView.builder(
       shrinkWrap: true,
@@ -1344,7 +1541,7 @@ class HomeScreen extends StatelessWidget {
               ),
               SizedBox(width: 8.w),
               GestureDetector(
-                onTap: () => Get.to(() => PurchasesScreen()),
+                onTap: () => Get.toNamed(AppRoute.allShows),
                 behavior: HitTestBehavior.opaque,
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 4.h),
@@ -1807,4 +2004,338 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildHomeFilterTab(
+    HomeController controller,
+    int index,
+    String label,
+  ) {
+    return Obx(() {
+      final isSelected = controller.selectedHomeFilter.value == index;
+      return GestureDetector(
+        onTap: () => controller.changeHomeFilter(index),
+        child: Container(
+          height: 46.h,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: isSelected
+                ? const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF8B9BFF),
+                      Color(0xFF6C5CE7),
+                    ],
+                  )
+                : null,
+            color: isSelected ? null : const Color(0xFF14142B).withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(26.r),
+            border: Border.all(
+              color: isSelected
+                  ? const Color(0xFFB4C0FF)
+                  : Colors.white.withValues(alpha: 0.08),
+              width: 1.2,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF8B9BFF).withValues(alpha: 0.5),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.white70,
+              fontSize: 14.sp,
+              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildSciFiGoLiveButton(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final buttonWidth = 172.w;
+    final buttonHeight = 48.h;
+    final totalHeight = 54.h;
+
+    return SizedBox(
+      height: totalHeight,
+      child: OverflowBox(
+        minWidth: 0.0,
+        maxWidth: screenWidth,
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: screenWidth,
+          height: totalHeight,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Sci-Fi Tech Circuit Wings
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _GoLiveCircuitPainter(
+                    buttonWidth: buttonWidth,
+                    buttonHeight: buttonHeight,
+                  ),
+                ),
+              ),
+
+              // Futuristic Pill Button
+              GestureDetector(
+                onTap: () {
+                  AuthGuard.check(
+                    title: "Sign in to Go Live",
+                    message:
+                        "Guest mode is browse-only. Sign in or create an account to host streams and auction items.",
+                    onAuthorized: () {
+                      try {
+                        if (Get.isRegistered<AgoraLiveController>()) {
+                          final ctrl = Get.find<AgoraLiveController>();
+                          if (ctrl.isLive.value) {
+                            ctrl.resumeStream();
+                            return;
+                          }
+                        }
+                      } catch (_) {}
+                      Get.toNamed(AppRoute.goLiveSetup);
+                    },
+                  );
+                },
+                child: Container(
+                  width: buttonWidth,
+                  height: buttonHeight,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(buttonHeight / 2),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF1B1745),
+                        Color(0xFF0F0D29),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: const Color(0xFF8B9BFF),
+                      width: 1.6,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.55),
+                        blurRadius: 18,
+                        spreadRadius: 1,
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF6C5CE7).withValues(alpha: 0.35),
+                        blurRadius: 30,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      "Go Live",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 17.sp,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
+
+class _GoLiveCircuitPainter extends CustomPainter {
+  final double buttonWidth;
+  final double buttonHeight;
+
+  _GoLiveCircuitPainter({
+    required this.buttonWidth,
+    required this.buttonHeight,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double cx = size.width / 2;
+    final double cy = size.height / 2;
+
+    // Glowing base paint
+    final glowPaint = Paint()
+      ..color = const Color(0xFF8B9BFF).withValues(alpha: 0.35)
+      ..strokeWidth = 3.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    // Crisp neon foreground paint
+    final linePaint = Paint()
+      ..color = const Color(0xFF8B9BFF)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    // Accent lines paint
+    final accentPaint = Paint()
+      ..color = const Color(0xFFAAB8FF)
+      ..strokeWidth = 1.4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    // Terminal dots
+    final dotPaint = Paint()
+      ..color = const Color(0xFFC7D0FF)
+      ..style = PaintingStyle.fill;
+
+    final double btnLeft = cx - (buttonWidth / 2);
+    final double btnRight = cx + (buttonWidth / 2);
+
+    final double gap = 12.0;
+    final double xCutLeft = btnLeft - gap;
+    final double xCutRight = btnRight + gap;
+
+    final double chamfer = 14.0;
+    final double topY = cy - 13.0;
+    final double bottomY = cy + 13.0;
+
+    // --- LEFT WING ---
+    final leftPath = Path();
+    leftPath.moveTo(0, topY);
+    leftPath.lineTo(xCutLeft - chamfer, topY);
+    leftPath.lineTo(xCutLeft, cy - 3.5);
+
+    leftPath.moveTo(0, bottomY);
+    leftPath.lineTo(xCutLeft - chamfer, bottomY);
+    leftPath.lineTo(xCutLeft, cy + 3.5);
+
+    canvas.drawPath(leftPath, glowPaint);
+    canvas.drawPath(leftPath, linePaint);
+
+    // Left middle accent line
+    if (xCutLeft - chamfer - 20 > 16) {
+      canvas.drawLine(
+        Offset(14, cy),
+        Offset(xCutLeft - chamfer - 18, cy),
+        accentPaint,
+      );
+    }
+
+    // Left vertical ticks
+    const double tickXLeft = 40.0;
+    if (tickXLeft < xCutLeft - chamfer - 10) {
+      canvas.drawLine(
+        Offset(tickXLeft, topY - 3.5),
+        Offset(tickXLeft, topY + 3.5),
+        accentPaint,
+      );
+      canvas.drawLine(
+        Offset(tickXLeft, bottomY - 3.5),
+        Offset(tickXLeft, bottomY + 3.5),
+        accentPaint,
+      );
+    }
+
+    // Left terminal dots
+    canvas.drawCircle(Offset(xCutLeft, cy - 3.5), 1.8, dotPaint);
+    canvas.drawCircle(Offset(xCutLeft, cy + 3.5), 1.8, dotPaint);
+
+    // --- RIGHT WING ---
+    final rightPath = Path();
+    rightPath.moveTo(xCutRight, cy - 3.5);
+    rightPath.lineTo(xCutRight + chamfer, topY);
+    rightPath.lineTo(size.width, topY);
+
+    rightPath.moveTo(xCutRight, cy + 3.5);
+    rightPath.lineTo(xCutRight + chamfer, bottomY);
+    rightPath.lineTo(size.width, bottomY);
+
+    canvas.drawPath(rightPath, glowPaint);
+    canvas.drawPath(rightPath, linePaint);
+
+    // Right middle accent line
+    if (size.width - 14 > xCutRight + chamfer + 20) {
+      canvas.drawLine(
+        Offset(xCutRight + chamfer + 18, cy),
+        Offset(size.width - 14, cy),
+        accentPaint,
+      );
+    }
+
+    // Right vertical ticks
+    final double tickXRight = size.width - 40.0;
+    if (tickXRight > xCutRight + chamfer + 10) {
+      canvas.drawLine(
+        Offset(tickXRight, topY - 3.5),
+        Offset(tickXRight, topY + 3.5),
+        accentPaint,
+      );
+      canvas.drawLine(
+        Offset(tickXRight, bottomY - 3.5),
+        Offset(tickXRight, bottomY + 3.5),
+        accentPaint,
+      );
+    }
+
+    // Right terminal dots
+    canvas.drawCircle(Offset(xCutRight, cy - 3.5), 1.8, dotPaint);
+    canvas.drawCircle(Offset(xCutRight, cy + 3.5), 1.8, dotPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GoLiveCircuitPainter oldDelegate) {
+    return oldDelegate.buttonWidth != buttonWidth ||
+        oldDelegate.buttonHeight != buttonHeight;
+  }
+}
+
+class _GiveawayCyberLinesPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = const Color(0xFF5B3EE4).withValues(alpha: 0.20)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    final brightPaint = Paint()
+      ..color = const Color(0xFF7C5CFC).withValues(alpha: 0.30)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    // Diagonal futuristic lines across the giveaway card background
+    canvas.drawLine(
+      Offset(size.width * 0.12, size.height),
+      Offset(size.width * 0.52, 0),
+      linePaint,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.32, size.height),
+      Offset(size.width * 0.70, 0),
+      brightPaint,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.46, size.height),
+      Offset(size.width * 0.84, 0),
+      linePaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+

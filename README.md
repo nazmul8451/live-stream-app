@@ -197,8 +197,8 @@ sequenceDiagram
 Create a `.env` file in the root directory:
 
 ```env
-BASE_URL=https://mohosin5001.binarybards.online/api/v1
-IMAGE_BASE_URL=https://mohosin5001.binarybards.online
+BASE_URL=https://api.areisco.com/api/v1
+IMAGE_BASE_URL=https://api.areisco.com
 STRIPE_PUBLISHABLE_KEY=pk_test_51NJLdJF5nDLFMGmox0iseTJZp42wfLi6Ub41OGs7hoMl0GSFe93a0My7PxdF2eKsxV1rvUf8vVw4p6jl9h9pCmEQ00WSln5w44
 AGORA_APP_ID=YOUR_AGORA_APP_ID
 ```

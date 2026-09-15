@@ -91,6 +91,9 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   final RxBool isUnsold = false.obs;
   final RxString winningCheckoutUrl = "".obs;
   final RxBool isPlacingBid = false.obs;
+  // Sudden Death & Auto Extend feature flags
+  final RxBool isSuddenDeath = false.obs;
+  final RxBool isAutoExtend = true.obs;
   // Outbid tracking
   final RxBool isOutbid = false.obs;
   final RxDouble myLastBidAmount = 0.0.obs;
@@ -428,6 +431,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       lastBidderName.value = "";
       showWinnerOverlay.value = false;
       auctionActive.value = true;
+      isSuddenDeath.value = itemMap['suddenDeath'] == true;
+      isAutoExtend.value = itemMap['autoExtend'] != false;
       isOutbid.value = false;
       myLastBidAmount.value = 0.0;
       isMyBidHighest.value = false;
@@ -539,7 +544,10 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
             } catch (_) {}
           }
 
-          if (bidTimer.value <= 10) {
+          if (isSuddenDeath.value && bidTimer.value <= 5) {
+            bidTimer.value = 0;
+            _handleAuctionTimeout();
+          } else if (isAutoExtend.value && bidTimer.value <= 10) {
             extendTimerLocal();
           }
 
@@ -855,6 +863,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         lastBidderName.value = "";
         showWinnerOverlay.value = false;
         auctionActive.value = true;
+        isSuddenDeath.value = msgMap['suddenDeath'] == true;
+        isAutoExtend.value = msgMap['autoExtend'] != false;
         
         if (pId.isNotEmpty) {
           fetchProductReservePrice(pId);
@@ -1465,6 +1475,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
             }
 
             auctionActive.value = true;
+            isSuddenDeath.value = itemMap['suddenDeath'] == true;
+            isAutoExtend.value = itemMap['autoExtend'] != false;
             debugPrint("✅ [AgoraLive] Fetched active auction item via /auctions/stream/$sId/items: ${auctionItemId.value}");
             return true;
           }
@@ -1544,7 +1556,13 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         Get.snackbar("Bid Placed!", "Your bid of \$${amount.toStringAsFixed(0)} is live!", snackPosition: SnackPosition.BOTTOM);
         
         bool extended = false;
-        if (bidTimer.value <= 10) { extended = true; extendTimerLocal(); }
+        if (isSuddenDeath.value && bidTimer.value <= 5) {
+          bidTimer.value = 0;
+          _handleAuctionTimeout();
+        } else if (isAutoExtend.value && bidTimer.value <= 10) {
+          extended = true;
+          extendTimerLocal();
+        }
         
         if (engine != null && _dataStreamId != null) {
           try { final payload = jsonEncode({"type": "bid", "username": usernameStr, "avatar": avatarUrl, "amount": amount, "senderId": bidderId, "extendTimer": extended}); await engine!.sendStreamMessage(streamId: _dataStreamId!, data: Uint8List.fromList(utf8.encode(payload)), length: payload.length); } catch (e) { debugPrint("Stream bid failed: $e"); }
@@ -1768,7 +1786,10 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       if (amount > currentBidPrice.value) {
         currentBidPrice.value = amount;
       }
-      if (isExtended) {
+      if (isSuddenDeath.value && bidTimer.value <= 5) {
+        bidTimer.value = 0;
+        _handleAuctionTimeout();
+      } else if (isExtended || (isAutoExtend.value && bidTimer.value <= 10)) {
         extendTimerLocal();
       }
 
@@ -1806,6 +1827,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       lastBidderName.value = "";
       showWinnerOverlay.value = false;
       auctionActive.value = true;
+      isSuddenDeath.value = payload['suddenDeath'] == true;
+      isAutoExtend.value = payload['autoExtend'] != false;
       
       if (pId.isNotEmpty) {
         fetchProductReservePrice(pId);
@@ -2078,17 +2101,23 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     required int timerDuration,
     String productTitle = "",
     String productImage = "",
+    bool suddenDeath = false,
+    bool autoExtend = true,
   }) async {
     isLoading.value = true;
     try {
       if (productId.isNotEmpty && streamId.value.isNotEmpty) {
         this.bidIncrement.value = bidIncrement;
+        isSuddenDeath.value = suddenDeath;
+        isAutoExtend.value = autoExtend;
         final itemRes = await _apiClient.postData(ApiUrl.addAuctionItem, {
           "streamId": streamId.value,
           "productId": productId,
           "startingBid": startingBid,
           "bidIncrement": bidIncrement,
           "timerDuration": timerDuration,
+          "suddenDeath": suddenDeath,
+          "autoExtend": autoExtend,
         });
         if (itemRes.statusCode == 200 || itemRes.statusCode == 201) {
           final itemBody = jsonDecode(itemRes.body);
@@ -2121,6 +2150,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
               "timerDuration": timerDuration,
               "auctionItemId": auctionItemId.value,
               "isLiveStream": true,
+              "suddenDeath": suddenDeath,
+              "autoExtend": autoExtend,
             });
           } catch (_) {}
 
@@ -2135,6 +2166,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
                 "productImage": productImage,
                 "startingBid": startingBid,
                 "timerDuration": timerDuration,
+                "suddenDeath": suddenDeath,
+                "autoExtend": autoExtend,
               });
               final bytes = utf8.encode(payload);
               await engine!.sendStreamMessage(

@@ -31,6 +31,14 @@ class HomeController extends GetxController {
   final RxBool isMoreProductsLoading = false.obs;
   final int productLimit = 10;
 
+  // Home Top Filter Tabs ("All", "Live Shows", "Trade Market")
+  final List<String> homeFilters = const ["All", "Live Shows", "Trade Market"];
+  final RxInt selectedHomeFilter = 0.obs;
+
+  void changeHomeFilter(int index) {
+    selectedHomeFilter.value = index;
+  }
+
   // Dynamic Category Items & Titles List
   final RxList<HomeCategoryItem> categoriesList = <HomeCategoryItem>[
     HomeCategoryItem(id: "", name: "All"),
@@ -58,6 +66,80 @@ class HomeController extends GetxController {
   }
 
   final RxInt unreadNotificationCount = 0.obs;
+
+  // ─── DYNAMIC EXCLUSIVE GIVEAWAY STATE ───
+  final RxBool isGiveawayLoading = false.obs;
+  final RxBool isGiveawayEntered = false.obs;
+  final RxBool isEnteringGiveaway = false.obs;
+  final RxMap<String, dynamic> giveawayConfig = <String, dynamic>{}.obs;
+  final RxString giveawayEnteredAt = "".obs;
+  final RxList<dynamic> giveawayWinners = <dynamic>[].obs;
+
+  String get giveawayTitle {
+    final t = giveawayConfig['title']?.toString();
+    if (t != null && t.trim().isNotEmpty) return t;
+    return "Michael Vick Jersey Giveaway";
+  }
+
+  String get giveawayPrizeTitle {
+    final pt = giveawayConfig['prizeTitle']?.toString();
+    if (pt != null && pt.trim().isNotEmpty) return pt;
+    final t = giveawayConfig['title']?.toString();
+    if (t != null && t.trim().isNotEmpty) return t;
+    return "Official Signed Michael Vick Jersey";
+  }
+
+  String get giveawayDescription {
+    final d = giveawayConfig['description']?.toString();
+    if (d != null && d.trim().isNotEmpty) return d;
+    return "Enter for a chance to win! Winner will be drawn on September 25th.";
+  }
+
+  String get giveawayPrizeImage {
+    return (giveawayConfig['prizeImage'] ?? giveawayConfig['image'] ?? '').toString();
+  }
+
+  String get giveawayDrawDateFormatted {
+    final raw = giveawayConfig['drawDate']?.toString();
+    if (raw == null || raw.isEmpty) return "September 25th, 2026";
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      final months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      final month = months[dt.month - 1];
+      final day = dt.day;
+      String suffix = "th";
+      if (day == 1 || day == 21 || day == 31) {
+        suffix = "st";
+      } else if (day == 2 || day == 22) {
+        suffix = "nd";
+      } else if (day == 3 || day == 23) {
+        suffix = "rd";
+      }
+      return "$month $day$suffix";
+    } catch (_) {
+      return raw;
+    }
+  }
+
+  bool get isGiveawayActive {
+    return giveawayConfig['isActive'] != false;
+  }
+
+  String get giveawayEnteredAtFormatted {
+    final raw = giveawayEnteredAt.value;
+    if (raw.isEmpty) return "";
+    try {
+      final dt = DateTime.parse(raw).toLocal();
+      final months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      final month = months[dt.month - 1];
+      final hour = dt.hour > 12 ? dt.hour - 12 : (dt.hour == 0 ? 12 : dt.hour);
+      final ampm = dt.hour >= 12 ? "PM" : "AM";
+      final minute = dt.minute.toString().padLeft(2, '0');
+      return "$month ${dt.day}, $hour:$minute $ampm";
+    } catch (_) {
+      return raw;
+    }
+  }
 
   // Search state for Discover-in-Home feature
   final TextEditingController searchController = TextEditingController();
@@ -319,7 +401,158 @@ class HomeController extends GetxController {
       fetchProducts(showLoading: products.isEmpty),
       fetchUnreadNotificationCount(),
       fetchRecentTrades(),
+      fetchGiveawayData(),
     ]);
+  }
+
+  Future<void> fetchGiveawayData() async {
+    isGiveawayLoading.value = true;
+    try {
+      // 1. Fetch public giveaway config
+      final res = await _apiClient.getData(ApiUrl.giveawayConfig);
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        if (body['success'] == true && body['data'] is Map) {
+          giveawayConfig.assignAll(Map<String, dynamic>.from(body['data']));
+        }
+      }
+
+      // 2. If authenticated, fetch user's entry status
+      final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
+      if (token.isNotEmpty) {
+        final statusRes = await _apiClient.getData(ApiUrl.giveawayMyStatus);
+        Get.log("🎁 [Giveaway] my-status code: ${statusRes.statusCode}, body: ${statusRes.body}");
+        if (statusRes.statusCode == 200 || statusRes.statusCode == 201) {
+          final body = jsonDecode(statusRes.body);
+          final data = body['data'] is Map ? body['data'] : body;
+          if (data is Map) {
+            isGiveawayEntered.value = data['hasEntered'] == true ||
+                data['hasEntered'] == 'true' ||
+                data['hasEntered'] == 1 ||
+                data['isEntered'] == true ||
+                data['isEntered'] == 'true' ||
+                data['isEntered'] == 1;
+            giveawayEnteredAt.value = (data['enteredAt'] ?? '').toString();
+            final cfg = data['config'] ?? data['giveaway'];
+            if (cfg is Map && (giveawayConfig.isEmpty || giveawayConfig['prizeTitle'] == null)) {
+              giveawayConfig.assignAll(Map<String, dynamic>.from(cfg));
+            }
+          }
+        }
+      }
+
+      // 3. Optionally fetch winners
+      try {
+        final winRes = await _apiClient.getData(ApiUrl.giveawayWinners);
+        if (winRes.statusCode == 200 || winRes.statusCode == 201) {
+          final body = jsonDecode(winRes.body);
+          final rawWins = body['data'] ?? body['winners'];
+          if (rawWins is List) {
+            giveawayWinners.assignAll(rawWins);
+          }
+        }
+      } catch (_) {}
+    } catch (e) {
+      Get.log("❌ [Giveaway] Error loading giveaway data: $e");
+    } finally {
+      isGiveawayLoading.value = false;
+    }
+  }
+
+  Future<void> enterGiveaway() async {
+    if (isEnteringGiveaway.value) return;
+
+    if (isGiveawayEntered.value) {
+      Get.snackbar(
+        "Already Entered! 🎉",
+        "You're already in the draw! Winner will be announced on $giveawayDrawDateFormatted.",
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: EdgeInsets.all(16.r),
+        duration: const Duration(seconds: 4),
+      );
+      return;
+    }
+
+    AuthGuard.check(
+      title: "Sign in to Enter Giveaway",
+      message: "Guest mode is browse-only. Sign in or create an account to enter exclusive giveaways.",
+      onAuthorized: () async {
+        isEnteringGiveaway.value = true;
+        try {
+          final res = await _apiClient.postData(ApiUrl.giveawayEnter, jsonEncode({}));
+          final body = jsonDecode(res.body);
+
+          if (res.statusCode == 200 || res.statusCode == 201) {
+            isGiveawayEntered.value = true;
+            giveawayEnteredAt.value = DateTime.now().toIso8601String();
+            final msg = body['message']?.toString() ?? "Successfully entered the $giveawayTitle!";
+            Get.snackbar(
+              "You're Entered! 🎉",
+              "$msg Winner will be drawn on $giveawayDrawDateFormatted.",
+              backgroundColor: const Color(0xFF10B981),
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+              margin: EdgeInsets.all(16.r),
+              duration: const Duration(seconds: 4),
+            );
+          } else if (res.statusCode == 409 ||
+              (res.statusCode == 400 &&
+                  (body['message']?.toString().toLowerCase().contains("already") ?? false))) {
+            // Backend returned 409 Conflict: Already entered
+            isGiveawayEntered.value = true;
+            final msg = body['message']?.toString() ?? "You're already entered in this giveaway!";
+            Get.snackbar(
+              "You're Entered! 🎉",
+              "$msg Winner will be drawn on $giveawayDrawDateFormatted.",
+              backgroundColor: const Color(0xFF10B981),
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+              margin: EdgeInsets.all(16.r),
+              duration: const Duration(seconds: 4),
+            );
+          } else if (res.statusCode == 400) {
+            final msg = body['message']?.toString() ?? "Could not enter giveaway.";
+            Get.snackbar(
+              "Giveaway Notice",
+              msg,
+              backgroundColor: const Color(0xFFF59E0B),
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+              margin: EdgeInsets.all(16.r),
+            );
+          } else if (res.statusCode == 401) {
+            AuthGuard.showAuthPrompt(
+              title: "Sign in Required",
+              message: "Your session has expired. Please sign in to enter the giveaway.",
+            );
+          } else {
+            final msg = body['message']?.toString() ?? "Failed to enter giveaway. Please try again.";
+            Get.snackbar(
+              "Error",
+              msg,
+              backgroundColor: const Color(0xFFEF4444),
+              colorText: Colors.white,
+              snackPosition: SnackPosition.BOTTOM,
+              margin: EdgeInsets.all(16.r),
+            );
+          }
+        } catch (e) {
+          Get.log("❌ [Giveaway] Error entering giveaway: $e");
+          Get.snackbar(
+            "Connection Error",
+            "Could not connect to the server. Please check your internet connection.",
+            backgroundColor: const Color(0xFFEF4444),
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+            margin: EdgeInsets.all(16.r),
+          );
+        } finally {
+          isEnteringGiveaway.value = false;
+        }
+      },
+    );
   }
 
   Future<void> fetchUnreadNotificationCount() async {
@@ -786,6 +1019,7 @@ class HomeController extends GetxController {
       fetchScheduledShows(),
       fetchCategories(),
       fetchSavedShows(),
+      fetchGiveawayData(),
     ]);
     await fetchProducts(showLoading: true);
   }

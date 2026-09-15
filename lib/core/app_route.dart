@@ -36,12 +36,14 @@ import '../view/screens/spin_wheel/screen/spin_wheel_screen.dart';
 import '../view/screens/checkout/screen/order_checkout_screen.dart';
 import '../view/screens/trade_voting/screen/trade_voting_feed_screen.dart';
 import '../view/screens/trade_voting/controller/trade_voting_controller.dart';
+import '../view/screens/home/screen/all_shows_screen.dart';
 
 import '../view/screens/profile/screen/blocked_users_screen.dart';
 import '../view/screens/profile/screen/payment_methods_screen.dart';
 
 class AppRoute {
   static final routeStream = StreamController<String>.broadcast();
+  static const String allShows = "/all_shows";
   static const String paymentMethods = "/payment_methods";
   static const String checkout = "/checkout";
   static const String forgotPassword = "/forgotPassword";
@@ -131,5 +133,6 @@ class AppRoute {
         Get.put<TradeVotingController>(TradeVotingController());
       }),
     ),
+    GetPage(name: allShows, page: () => const AllShowsScreen()),
   ];
 }
