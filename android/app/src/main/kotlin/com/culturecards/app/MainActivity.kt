@@ -1,4 +1,4 @@
-package com.vibelive.app
+package com.culturecards.app
 
 import android.app.PictureInPictureParams
 import android.content.Intent
@@ -11,7 +11,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
 
-    private val CHANNEL = "com.vibelive.app/live_service"
+    private val CHANNEL = "com.culturecards.app/live_service"
     private var isStreaming = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

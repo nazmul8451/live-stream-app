@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -5,10 +8,16 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
-    namespace = "com.vibelive.app"
+    namespace = "com.culturecards.app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "28.2.13676358"
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
@@ -21,7 +30,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.vibelive.app"
+        applicationId = "com.culturecards.app"
         // Android 10 (API 29) required for foregroundServiceType camera + microphone
         minSdk = 29
         targetSdk = flutter.targetSdkVersion
@@ -30,17 +39,26 @@ android {
         multiDexEnabled = true
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias") ?: "upload"
+            keyPassword = keystoreProperties.getProperty("keyPassword") ?: "culturecards123"
+            storeFile = file(keystoreProperties.getProperty("storeFile") ?: "upload-keystore.jks")
+            storePassword = keystoreProperties.getProperty("storePassword") ?: "culturecards123"
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 
     packaging {
-        jniLibs {
-            keepDebugSymbols += "**/*.so"
-        }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }

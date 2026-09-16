@@ -1,4 +1,4 @@
-package com.vibelive.app
+package com.culturecards.app
 
 import android.app.Notification
 import android.app.NotificationChannel
