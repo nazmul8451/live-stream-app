@@ -1497,7 +1497,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   }
 
   // PLACE BID
-  Future<void> placeBid(double amount) async {
+  Future<void> placeBid(double amount, {bool isQuickBid = false}) async {
     if (isPlacingBid.value) return;
     isPlacingBid.value = true;
     try {
@@ -1516,6 +1516,12 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         );
         return;
       }
+
+      // If quick bid (e.g. swipe to bid) and someone sniped just ahead, auto-bump to current highest + increment
+      if (isQuickBid && amount <= currentBidPrice.value) {
+        amount = currentBidPrice.value > 0 ? (currentBidPrice.value + bidIncrement.value) : bidIncrement.value;
+      }
+
       if (amount <= currentBidPrice.value) {
         Get.snackbar(
           "Invalid Bid",

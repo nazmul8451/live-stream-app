@@ -11,6 +11,7 @@ import '../../../../core/app_route.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../global/helper/auth_guard.dart';
 import '../../../../global/controllers/safety_controller.dart';
+import '../widgets/swipe_to_bid_button.dart';
 import 'dart:convert';
 
 class ViewerLiveScreen extends StatefulWidget {
@@ -1991,119 +1992,52 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
 
 
 
-        // Custom Bid Button
-        GestureDetector(
-          onTap: () => _showBidSheet(),
-          child: Container(
-            height: 48.r,
-            width: 48.r,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E1E2C).withOpacity(0.6),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
-            ),
-            child: Center(
-              child: Text(
-                "Custom",
-                style: TextStyle(color: Colors.white, fontSize: 9.sp, fontWeight: FontWeight.w700),
-              ),
-            ),
-          ),
-        ),
-        SizedBox(width: 8.w),
-
-
         Obx(() {
+          if (!ctrl.auctionActive.value) return const SizedBox.shrink();
           final currentBid = ctrl.currentBidPrice.value;
           final nextBid = currentBid > 0 ? (currentBid + ctrl.bidIncrement.value) : ctrl.bidIncrement.value;
           final isBidding = ctrl.isPlacingBid.value;
           final isOutbid = ctrl.isOutbid.value;
 
-          return GestureDetector(
-            onTap: isBidding ? null : () => ctrl.placeBid(nextBid),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              height: 48.h,
-              padding: EdgeInsets.fromLTRB(16.w, 4.h, 8.w, 4.h),
-              decoration: BoxDecoration(
-                gradient: isOutbid
-                    ? const LinearGradient(
-                        colors: [Color(0xFFFF2D55), Color(0xFFE00034)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : null,
-                color: !isOutbid
-                    ? (isBidding ? const Color(0xFF8B9BFF).withValues(alpha: 0.6) : const Color(0xFF8B9BFF))
-                    : null,
-                borderRadius: BorderRadius.circular(24.r),
-                border: isOutbid ? Border.all(color: Colors.white, width: 1.5.w) : null,
-                boxShadow: isOutbid
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFFFF2D55).withValues(alpha: 0.65),
-                          blurRadius: 14,
-                          spreadRadius: 2,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isOutbid ? "OUTBID!" : "BID",
-                        style: TextStyle(
-                          color: isOutbid ? Colors.white : Colors.black.withValues(alpha: 0.6),
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.w900,
-                          height: 1.0,
-                        ),
-                      ),
-                      SizedBox(height: 2.h),
-                      Text(
-                        "\$${nextBid.toStringAsFixed(0)}",
-                        style: TextStyle(
-                          color: isOutbid ? Colors.white : Colors.black,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w900,
-                          height: 1.0,
-                        ),
-                      ),
-                    ],
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Custom Bid Button
+              GestureDetector(
+                onTap: () => _showBidSheet(),
+                child: Container(
+                  height: 48.r,
+                  width: 48.r,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1E2C).withOpacity(0.6),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
                   ),
-                  SizedBox(width: 12.w),
-                  Container(
-                    width: 32.r,
-                    height: 32.r,
-                    decoration: BoxDecoration(
-                      color: isOutbid ? Colors.white : const Color(0xFF6B7BFF),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: isBidding
-                          ? SizedBox(
-                              width: 14.r,
-                              height: 14.r,
-                              child: CircularProgressIndicator(
-                                color: isOutbid ? const Color(0xFFFF2D55) : Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : Icon(
-                              Icons.arrow_forward_rounded,
-                              color: isOutbid ? const Color(0xFFFF2D55) : Colors.black,
-                              size: 16.sp,
-                            ),
+                  child: Center(
+                    child: Text(
+                      "Custom",
+                      style: TextStyle(color: Colors.white, fontSize: 9.sp, fontWeight: FontWeight.w700),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+              SizedBox(width: 8.w),
+
+              // Smooth Swipe to Bid Slider
+              SwipeToBidButton(
+                amount: nextBid,
+                isOutbid: isOutbid,
+                isLoading: isBidding,
+                height: 48.h,
+                width: 175.w,
+                onSwipeCompleted: () {
+                  final dynamicNextBid = ctrl.currentBidPrice.value > 0
+                      ? (ctrl.currentBidPrice.value + ctrl.bidIncrement.value)
+                      : ctrl.bidIncrement.value;
+                  ctrl.placeBid(dynamicNextBid, isQuickBid: true);
+                },
+              ),
+            ],
           );
         }),
       ],
