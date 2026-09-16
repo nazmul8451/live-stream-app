@@ -14,6 +14,7 @@ import '../../profile/controller/profile_controller.dart';
 import '../../profile/screen/profile_screen.dart';
 import '../../trade_voting/widgets/tinder_swipeable_trade_voting.dart';
 import '../controller/home_controller.dart';
+import '../widgets/celebrity_spotlight_card.dart';
 import 'home_live_preview_widget.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -174,8 +175,14 @@ class HomeScreen extends StatelessWidget {
               // Futuristic Sci-Fi Go Live Button
               _buildSciFiGoLiveButton(context),
 
+              // Celebrity Spotlight VIP Section (Only displays when a celebrity is live)
+              Obx(() {
+                if (controller.selectedHomeFilter.value == 2) return const SizedBox.shrink();
+                return CelebritySpotlightCard(controller: controller);
+              }),
+
               // Dynamic spacing between Go Live and content
-              Obx(() => SizedBox(height: controller.liveItems.isNotEmpty ? 18.h : 36.h)),
+              Obx(() => SizedBox(height: (controller.liveItems.isNotEmpty || controller.celebrityLiveItems.isNotEmpty) ? 18.h : 36.h)),
 
               // Dynamic Live Stream (Shows dynamically when a broadcaster is live)
               Obx(() {
@@ -327,9 +334,14 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildDynamicLiveSection(HomeController controller) {
     return Obx(() {
-      if (controller.liveItems.isEmpty) return const SizedBox.shrink();
+      // If celebrity is already featured in CelebritySpotlightCard, show regular community stream here
+      final availableStreams = controller.celebrityLiveItems.isNotEmpty
+          ? controller.liveItems.where((s) => !s.isCelebrity).toList()
+          : controller.liveItems;
 
-      final liveShow = controller.liveItems.first;
+      if (availableStreams.isEmpty) return const SizedBox.shrink();
+
+      final liveShow = availableStreams.first;
       final String image = liveShow.image;
       final String title = liveShow.title;
       final String curator = liveShow.curator;

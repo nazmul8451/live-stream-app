@@ -20,6 +20,7 @@ class HomeController extends GetxController {
   final RxBool isLoading = false.obs;
 
   final RxList<LiveItemModel> liveItems = <LiveItemModel>[].obs;
+  final RxList<LiveItemModel> celebrityLiveItems = <LiveItemModel>[].obs;
 
   // Dynamic Products List
   final RxList<Map<String, dynamic>> products = <Map<String, dynamic>>[].obs;
@@ -675,13 +676,22 @@ class HomeController extends GetxController {
             ? body['data'] 
             : (body['streams'] is List ? body['streams'] : (body['result'] is List ? body['result'] : []));
 
-        final parsedShows = data.where((item) {
-          if (item is! Map) return false;
+        final List<LiveItemModel> celebs = [];
+        final List<LiveItemModel> regulars = [];
+
+        for (var item in data) {
+          if (item is! Map) continue;
           final status = (item['status'] ?? item['state'] ?? 'live').toString().toLowerCase();
-          return status == 'live' || status == 'active' || item['isLive'] == true;
-        }).map((item) {
+          final bool isLive = status == 'live' || status == 'active' || item['isLive'] == true;
+          if (!isLive) continue;
+
+          final seller = item['sellerId'] is Map ? item['sellerId'] : (item['seller'] is Map ? item['seller'] : null);
+          final bool isCelebrity = item['isCelebrity'] == true || 
+              (seller != null && (seller['isCelebrity'] == true || seller['isCelebrity'] == 'true'));
+
           final title = (item['title'] ?? "Live Show").toString();
-          final hostName = (item['curator'] ?? item['sellerId']?['fullName'] ?? item['seller']?['fullName'] ?? "Curator").toString();
+          final description = (item['description'] ?? "").toString();
+          final hostName = (item['curator'] ?? seller?['fullName'] ?? seller?['name'] ?? "Curator").toString();
           
           String imageUrl = "";
           String imagePath = (item['image'] ?? item['coverImage'] ?? "").toString();
@@ -701,7 +711,6 @@ class HomeController extends GetxController {
                 : "${ApiUrl.imageBaseUrl}${imagePath.startsWith('/') ? imagePath : '/$imagePath'}";
           }
 
-          final seller = item['sellerId'] is Map ? item['sellerId'] : item['seller'];
           String avatarUrl = "";
           if (seller is Map) {
             final avatarPath = (seller['profile'] ?? seller['profileImage'] ?? seller['image'] ?? seller['profileImageUrl'] ?? seller['avatar'] ?? "").toString();
@@ -712,18 +721,28 @@ class HomeController extends GetxController {
             }
           }
 
-          return LiveItemModel(
+          final model = LiveItemModel(
             title: title,
+            description: description,
             curator: hostName,
             viewers: "${item['viewersCount'] ?? item['viewers'] ?? '0'}",
             image: imageUrl,
             curatorAvatar: avatarUrl,
-            raw: item,
+            raw: Map<String, dynamic>.from(item),
+            isCelebrity: isCelebrity,
           );
-        }).toList();
-        
-        liveItems.assignAll(parsedShows);
-        Get.log("📺 [Home] Loaded ${liveItems.length} active live streams");
+
+          if (isCelebrity) {
+            celebs.add(model);
+          } else {
+            regulars.add(model);
+          }
+        }
+
+        celebrityLiveItems.assignAll(celebs);
+        // All active live streams ordered with celebrities first
+        liveItems.assignAll([...celebs, ...regulars]);
+        Get.log("📺 [Home] Loaded ${celebs.length} celebrity streams, ${regulars.length} regular streams");
       }
     } catch (e) {
       Get.log("Error fetching live streams on Home: $e");
@@ -1046,6 +1065,8 @@ class LiveItemModel {
   final String image;
   final String curatorAvatar;
   final Map<String, dynamic>? raw;
+  final bool isCelebrity;
+  final String description;
 
   LiveItemModel({
     required this.title,
@@ -1054,6 +1075,8 @@ class LiveItemModel {
     required this.image,
     this.curatorAvatar = "",
     this.raw,
+    this.isCelebrity = false,
+    this.description = "",
   });
 }
 

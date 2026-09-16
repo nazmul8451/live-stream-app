@@ -43,13 +43,13 @@ class _HomeLivePreviewWidgetState extends State<HomeLivePreviewWidget> {
 
   void _handleRouteChange(String currentRoute) {
     if (!mounted) return;
-    if (currentRoute != '/main') {
+    if (currentRoute != '/main' && currentRoute != AppRoute.main) {
       if (_engine != null) {
         debugPrint("📺 [HomePreview] Navigated away from home route ($currentRoute). Releasing engine.");
         _cleanupPreview();
       }
     } else {
-      if (_engine == null) {
+      if (_engine == null && mounted) {
         debugPrint("📺 [HomePreview] Returned to home route. Re-initializing engine.");
         _initPreviewAgora();
       }
@@ -58,10 +58,21 @@ class _HomeLivePreviewWidgetState extends State<HomeLivePreviewWidget> {
 
   Future<void> _initPreviewAgora() async {
     try {
+      final currentRoute = Get.currentRoute;
+      if (currentRoute != '/main' && currentRoute != AppRoute.main) {
+        debugPrint("📺 [HomePreview] Current route is $currentRoute, not /main. Skipping preview init.");
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
       if (Get.isRegistered<AgoraLiveController>()) {
         final agoraCtrl = Get.find<AgoraLiveController>();
-        if (agoraCtrl.isLive.value && agoraCtrl.channelName.value == widget.channelName) {
-          debugPrint("📺 [HomePreview] Stream active in AgoraLiveController for ${widget.channelName}. Skipping secondary engine.");
+        if (agoraCtrl.isLive.value) {
+          debugPrint("📺 [HomePreview] Active live session in AgoraLiveController. Skipping secondary engine.");
           if (mounted) {
             setState(() {
               _isLoading = false;
@@ -156,8 +167,10 @@ class _HomeLivePreviewWidgetState extends State<HomeLivePreviewWidget> {
   Future<void> _cleanupPreview() async {
     try {
       if (_engine != null) {
-        await _engine!.leaveChannel();
+        final eng = _engine!;
         _engine = null;
+        await eng.leaveChannel();
+        await eng.release();
         if (mounted) {
           setState(() {
             _remoteJoined = false;
@@ -195,48 +208,16 @@ class _HomeLivePreviewWidgetState extends State<HomeLivePreviewWidget> {
       );
     }
 
-    if (Get.isRegistered<AgoraLiveController>()) {
-      final agoraCtrl = Get.find<AgoraLiveController>();
-      if (agoraCtrl.isLive.value && agoraCtrl.channelName.value == widget.channelName && agoraCtrl.engine != null) {
-        if (agoraCtrl.isHost.value && agoraCtrl.isLocalVideoReady.value) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(32.r),
-            child: SizedBox.expand(
-              child: AgoraVideoView(
-                controller: VideoViewController(
-                  rtcEngine: agoraCtrl.engine!,
-                  canvas: const VideoCanvas(
-                    uid: 0,
-                    renderMode: RenderModeType.renderModeHidden,
-                    mirrorMode: VideoMirrorModeType.videoMirrorModeEnabled,
-                    sourceType: VideoSourceType.videoSourceCamera,
-                  ),
-                  useFlutterTexture: true,
-                  useAndroidSurfaceView: false,
-                ),
-              ),
-            ),
-          );
-        } else if (agoraCtrl.remoteJoined.value && agoraCtrl.remoteUid.value != -1) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(32.r),
-            child: SizedBox.expand(
-              child: AgoraVideoView(
-                controller: VideoViewController.remote(
-                  rtcEngine: agoraCtrl.engine!,
-                  canvas: VideoCanvas(
-                    uid: agoraCtrl.remoteUid.value,
-                    renderMode: RenderModeType.renderModeHidden,
-                  ),
-                  connection: RtcConnection(channelId: widget.channelName),
-                  useFlutterTexture: true,
-                  useAndroidSurfaceView: false,
-                ),
-              ),
-            ),
-          );
-        }
-      }
+    final currentRoute = Get.currentRoute;
+    final bool isInLiveRoom = currentRoute == AppRoute.viewerLive ||
+        currentRoute == AppRoute.hostLive ||
+        currentRoute.contains('viewer_live') ||
+        currentRoute.contains('host_live');
+
+    // If user is currently in the live room or away from /main, NEVER render an AgoraVideoView here.
+    // Doing so steals the native video texture and leaves ViewerLiveScreen pitch black.
+    if (isInLiveRoom || (currentRoute != '/main' && currentRoute != AppRoute.main)) {
+      return background;
     }
 
     if (_remoteJoined && _remoteUid != -1 && _engine != null) {

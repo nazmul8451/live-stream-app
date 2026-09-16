@@ -87,6 +87,7 @@ class AllLiveShowsScreen extends StatelessWidget {
                     show['viewers']!,
                     show['image']!,
                     show['hostAvatar'] ?? '',
+                    isCelebrity: show['isCelebrity'] == true,
                   ),
                 ),
               );
@@ -97,14 +98,26 @@ class AllLiveShowsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLiveCard(String title, String host, String viewers, String imgUrl, String hostAvatar) {
+  Widget _buildLiveCard(String title, String host, String viewers, String imgUrl, String hostAvatar, {bool isCelebrity = false}) {
     return Container(
       height: 320.h,
       width: double.infinity,
       decoration: BoxDecoration(
         color: const Color(0xFF11111A),
         borderRadius: BorderRadius.circular(32.r),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(
+          color: isCelebrity ? const Color(0xFFFFD700) : Colors.white.withOpacity(0.05),
+          width: isCelebrity ? 1.8 : 1.0,
+        ),
+        boxShadow: isCelebrity
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
       ),
       child: Column(
         children: [
@@ -141,6 +154,10 @@ class AllLiveShowsScreen extends StatelessWidget {
                     left: 20.w,
                     child: Row(
                       children: [
+                        if (isCelebrity) ...[
+                          _buildSmallBadge("👑 VIP", const Color(0xFFFFD700), textColor: const Color(0xFF1E1435)),
+                          SizedBox(width: 8.w),
+                        ],
                         _buildSmallBadge("LIVE", const Color(0xFFFF4D4D), showDot: true),
                         SizedBox(width: 8.w),
                         _buildSmallBadge(
@@ -248,7 +265,7 @@ class AllLiveShowsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSmallBadge(String text, Color color, {bool showDot = false, IconData? icon}) {
+  Widget _buildSmallBadge(String text, Color color, {bool showDot = false, IconData? icon, Color textColor = Colors.white}) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
       decoration: BoxDecoration(
@@ -259,17 +276,17 @@ class AllLiveShowsScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (showDot) ...[
-            Icon(Icons.circle, color: Colors.white, size: 6.sp),
+            Icon(Icons.circle, color: textColor, size: 6.sp),
             SizedBox(width: 6.w),
           ],
           if (icon != null) ...[
-            Icon(icon, color: Colors.white, size: 14.sp),
+            Icon(icon, color: textColor, size: 14.sp),
             SizedBox(width: 6.w),
           ],
           Text(
             text,
             style: TextStyle(
-              color: Colors.white,
+              color: textColor,
               fontSize: 10.sp,
               fontWeight: FontWeight.w900,
             ),

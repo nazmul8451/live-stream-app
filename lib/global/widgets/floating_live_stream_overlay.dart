@@ -401,7 +401,11 @@ class _FloatingLiveStreamOverlayState extends State<FloatingLiveStreamOverlay> w
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () {
               Get.back();
-              ctrl.endStream();
+              if (ctrl.isHost.value) {
+                ctrl.endStream();
+              } else {
+                ctrl.leaveStream();
+              }
             },
             child: Text(ctrl.isHost.value ? "End" : "Leave", style: const TextStyle(color: Colors.white)),
           ),

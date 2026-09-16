@@ -169,34 +169,35 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
               right: 0,
               child: SafeArea(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Close & Minimize buttons
+                          // Close & Minimize & Report buttons
                           Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               GestureDetector(
                                 onTap: () => ctrl.minimizeStream(),
                                 child: Container(
-                                  padding: EdgeInsets.all(7.r),
+                                  padding: EdgeInsets.all(6.r),
                                   decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                                  child: Icon(Icons.fullscreen_exit_rounded, color: Colors.white, size: 20.sp),
+                                  child: Icon(Icons.fullscreen_exit_rounded, color: Colors.white, size: 18.sp),
                                 ),
                               ),
-                              SizedBox(width: 8.w),
+                              SizedBox(width: 6.w),
                               GestureDetector(
                                 onTap: () => _showExitDialog(ctrl),
                                 child: Container(
-                                  padding: EdgeInsets.all(7.r),
+                                  padding: EdgeInsets.all(6.r),
                                   decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                                  child: Icon(Icons.close_rounded, color: Colors.white, size: 20.sp),
+                                  child: Icon(Icons.close_rounded, color: Colors.white, size: 18.sp),
                                 ),
                               ),
-                              SizedBox(width: 8.w),
+                              SizedBox(width: 6.w),
                               GestureDetector(
                                 onTap: () {
                                   final streamId = (widget.streamData['_id'] ?? widget.streamData['id'] ?? widget.streamData['streamId'] ?? '').toString();
@@ -209,97 +210,102 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                                   );
                                 },
                                 child: Container(
-                                  padding: EdgeInsets.all(7.r),
+                                  padding: EdgeInsets.all(6.r),
                                   decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
-                                  child: Icon(Icons.flag_outlined, color: Colors.white70, size: 20.sp),
+                                  child: Icon(Icons.flag_outlined, color: Colors.white70, size: 18.sp),
                                 ),
                               ),
                             ],
                           ),
-                           // LIVE pill & TIMER row
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.35),
-                                  borderRadius: BorderRadius.circular(20.r),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.wifi_tethering_rounded,
-                                      color: const Color(0xFFFF52C5),
-                                      size: 13.sp,
-                                    ),
-                                    SizedBox(width: 6.w),
-                                    Text(
-                                      "LIVE",
-                                      style: TextStyle(
-                                        color: const Color(0xFFFF52C5),
-                                        fontSize: 10.sp,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                    Text(
-                                      "   |   ",
-                                      style: TextStyle(
-                                        color: Colors.white24,
-                                        fontSize: 10.sp,
-                                      ),
-                                    ),
-                                    Obx(() => Text(
-                                      ctrl.viewersCount.value,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    )),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(width: 8.w),
-                              // TIMER badge
-                              Obx(() {
-                                if (!ctrl.auctionActive.value) return const SizedBox.shrink();
-                                final isLowTime = ctrl.bidTimer.value <= 10;
-                                final isSudden = ctrl.isSuddenDeath.value;
-                                return Container(
+                          // LIVE pill & TIMER row
+                          Flexible(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Container(
                                   padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
                                   decoration: BoxDecoration(
-                                    color: isSudden
-                                        ? const Color(0xFF7C3AED).withOpacity(0.8)
-                                        : (isLowTime ? Colors.redAccent.withOpacity(0.8) : const Color(0xFF8B9BFF).withOpacity(0.12)),
+                                    color: Colors.black.withOpacity(0.45),
                                     borderRadius: BorderRadius.circular(20.r),
-                                    border: Border.all(
-                                      color: isSudden
-                                          ? const Color(0xFFB07CFF)
-                                          : (isLowTime ? Colors.redAccent : const Color(0xFF8B9BFF).withOpacity(0.4)),
-                                      width: 1,
-                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(isSudden ? Icons.bolt_rounded : Icons.timer_outlined, color: Colors.white, size: 12.sp),
+                                      Icon(
+                                        Icons.wifi_tethering_rounded,
+                                        color: const Color(0xFFFF52C5),
+                                        size: 12.sp,
+                                      ),
                                       SizedBox(width: 4.w),
                                       Text(
-                                        "00:${ctrl.bidTimer.value.toString().padLeft(2, '0')}${isSudden ? ' ⚡' : ''}",
-                                        style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w900),
+                                        "LIVE",
+                                        style: TextStyle(
+                                          color: const Color(0xFFFF52C5),
+                                          fontSize: 9.5.sp,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.5,
+                                        ),
                                       ),
+                                      Text(
+                                        " | ",
+                                        style: TextStyle(
+                                          color: Colors.white24,
+                                          fontSize: 9.5.sp,
+                                        ),
+                                      ),
+                                      Obx(() => Text(
+                                        ctrl.viewersCount.value,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11.5.sp,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      )),
                                     ],
                                   ),
-                                );
-                              }),
-                            ],
+                                ),
+                                // TIMER badge
+                                Obx(() {
+                                  if (!ctrl.auctionActive.value) return const SizedBox.shrink();
+                                  final isLowTime = ctrl.bidTimer.value <= 10;
+                                  final isSudden = ctrl.isSuddenDeath.value;
+                                  return Padding(
+                                    padding: EdgeInsets.only(left: 6.w),
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
+                                      decoration: BoxDecoration(
+                                        color: isSudden
+                                            ? const Color(0xFF7C3AED).withOpacity(0.8)
+                                            : (isLowTime ? Colors.redAccent.withOpacity(0.8) : const Color(0xFF8B9BFF).withOpacity(0.12)),
+                                        borderRadius: BorderRadius.circular(20.r),
+                                        border: Border.all(
+                                          color: isSudden
+                                              ? const Color(0xFFB07CFF)
+                                              : (isLowTime ? Colors.redAccent : const Color(0xFF8B9BFF).withOpacity(0.4)),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(isSudden ? Icons.bolt_rounded : Icons.timer_outlined, color: Colors.white, size: 11.sp),
+                                          SizedBox(width: 3.w),
+                                          Text(
+                                            "00:${ctrl.bidTimer.value.toString().padLeft(2, '0')}${isSudden ? ' ⚡' : ''}",
+                                            style: TextStyle(color: Colors.white, fontSize: 10.5.sp, fontWeight: FontWeight.w900),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 12.h),
+                      SizedBox(height: 10.h),
                       _buildHostProfileCard(),
                     ],
                   ),
@@ -848,7 +854,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () {
                           ctrl.showWinnerOverlay.value = false;
-                          ctrl.endStream();
+                          ctrl.leaveStream();
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.redAccent,
@@ -899,7 +905,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () {
                           ctrl.showWinnerOverlay.value = false;
-                          ctrl.endStream();
+                          ctrl.leaveStream();
                         },
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.redAccent,
@@ -1361,6 +1367,8 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
   Widget _buildHostProfileCard() {
     final rawSeller = widget.streamData['sellerId'];
     final seller = rawSeller is Map ? rawSeller : {};
+    final bool isCelebrity = widget.streamData['isCelebrity'] == true ||
+        (seller is Map && (seller['isCelebrity'] == true || seller['isCelebrity'] == 'true'));
     final username = "@${seller['username'] ?? seller['fullName'] ?? seller['name'] ?? 'Host'}";
     final rating = seller['rating']?.toString() ?? "4.9";
 
@@ -1384,74 +1392,121 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
           });
         }
       },
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-        decoration: BoxDecoration(
-          color: Colors.black38,
-          borderRadius: BorderRadius.circular(28.r),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36.r,
-              height: 36.r,
-              decoration: const BoxDecoration(
-                color: Colors.white12,
-                shape: BoxShape.circle,
-              ),
-              child: avatarUrl.isNotEmpty
-                  ? ClipOval(
-                      child: Image.network(
-                        avatarUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Icon(Icons.person, color: Colors.white54, size: 20.sp),
-                      ),
-                    )
-                  : Icon(Icons.person, color: Colors.white54, size: 20.sp),
-            ),
-            SizedBox(width: 8.w),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  username,
-                  style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w900),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 0.88.sw),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+          decoration: BoxDecoration(
+            color: Colors.black38,
+            borderRadius: BorderRadius.circular(28.r),
+            border: isCelebrity
+                ? Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.6), width: 1.2)
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 34.r,
+                height: 34.r,
+                decoration: BoxDecoration(
+                  color: Colors.white12,
+                  shape: BoxShape.circle,
+                  border: isCelebrity
+                      ? Border.all(color: const Color(0xFFFFD700), width: 1.8.w)
+                      : null,
                 ),
-                SizedBox(height: 2.h),
-                Row(
+                child: avatarUrl.isNotEmpty
+                    ? ClipOval(
+                        child: Image.network(
+                          avatarUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Icon(Icons.person, color: Colors.white54, size: 18.sp),
+                        ),
+                      )
+                    : Icon(Icons.person, color: Colors.white54, size: 18.sp),
+              ),
+              SizedBox(width: 8.w),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.star_rounded, color: const Color(0xFFFF41FF), size: 10.sp),
-                    SizedBox(width: 2.w),
-                    Text(
-                      rating,
-                      style: TextStyle(color: Colors.white70, fontSize: 9.sp, fontWeight: FontWeight.w700),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            username,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Colors.white, fontSize: 11.5.sp, fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                        if (isCelebrity) ...[
+                          SizedBox(width: 4.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 4.5.w, vertical: 1.h),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
+                              ),
+                              borderRadius: BorderRadius.circular(6.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text("👑", style: TextStyle(fontSize: 8.sp)),
+                                SizedBox(width: 2.w),
+                                Text(
+                                  "VIP",
+                                  style: TextStyle(
+                                    color: const Color(0xFF1E1435),
+                                    fontSize: 7.5.sp,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    SizedBox(height: 2.h),
+                    Row(
+                      children: [
+                        Icon(Icons.star_rounded, color: const Color(0xFFFF41FF), size: 10.sp),
+                        SizedBox(width: 2.w),
+                        Text(
+                          rating,
+                          style: TextStyle(color: Colors.white70, fontSize: 9.sp, fontWeight: FontWeight.w700),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-            SizedBox(width: 16.w),
-            Obx(() => GestureDetector(
-              onTap: () => ctrl.isFollowingHost.toggle(),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                decoration: BoxDecoration(
-                  color: ctrl.isFollowingHost.value ? Colors.white12 : const Color(0xFF8B9BFF),
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-                child: Text(
-                  ctrl.isFollowingHost.value ? "FOLLOWED" : "FOLLOW",
-                  style: TextStyle(
-                    color: ctrl.isFollowingHost.value ? Colors.white : Colors.black,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w900,
+              ),
+              SizedBox(width: 8.w),
+              Obx(() => GestureDetector(
+                onTap: () => ctrl.isFollowingHost.toggle(),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                  decoration: BoxDecoration(
+                    color: ctrl.isFollowingHost.value ? Colors.white12 : const Color(0xFF8B9BFF),
+                    borderRadius: BorderRadius.circular(16.r),
+                  ),
+                  child: Text(
+                    ctrl.isFollowingHost.value ? "FOLLOWED" : "FOLLOW",
+                    style: TextStyle(
+                      color: ctrl.isFollowingHost.value ? Colors.white70 : const Color(0xFF0F0B1E),
+                      fontSize: 9.5.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
-            )),
-          ],
+              )),
+            ],
+          ),
         ),
       ),
     );
@@ -2495,7 +2550,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
             ),
             onPressed: () {
               Get.back();
-              ctrl.endStream();
+              ctrl.leaveStream();
             },
             child: const Text("Leave", style: TextStyle(color: Colors.white)),
           ),

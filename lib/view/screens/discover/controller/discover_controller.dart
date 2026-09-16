@@ -107,6 +107,9 @@ class DiscoverController extends GetxController {
             }
           }
 
+          final bool isCelebrity = item['isCelebrity'] == true ||
+              (seller is Map && (seller['isCelebrity'] == true || seller['isCelebrity'] == 'true'));
+
           return <String, dynamic>{
             "title": title,
             "host": "Hosted by $hostName",
@@ -114,8 +117,17 @@ class DiscoverController extends GetxController {
             "image": imageUrl,
             "hostAvatar": hostAvatarUrl,
             "raw": item,
+            "isCelebrity": isCelebrity,
           };
         }).toList();
+
+        // Sort celebrity shows at the very top
+        parsedShows.sort((a, b) {
+          final aCeleb = a['isCelebrity'] == true ? 1 : 0;
+          final bCeleb = b['isCelebrity'] == true ? 1 : 0;
+          return bCeleb.compareTo(aCeleb);
+        });
+
         liveShows.assignAll(parsedShows);
 
         final List<Map<String, dynamic>> parsedFeatured = [];

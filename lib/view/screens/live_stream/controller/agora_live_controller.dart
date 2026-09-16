@@ -789,7 +789,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       duration: const Duration(seconds: 4),
     );
     if (!isHost.value) {
-      endStream();
+      leaveStream();
     }
   }
 
@@ -2387,12 +2387,76 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   // ─────────────────────────────────────────────
   //  END STREAM
   // ─────────────────────────────────────────────
+  // ─────────────────────────────────────────────
+  //  LEAVE STREAM (Viewer)
+  // ─────────────────────────────────────────────
+  Future<void> leaveStream() async {
+    isEnding.value = true;
+    isLive.value = false;
+    isMinimized.value = false;
+    isHost.value = false;
+    isLocalVideoReady.value = false;
+    remoteJoined.value = false;
+    remoteUid.value = -1;
+    auctionActive.value = false;
+    streamId.value = "";
+    channelName.value = "";
+    auctionItemId.value = "";
+    currentProductId.value = "";
+    currentProductTitle.value = "";
+    currentProductImage.value = "";
+
+    LiveStreamServiceBridge.stopLiveService();
+    _countdownTimer?.cancel();
+    _cleanupSocket();
+
+    // Release engine asynchronously
+    final activeEngine = engine;
+    engine = null;
+    if (activeEngine != null) {
+      Future.microtask(() async {
+        try {
+          await activeEngine.stopPreview().catchError((_) => null);
+          await activeEngine.leaveChannel().catchError((_) => null);
+          await activeEngine.release().catchError((_) => null);
+        } catch (e) {
+          debugPrint("⚠️ Background engine release info: $e");
+        }
+      });
+    }
+
+    try {
+      if (Get.isRegistered<HomeController>()) {
+        Get.find<HomeController>().fetchLiveStreams();
+      }
+    } catch (_) {}
+
+    // Gracefully navigate back to previous screen or /main
+    if (Get.currentRoute == AppRoute.viewerLive || Get.currentRoute == '/viewer_live') {
+      if (Navigator.canPop(Get.context!)) {
+        Get.back();
+      } else {
+        Get.offNamed(AppRoute.main);
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  //  END STREAM (Host)
+  // ─────────────────────────────────────────────
   Future<void> endStream() async {
+    final wasHost = isHost.value;
+    
+    // If not host, this is a viewer exiting — delegate to leaveStream() to prevent calling host-only APIs!
+    if (!wasHost) {
+      await leaveStream();
+      return;
+    }
+
     isEnding.value = true;
     isLive.value = false;
     isMinimized.value = false;
 
-    final wasHost = isHost.value;
     String activeStreamId = streamId.value;
     if (activeStreamId.isEmpty) {
       activeStreamId = (activeStreamData['_id'] ?? activeStreamData['id'] ?? activeStreamData['streamId'] ?? '').toString();
