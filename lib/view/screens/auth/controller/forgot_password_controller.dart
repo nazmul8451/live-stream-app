@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/app_route.dart';
+import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
+import 'otp_controller.dart';
 
 class ForgotPasswordController extends GetxController {
   final emailController = TextEditingController();
@@ -11,7 +13,7 @@ class ForgotPasswordController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
 
   Future<void> onForgotPassword() async {
-    final email = emailController.text.trim();
+    final email = emailController.text.trim().toLowerCase();
 
     if (email.isEmpty) {
       Get.snackbar(
@@ -34,6 +36,13 @@ class ForgotPasswordController extends GetxController {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        await SharePrefsHelper.setString('pending_otp_email', email);
+        await SharePrefsHelper.setBool('pending_otp_from_forgot_password', true);
+        if (Get.isRegistered<OtpController>()) {
+          Get.find<OtpController>().email.value = email;
+          Get.find<OtpController>().fromForgotPassword.value = true;
+        }
+
         Get.snackbar(
           "Success",
           "Password reset request sent successfully!",

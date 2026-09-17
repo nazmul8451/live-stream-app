@@ -27,7 +27,10 @@ class DiscoverScreen extends GetView<DiscoverController> {
                 backgroundColor: const Color(0xFF11111A),
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (ScrollNotification scrollInfo) {
-                    if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 300) {
+                    if (scrollInfo is ScrollUpdateNotification &&
+                        scrollInfo.metrics.maxScrollExtent > 0 &&
+                        scrollInfo.metrics.pixels > 50 &&
+                        scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 150) {
                       controller.loadMoreTradeItems();
                     }
                     return false;

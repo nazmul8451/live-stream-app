@@ -33,7 +33,10 @@ class HomeScreen extends StatelessWidget {
           },
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
-              if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 300) {
+              if (scrollInfo is ScrollUpdateNotification &&
+                  scrollInfo.metrics.maxScrollExtent > 0 &&
+                  scrollInfo.metrics.pixels > 50 &&
+                  scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 150) {
                 controller.loadMoreProducts();
               }
               return false;

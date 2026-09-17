@@ -9,7 +9,10 @@ class OtpScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(OtpController());
+    final controller = Get.isRegistered<OtpController>()
+        ? Get.find<OtpController>()
+        : Get.put(OtpController());
+    controller.initFromArguments();
     
     final defaultPinTheme = PinTheme(
       width: 50.w,
@@ -63,13 +66,15 @@ class OtpScreen extends StatelessWidget {
               ),
             ),
             SizedBox(height: 12.h),
-            Text(
-              controller.email.isNotEmpty
-                  ? "Please enter the 6-digit code sent to\n${controller.email}."
-                  : "Please enter the 6-digit code sent to your email address.",
-              style: TextStyle(
-                color: Colors.white38,
-                fontSize: 14.sp,
+            Obx(
+              () => Text(
+                controller.email.value.isNotEmpty
+                    ? "Please enter the 6-digit code sent to\n${controller.email.value}."
+                    : "Please enter the 6-digit code sent to your email address.",
+                style: TextStyle(
+                  color: Colors.white38,
+                  fontSize: 14.sp,
+                ),
               ),
             ),
             SizedBox(height: 40.h),

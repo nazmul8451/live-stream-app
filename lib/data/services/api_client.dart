@@ -15,13 +15,22 @@ import '../../global/controllers/safety_controller.dart';
 class ApiClient {
   final String baseUrl = ApiUrl.baseUrl;
 
+  bool isPublicAuthRoute(String uri) {
+    return uri.contains('/auth/login') ||
+        uri.contains('/auth/signup') ||
+        uri.contains('/auth/verify-account') ||
+        uri.contains('/auth/forget-password') ||
+        uri.contains('/auth/resend-otp');
+  }
+
   // Base Headers
-  Map<String, String> getHeader() {
+  Map<String, String> getHeader({String? uri}) {
     final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
+    final bool isPublicAuth = uri != null && isPublicAuthRoute(uri);
     return {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+      if (token.isNotEmpty && !isPublicAuth) 'Authorization': 'Bearer $token',
     };
   }
 
@@ -103,7 +112,7 @@ class ApiClient {
     Map<String, String>? headers,
   }) async {
     final url = Uri.parse('$baseUrl$uri');
-    final Map<String, String> requestHeaders = headers ?? getHeader();
+    final Map<String, String> requestHeaders = headers ?? getHeader(uri: uri);
     final String requestBody = body is Map || body is List
         ? jsonEncode(body)
         : body.toString();
@@ -195,7 +204,7 @@ class ApiClient {
     Map<String, String>? headers,
   }) async {
     final url = Uri.parse('$baseUrl$uri');
-    final Map<String, String> requestHeaders = headers ?? getHeader();
+    final Map<String, String> requestHeaders = headers ?? getHeader(uri: uri);
     final String requestBody = body is Map || body is List
         ? jsonEncode(body)
         : body.toString();
@@ -227,7 +236,7 @@ class ApiClient {
     Map<String, String>? headers,
   }) async {
     final url = Uri.parse('$baseUrl$uri');
-    final Map<String, String> requestHeaders = headers ?? getHeader();
+    final Map<String, String> requestHeaders = headers ?? getHeader(uri: uri);
     requestHeaders.remove('Content-Type');
 
     _logRequest(
@@ -282,7 +291,7 @@ class ApiClient {
     Map<String, String>? headers,
   }) async {
     final url = Uri.parse('$baseUrl$uri');
-    final Map<String, String> requestHeaders = headers ?? getHeader();
+    final Map<String, String> requestHeaders = headers ?? getHeader(uri: uri);
     final String? requestBody = body != null
         ? (body is Map || body is List ? jsonEncode(body) : body.toString())
         : null;
@@ -322,7 +331,7 @@ class ApiClient {
     Map<String, String>? headers,
   }) async {
     final url = Uri.parse('$baseUrl$uri');
-    final Map<String, String> requestHeaders = headers ?? getHeader();
+    final Map<String, String> requestHeaders = headers ?? getHeader(uri: uri);
 
     _logRequest('GET', url, requestHeaders);
 
@@ -344,8 +353,10 @@ class ApiClient {
     http.Response response,
     Future<http.Response> Function() retryAction,
   ) async {
-    // If in Guest mode, do not trigger forced logout or refresh token logic
-    if (SharePrefsHelper.isGuest || SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isEmpty) {
+    // If public auth route, or in Guest mode, do not trigger forced logout or refresh token logic
+    if (isPublicAuthRoute(uri) ||
+        SharePrefsHelper.isGuest ||
+        SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isEmpty) {
       return response;
     }
     // Check if session/token is expired or account is invalid

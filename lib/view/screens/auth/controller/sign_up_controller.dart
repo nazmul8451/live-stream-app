@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/app_route.dart';
+import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/deep_link_service.dart';
+import 'otp_controller.dart';
 
 class SignUpController extends GetxController {
   late TextEditingController firstNameController;
@@ -117,7 +119,7 @@ class SignUpController extends GetxController {
   Future<void> onSignUp() async {
     final firstName = firstNameController.text.trim();
     final lastName = lastNameController.text.trim();
-    final email = emailController.text.trim();
+    final email = emailController.text.trim().toLowerCase();
     final password = passwordController.text.trim();
     final confirmPassword = confirmPasswordController.text.trim();
 
@@ -168,6 +170,12 @@ class SignUpController extends GetxController {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        await SharePrefsHelper.setString('pending_otp_email', email);
+        await SharePrefsHelper.setBool('pending_otp_from_forgot_password', false);
+        if (Get.isRegistered<OtpController>()) {
+          Get.find<OtpController>().email.value = email;
+          Get.find<OtpController>().fromForgotPassword.value = false;
+        }
         Get.snackbar(
           "Success",
           "Registration successful! OTP sent to your email.",

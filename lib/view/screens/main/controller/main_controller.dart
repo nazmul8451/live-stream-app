@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/socket_service.dart';
-import '../../discover/screen/discover_screen.dart';
 import '../../bidshwap/screen/bidshwap_screen.dart';
 import '../../home/screen/home_screen.dart';
 import '../../messages/screen/messages_screen.dart';
@@ -39,8 +39,11 @@ class MainController extends GetxController {
 
   void _startBadgeSyncTimer() {
     _badgeSyncTimer?.cancel();
-    // Sync unread badge every 6 seconds as a robust background fallback
-    _badgeSyncTimer = Timer.periodic(const Duration(seconds: 6), (_) {
+    final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
+    if (token.isEmpty || SharePrefsHelper.isGuest) return;
+
+    // Sync unread badge every 60 seconds as a light fallback (socket handles real-time messages)
+    _badgeSyncTimer = Timer.periodic(const Duration(seconds: 60), (_) {
       fetchUnreadMessageCount();
     });
   }
@@ -55,6 +58,11 @@ class MainController extends GetxController {
 
   Future<void> fetchUnreadMessageCount() async {
     try {
+      final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
+      if (token.isEmpty || SharePrefsHelper.isGuest) {
+        unreadMessageCount.value = 0;
+        return;
+      }
       if (!Get.isRegistered<ApiClient>()) return;
       final client = Get.find<ApiClient>();
       final response = await client.getData(ApiUrl.chat);
