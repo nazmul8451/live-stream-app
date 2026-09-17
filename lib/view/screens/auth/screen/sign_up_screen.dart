@@ -14,6 +14,7 @@ class SignUpScreen extends StatelessWidget {
     final controller = Get.isRegistered<SignUpController>()
         ? Get.find<SignUpController>()
         : Get.put(SignUpController());
+    controller.ensureControllers();
     return Scaffold(
       backgroundColor: const Color(0xFF0F0B1E),
       body: SafeArea(

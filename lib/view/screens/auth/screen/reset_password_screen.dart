@@ -9,6 +9,7 @@ class ResetPasswordScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(ResetPasswordController());
+    controller.ensureControllers();
     return Scaffold(
       backgroundColor: const Color(0xFF0F0B1E),
       appBar: AppBar(

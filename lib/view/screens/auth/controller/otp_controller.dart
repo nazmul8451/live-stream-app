@@ -8,20 +8,46 @@ import '../../../../data/services/api_url.dart';
 import '../../../../data/services/push_notification_service.dart';
 
 class OtpController extends GetxController {
-  final pinController = TextEditingController();
-  final focusNode = FocusNode();
+  TextEditingController pinController = TextEditingController();
+  FocusNode focusNode = FocusNode();
+
+  void ensureControllers() {
+    if (_isDisposed(pinController)) {
+      String oldText = '';
+      try {
+        oldText = pinController.text;
+      } catch (_) {}
+      pinController = TextEditingController(text: oldText);
+    }
+    if (_isDisposed(focusNode)) {
+      focusNode = FocusNode();
+    }
+  }
+
+  bool _isDisposed(ChangeNotifier c) {
+    try {
+      void listener() {}
+      c.addListener(listener);
+      c.removeListener(listener);
+      return false;
+    } catch (_) {
+      return true;
+    }
+  }
 
   final RxInt timerSeconds = 60.obs;
   bool _isTimerRunning = false;
 
   final RxString email = "".obs;
   final RxBool fromForgotPassword = false.obs;
+  final RxBool fromLogin = false.obs;
   final RxBool isLoading = false.obs;
   final ApiClient _apiClient = Get.find<ApiClient>();
 
   @override
   void onInit() {
     super.onInit();
+    ensureControllers();
     initFromArguments();
     startTimer();
   }
@@ -31,6 +57,7 @@ class OtpController extends GetxController {
     if (args is Map) {
       email.value = (args['email'] ?? "").toString().trim().toLowerCase();
       fromForgotPassword.value = args['fromForgotPassword'] == true;
+      fromLogin.value = args['fromLogin'] == true;
     } else if (args is String && args.trim().isNotEmpty) {
       email.value = args.trim().toLowerCase();
     }
@@ -45,6 +72,9 @@ class OtpController extends GetxController {
 
     if (SharePrefsHelper.getBool('pending_otp_from_forgot_password')) {
       fromForgotPassword.value = true;
+    }
+    if (SharePrefsHelper.getBool('pending_otp_from_login')) {
+      fromLogin.value = true;
     }
   }
 
@@ -130,6 +160,7 @@ class OtpController extends GetxController {
         // Clean up pending verification state
         await SharePrefsHelper.remove('pending_otp_email');
         await SharePrefsHelper.remove('pending_otp_from_forgot_password');
+        await SharePrefsHelper.remove('pending_otp_from_login');
 
         Get.snackbar(
           "Success",
@@ -143,6 +174,16 @@ class OtpController extends GetxController {
             'token': accessToken ?? '',
             'email': targetEmail,
           });
+        } else if (fromLogin.value) {
+          // If came from unverified login attempt, take user straight to login screen
+          Get.offAllNamed(AppRoute.login);
+          Get.snackbar(
+            "Account Verified 🎉",
+            "Your account has been verified! Please login with your password.",
+            backgroundColor: Colors.green.withOpacity(0.8),
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
         } else {
           if (accessToken != null && accessToken.isNotEmpty) {
             Get.offAllNamed(AppRoute.category);
@@ -150,7 +191,7 @@ class OtpController extends GetxController {
             // If backend does not issue an access token upon verification, redirect to login
             Get.offAllNamed(AppRoute.login);
             Get.snackbar(
-              "Account Verified",
+              "Account Verified 🎉",
               "Your account has been verified. Please log in with your password.",
               backgroundColor: Colors.green.withOpacity(0.8),
               colorText: Colors.white,
@@ -259,8 +300,6 @@ class OtpController extends GetxController {
 
   @override
   void onClose() {
-    pinController.dispose();
-    focusNode.dispose();
     super.onClose();
   }
 }

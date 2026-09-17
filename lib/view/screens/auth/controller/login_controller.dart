@@ -8,16 +8,44 @@ import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 
 import '../../../../data/services/push_notification_service.dart';
+import 'otp_controller.dart';
 
 class LoginController extends GetxController {
-  late TextEditingController emailController;
-  late TextEditingController passwordController;
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
 
   @override
   void onInit() {
     super.onInit();
-    emailController = TextEditingController();
-    passwordController = TextEditingController();
+    ensureControllers();
+  }
+
+  void ensureControllers() {
+    if (_isDisposed(emailController)) {
+      String oldText = '';
+      try {
+        oldText = emailController.text;
+      } catch (_) {}
+      emailController = TextEditingController(text: oldText);
+    }
+    if (_isDisposed(passwordController)) {
+      String oldText = '';
+      try {
+        oldText = passwordController.text;
+      } catch (_) {}
+      passwordController = TextEditingController(text: oldText);
+    }
+  }
+
+  bool _isDisposed(ChangeNotifier c) {
+    try {
+      void listener() {}
+      c.addListener(listener);
+      c.removeListener(listener);
+      return false;
+    } catch (_) {
+      return true;
+    }
   }
 
   final RxBool isLoading = false.obs;
@@ -110,14 +138,68 @@ class LoginController extends GetxController {
         Get.offAllNamed(AppRoute.main);
       } else {
         String errorMessage = "Login failed. Please try again.";
+        bool isUnverified = response.statusCode == 407;
         try {
           final data = jsonDecode(response.body);
-          if (data['message'] != null) {
-            errorMessage = data['message'];
+          if (data['message'] != null && data['message'].toString().isNotEmpty) {
+            errorMessage = data['message'].toString();
           } else if (data['error'] != null) {
-            errorMessage = data['error'];
+            errorMessage = data['error'].toString();
+          }
+          final lower = errorMessage.toLowerCase();
+          if (lower.contains("verify") || lower.contains("otp") || lower.contains("unverified")) {
+            isUnverified = true;
           }
         } catch (_) {}
+
+        if (isUnverified) {
+          String targetEmail = email.trim().toLowerCase();
+          try {
+            final data = jsonDecode(response.body);
+            if (data is Map) {
+              if (data['data'] is Map && data['data']['email'] != null) {
+                targetEmail = data['data']['email'].toString().trim().toLowerCase();
+              } else if (data['email'] != null) {
+                targetEmail = data['email'].toString().trim().toLowerCase();
+              }
+            }
+          } catch (_) {}
+
+          await SharePrefsHelper.setString('pending_otp_email', targetEmail);
+          await SharePrefsHelper.setBool('pending_otp_from_forgot_password', false);
+          await SharePrefsHelper.setBool('pending_otp_from_login', true);
+
+          // Automatically trigger resend-otp so the email is dispatched immediately
+          try {
+            await _apiClient.postData(ApiUrl.resendOtp, {
+              "email": targetEmail,
+              "authType": "createAccount",
+            });
+          } catch (e) {
+            Get.log("⚠️ [Login] Auto-resend OTP error: $e");
+          }
+
+          if (Get.isRegistered<OtpController>()) {
+            Get.find<OtpController>().email.value = targetEmail;
+            Get.find<OtpController>().fromForgotPassword.value = false;
+            Get.find<OtpController>().fromLogin.value = true;
+          }
+
+          Get.snackbar(
+            "Account Verification Required",
+            errorMessage,
+            backgroundColor: const Color(0xFF8B9BFF),
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
+
+          Get.toNamed(AppRoute.otp, arguments: {
+            'email': targetEmail,
+            'fromLogin': true,
+            'fromForgotPassword': false,
+          });
+          return;
+        }
 
         Get.snackbar(
           "Error",
@@ -148,12 +230,5 @@ class LoginController extends GetxController {
 
   void onForgotPassword() {
     Get.toNamed(AppRoute.forgotPassword);
-  }
-
-  @override
-  void onClose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.onClose();
   }
 }

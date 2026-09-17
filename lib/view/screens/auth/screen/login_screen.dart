@@ -4,12 +4,15 @@ import 'package:get/get.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../controller/login_controller.dart';
 
-class LoginScreen extends GetView<LoginController> {
+class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    Get.put(LoginController());
+    final controller = Get.isRegistered<LoginController>()
+        ? Get.find<LoginController>()
+        : Get.put(LoginController());
+    controller.ensureControllers();
     return CustomBackground(
       child: Center(
         child: SingleChildScrollView(

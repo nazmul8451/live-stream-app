@@ -13,6 +13,7 @@ class OtpScreen extends StatelessWidget {
         ? Get.find<OtpController>()
         : Get.put(OtpController());
     controller.initFromArguments();
+    controller.ensureControllers();
     
     final defaultPinTheme = PinTheme(
       width: 50.w,

@@ -10,12 +10,12 @@ import '../../../../data/services/deep_link_service.dart';
 import 'otp_controller.dart';
 
 class SignUpController extends GetxController {
-  late TextEditingController firstNameController;
-  late TextEditingController lastNameController;
-  late TextEditingController emailController;
-  late TextEditingController passwordController;
-  late TextEditingController confirmPasswordController;
-  late TextEditingController promoCodeController;
+  TextEditingController firstNameController = TextEditingController();
+  TextEditingController lastNameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  TextEditingController confirmPasswordController = TextEditingController();
+  TextEditingController promoCodeController = TextEditingController();
 
   final RxBool isCheckingPromo = false.obs;
   final RxBool isPromoValid = false.obs;
@@ -25,12 +25,7 @@ class SignUpController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    firstNameController = TextEditingController();
-    lastNameController = TextEditingController();
-    emailController = TextEditingController();
-    passwordController = TextEditingController();
-    confirmPasswordController = TextEditingController();
-    promoCodeController = TextEditingController();
+    ensureControllers();
 
     // Check for deep link / argument promoCode
     String initialPromo = "";
@@ -44,6 +39,50 @@ class SignUpController extends GetxController {
     if (initialPromo.isNotEmpty) {
       promoCodeController.text = initialPromo;
       validatePromo(initialPromo);
+    }
+  }
+
+  void ensureControllers() {
+    if (_isDisposed(firstNameController)) {
+      String t = '';
+      try { t = firstNameController.text; } catch (_) {}
+      firstNameController = TextEditingController(text: t);
+    }
+    if (_isDisposed(lastNameController)) {
+      String t = '';
+      try { t = lastNameController.text; } catch (_) {}
+      lastNameController = TextEditingController(text: t);
+    }
+    if (_isDisposed(emailController)) {
+      String t = '';
+      try { t = emailController.text; } catch (_) {}
+      emailController = TextEditingController(text: t);
+    }
+    if (_isDisposed(passwordController)) {
+      String t = '';
+      try { t = passwordController.text; } catch (_) {}
+      passwordController = TextEditingController(text: t);
+    }
+    if (_isDisposed(confirmPasswordController)) {
+      String t = '';
+      try { t = confirmPasswordController.text; } catch (_) {}
+      confirmPasswordController = TextEditingController(text: t);
+    }
+    if (_isDisposed(promoCodeController)) {
+      String t = '';
+      try { t = promoCodeController.text; } catch (_) {}
+      promoCodeController = TextEditingController(text: t);
+    }
+  }
+
+  bool _isDisposed(ChangeNotifier c) {
+    try {
+      void listener() {}
+      c.addListener(listener);
+      c.removeListener(listener);
+      return false;
+    } catch (_) {
+      return true;
     }
   }
 
@@ -172,9 +211,22 @@ class SignUpController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         await SharePrefsHelper.setString('pending_otp_email', email);
         await SharePrefsHelper.setBool('pending_otp_from_forgot_password', false);
+        await SharePrefsHelper.setBool('pending_otp_from_login', false);
+
+        // Immediately dispatch OTP email via resend-otp API
+        try {
+          await _apiClient.postData(ApiUrl.resendOtp, {
+            "email": email,
+            "authType": "createAccount",
+          });
+        } catch (e) {
+          Get.log("⚠️ [SignUp] Auto-resend OTP error: $e");
+        }
+
         if (Get.isRegistered<OtpController>()) {
           Get.find<OtpController>().email.value = email;
           Get.find<OtpController>().fromForgotPassword.value = false;
+          Get.find<OtpController>().fromLogin.value = false;
         }
         Get.snackbar(
           "Success",
@@ -182,7 +234,11 @@ class SignUpController extends GetxController {
           backgroundColor: Colors.green.withOpacity(0.8),
           colorText: Colors.white,
         );
-        Get.toNamed(AppRoute.otp, arguments: email);
+        Get.toNamed(AppRoute.otp, arguments: {
+          'email': email,
+          'fromLogin': false,
+          'fromForgotPassword': false,
+        });
       } else {
         String errorMessage = "Registration failed. Please try again.";
         try {
@@ -215,16 +271,5 @@ class SignUpController extends GetxController {
 
   void onLogin() {
     Get.back();
-  }
-
-  @override
-  void onClose() {
-    firstNameController.dispose();
-    lastNameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
-    promoCodeController.dispose();
-    super.onClose();
   }
 }

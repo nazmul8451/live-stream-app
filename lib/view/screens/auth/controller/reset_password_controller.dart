@@ -7,15 +7,39 @@ import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 
 class ResetPasswordController extends GetxController {
-  late TextEditingController passwordController;
-  late TextEditingController confirmPasswordController;
+  TextEditingController passwordController = TextEditingController();
+  TextEditingController confirmPasswordController = TextEditingController();
 
   @override
   void onInit() {
     super.onInit();
-    passwordController = TextEditingController();
-    confirmPasswordController = TextEditingController();
+    ensureControllers();
   }
+
+  void ensureControllers() {
+    if (_isDisposed(passwordController)) {
+      String t = '';
+      try { t = passwordController.text; } catch (_) {}
+      passwordController = TextEditingController(text: t);
+    }
+    if (_isDisposed(confirmPasswordController)) {
+      String t = '';
+      try { t = confirmPasswordController.text; } catch (_) {}
+      confirmPasswordController = TextEditingController(text: t);
+    }
+  }
+
+  bool _isDisposed(ChangeNotifier c) {
+    try {
+      void listener() {}
+      c.addListener(listener);
+      c.removeListener(listener);
+      return false;
+    } catch (_) {
+      return true;
+    }
+  }
+
   final RxBool isLoading = false.obs;
   final ApiClient _apiClient = Get.find<ApiClient>();
 
@@ -110,12 +134,5 @@ class ResetPasswordController extends GetxController {
     } finally {
       isLoading.value = false;
     }
-  }
-
-  @override
-  void onClose() {
-    passwordController.dispose();
-    confirmPasswordController.dispose();
-    super.onClose();
   }
 }

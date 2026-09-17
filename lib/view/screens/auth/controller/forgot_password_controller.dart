@@ -8,9 +8,36 @@ import '../../../../data/services/api_url.dart';
 import 'otp_controller.dart';
 
 class ForgotPasswordController extends GetxController {
-  final emailController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
   final RxBool isLoading = false.obs;
   final ApiClient _apiClient = Get.find<ApiClient>();
+
+  @override
+  void onInit() {
+    super.onInit();
+    ensureControllers();
+  }
+
+  void ensureControllers() {
+    if (_isDisposed(emailController)) {
+      String oldText = '';
+      try {
+        oldText = emailController.text;
+      } catch (_) {}
+      emailController = TextEditingController(text: oldText);
+    }
+  }
+
+  bool _isDisposed(ChangeNotifier c) {
+    try {
+      void listener() {}
+      c.addListener(listener);
+      c.removeListener(listener);
+      return false;
+    } catch (_) {
+      return true;
+    }
+  }
 
   Future<void> onForgotPassword() async {
     final email = emailController.text.trim().toLowerCase();
@@ -88,7 +115,6 @@ class ForgotPasswordController extends GetxController {
 
   @override
   void onClose() {
-    emailController.dispose();
     super.onClose();
   }
 }
