@@ -10,6 +10,7 @@ import '../../../../data/services/deep_link_service.dart';
 import 'otp_controller.dart';
 
 class SignUpController extends GetxController {
+  
   TextEditingController firstNameController = TextEditingController();
   TextEditingController lastNameController = TextEditingController();
   TextEditingController emailController = TextEditingController();

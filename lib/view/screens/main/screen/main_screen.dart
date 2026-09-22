@@ -14,7 +14,10 @@ class MainScreen extends GetView<MainController> {
       backgroundColor: const Color(0xFF0F0B1E),
       body: Stack(
         children: [
-          Obx(() => controller.screens[controller.currentIndex.value]),
+          Obx(() => IndexedStack(
+                index: controller.currentIndex.value,
+                children: controller.screens,
+              )),
           const Positioned(
             bottom: 0,
             left: 0,

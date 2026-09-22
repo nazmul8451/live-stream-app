@@ -168,7 +168,6 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     isHost.value = true;
     isMinimized.value = false;
     isCameraOn.value = true;
-    isLocalVideoReady.value = true;
 
     if (engine != null) {
       try {
@@ -177,12 +176,20 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         await engine!.enableLocalVideo(true);
         await engine!.muteLocalVideoStream(false);
         await engine!.startPreview();
+        isLocalVideoReady.value = true;
         debugPrint("📹 [AgoraLiveController] Host camera preview ensured and ready.");
       } catch (e) {
         debugPrint("⚠️ Host camera preview error: $e");
       }
-    } else if (channelName.value.isNotEmpty) {
-      await _initAgora(isHost: true, channel: channelName.value);
+    } else {
+      String ch = channelName.value;
+      if (ch.isEmpty && activeStreamData.isNotEmpty) {
+        ch = (activeStreamData['agoraChannelName'] ?? activeStreamData['channelName'] ?? activeStreamData['channel'] ?? '').toString();
+        channelName.value = ch;
+      }
+      if (ch.isNotEmpty) {
+        await _initAgora(isHost: true, channel: ch);
+      }
     }
   }
 
@@ -1912,14 +1919,18 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       // 2) Create engine
       if (engine != null) {
         try {
-          await engine!.leaveChannel();
-          await engine!.release();
+          await engine!.stopPreview().catchError((_) => null);
+          await engine!.leaveChannel().catchError((_) => null);
+          await engine!.release().catchError((_) => null);
         } catch (_) {}
         engine = null;
       }
       engine = createAgoraRtcEngine();
-      await engine!.initialize(RtcEngineContext(appId: dynamicAppId));
-      debugPrint("✅ Agora Engine initialized");
+      await engine!.initialize(RtcEngineContext(
+        appId: dynamicAppId,
+        channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+      ));
+      debugPrint("✅ Agora Engine initialized with LiveBroadcasting profile");
 
       // 3) Event handlers
       engine!.registerEventHandler(RtcEngineEventHandler(
@@ -2014,11 +2025,19 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         },
       ));
 
-      // 4) Setup channel profile
-      await engine!.setChannelProfile(ChannelProfileType.channelProfileLiveBroadcasting);
+      // 4) Setup channel profile (guarded against -8 ERR_INVALID_STATE)
+      try {
+        await engine!.setChannelProfile(ChannelProfileType.channelProfileLiveBroadcasting);
+      } catch (e) {
+        debugPrint("⚠️ setChannelProfile (already configured in initialize context): $e");
+      }
 
       if (isHost) {
-        await engine!.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
+        try {
+          await engine!.setClientRole(role: ClientRoleType.clientRoleBroadcaster);
+        } catch (e) {
+          debugPrint("⚠️ setClientRole error: $e");
+        }
         try {
           await engine!.setVideoEncoderConfiguration(
             const VideoEncoderConfiguration(
@@ -2039,18 +2058,27 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
             ),
           );
         } catch (_) {}
-        await engine!.enableVideo();
-        await engine!.enableLocalVideo(true);
-        await engine!.startPreview();
-        isLocalVideoReady.value = true; // Show camera immediately after preview starts
+        try {
+          await engine!.enableVideo();
+          await engine!.enableLocalVideo(true);
+          await engine!.startPreview();
+          isLocalVideoReady.value = true; // Show camera immediately after preview starts
+          debugPrint("📹 [AgoraLiveController] Local camera preview started and ready");
+        } catch (e) {
+          debugPrint("⚠️ Camera start preview warning: $e");
+        }
       } else {
-        await engine!.setClientRole(
-          role: ClientRoleType.clientRoleAudience,
-          options: const ClientRoleOptions(
-            audienceLatencyLevel: AudienceLatencyLevelType.audienceLatencyLevelUltraLowLatency,
-          ),
-        );
-        await engine!.enableVideo();
+        try {
+          await engine!.setClientRole(
+            role: ClientRoleType.clientRoleAudience,
+            options: const ClientRoleOptions(
+              audienceLatencyLevel: AudienceLatencyLevelType.audienceLatencyLevelUltraLowLatency,
+            ),
+          );
+          await engine!.enableVideo();
+        } catch (e) {
+          debugPrint("⚠️ Viewer enable video warning: $e");
+        }
       }
 
       // 5) Join channel
@@ -2074,7 +2102,9 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       return true;
     } catch (e) {
       debugPrint("❌ Agora init failed: $e");
-      engine = null;
+      if (!isLocalVideoReady.value) {
+        engine = null;
+      }
       // Show user-friendly error
       if (e.toString().contains('MissingPluginException') ||
           e.toString().contains('No implementation found')) {

@@ -66,8 +66,8 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       mirrorMode: VideoMirrorModeType.videoMirrorModeEnabled,
                       sourceType: VideoSourceType.videoSourceCamera,
                     ),
-                    useFlutterTexture: true,
-                    useAndroidSurfaceView: false,
+                    useFlutterTexture: false,
+                    useAndroidSurfaceView: true,
                   ),
                 );
               }
@@ -81,6 +81,15 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       SizedBox(height: 16.h),
                       Text("Starting camera...",
                           style: TextStyle(color: Colors.white60, fontSize: 14.sp)),
+                      SizedBox(height: 20.h),
+                      TextButton.icon(
+                        onPressed: () => ctrl.ensureHostCameraActive(),
+                        icon: const Icon(Icons.refresh_rounded, color: Color(0xFF8B9BFF)),
+                        label: Text(
+                          "Retry Camera",
+                          style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp),
+                        ),
+                      ),
                     ],
                   ),
                 ),

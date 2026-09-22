@@ -19,7 +19,9 @@ class ProfileScreen extends GetView<ProfileController> {
 
   @override
   Widget build(BuildContext context) {
-    Get.put(ProfileController());
+    if (!Get.isRegistered<ProfileController>()) {
+      Get.put(ProfileController(), permanent: true);
+    }
     return CustomBackground(
       child: SafeArea(
         child: Column(
@@ -597,7 +599,7 @@ class ProfileScreen extends GetView<ProfileController> {
 
   Widget _buildListingsGrid() {
     return Obx(() {
-      if (controller.isLoading.value) {
+      if (controller.isLoading.value && controller.userListings.isEmpty) {
         return _buildListingsGridShimmer();
       }
       
@@ -648,6 +650,7 @@ class ProfileScreen extends GetView<ProfileController> {
               hasTrade: hasTrade,
               isSold: isSold,
               onTap: () {
+                debugPrint("📦 [ProfileListing] Tapped item: ${item['title']} (ID: ${item['_id']}) - Images: ${item['images']}");
                 final Map<String, dynamic> itemWithSeller = Map<String, dynamic>.from(item);
                 if (itemWithSeller['sellerId'] == null || itemWithSeller['sellerId'] is String) {
                   itemWithSeller['sellerId'] = {

@@ -40,13 +40,6 @@ class SoldItemsController extends GetxController {
         }
       }
 
-      final responses = await Future.wait([
-        _apiClient.getData("${ApiUrl.userOrders}?role=seller"),
-        _apiClient.getData(ApiUrl.userOrders),
-        if (userId.isNotEmpty) _apiClient.getData("${ApiUrl.userOrders}?userId=$userId&role=seller"),
-        if (userId.isNotEmpty) _apiClient.getData("${ApiUrl.userOrders}?userId=$userId"),
-      ]);
-
       List extractListFromResponse(dynamic response) {
         if (response.statusCode == 200 || response.statusCode == 201) {
           final body = jsonDecode(response.body);
@@ -59,12 +52,20 @@ class SoldItemsController extends GetxController {
         return [];
       }
 
+      // 1. Primary query for seller orders
+      var response = await _apiClient.getData("${ApiUrl.userOrders}?role=seller");
+      var rawList = extractListFromResponse(response);
+
+      // 2. Only fallback if primary endpoint returned empty
+      if (rawList.isEmpty) {
+        response = await _apiClient.getData(ApiUrl.userOrders);
+        rawList = extractListFromResponse(response);
+      }
+
       Set<String> seenIds = {};
       List<PurchaseModel> loadedList = [];
 
-      for (var response in responses) {
-        final rawList = extractListFromResponse(response);
-        for (var item in rawList) {
+      for (var item in rawList) {
           if (item is Map) {
             final id = (item['_id'] ?? item['id'] ?? item['orderId'] ?? '').toString();
             if (id.isEmpty || seenIds.contains(id)) continue;
@@ -180,9 +181,8 @@ class SoldItemsController extends GetxController {
             loadedList.add(model);
           }
         }
-      }
 
-      soldItems.assignAll(loadedList);
+        soldItems.assignAll(loadedList);
     } catch (e) {
       Get.log("❌ [SoldItems] Fetch Error: $e");
     } finally {

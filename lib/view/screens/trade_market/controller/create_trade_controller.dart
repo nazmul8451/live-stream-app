@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 import '../../../../data/helpers/image_helper.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
+import '../../../../data/services/s3_upload_service.dart';
 import '../../profile/controller/profile_controller.dart';
 
 class CreateTradeController extends GetxController {
@@ -164,43 +164,10 @@ class CreateTradeController extends GetxController {
   void setTargetCategory(String val) => targetCategory.value = val;
 
   Future<String?> _uploadImageToS3(File file) async {
-    try {
-      final fileName = file.path.split('/').last.split('\\').last;
-      final ext = fileName.split('.').last.toLowerCase();
-      final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
-
-      // 1. Get S3 Presigned URL
-      final response = await _apiClient.postData("/upload/presign", {
-        "fileName": fileName,
-        "contentType": contentType,
-      });
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true && body['data'] != null) {
-          final uploadUrl = body['data']['url'].toString();
-
-          // 2. PUT request directly to S3
-          final fileBytes = await file.readAsBytes();
-          final s3Response = await http.put(
-            Uri.parse(uploadUrl),
-            headers: {
-              "Content-Type": contentType,
-            },
-            body: fileBytes,
-          );
-
-          if (s3Response.statusCode == 200 || s3Response.statusCode == 201) {
-            // Retrieve actual file URL from presigned URL
-            final s3Url = uploadUrl.split('?').first;
-            return s3Url;
-          }
-        }
-      }
-    } catch (e) {
-      Get.log("S3 upload error: $e");
-    }
-    return null;
+    return await S3UploadService.uploadToS3(
+      imageFile: file,
+      folder: 'products',
+    );
   }
 
   Future<void> postTrade() async {

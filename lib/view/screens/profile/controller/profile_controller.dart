@@ -87,7 +87,9 @@ class ProfileController extends GetxController {
       return;
     }
 
-    isLoading.value = true;
+    if (name.value.isEmpty || userListings.isEmpty) {
+      isLoading.value = true;
+    }
     hasError.value = false;
     errorMessage.value = "";
     try {

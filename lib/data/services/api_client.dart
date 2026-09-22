@@ -125,7 +125,7 @@ class ApiClient {
         url,
         headers: requestHeaders,
         body: requestBody,
-      );
+      ).timeout(const Duration(seconds: 15));
 
       _logResponse('POST', url, response, startTime);
       return await _checkAndRefreshToken(uri, response, () => postData(uri, body, headers: headers));
@@ -217,7 +217,7 @@ class ApiClient {
         url,
         headers: requestHeaders,
         body: requestBody,
-      );
+      ).timeout(const Duration(seconds: 15));
 
       _logResponse('PATCH', url, response, startTime);
       return await _checkAndRefreshToken(uri, response, () => patchData(uri, body, headers: headers));
@@ -337,7 +337,7 @@ class ApiClient {
 
     final startTime = DateTime.now();
     try {
-      final response = await http.get(url, headers: requestHeaders);
+      final response = await http.get(url, headers: requestHeaders).timeout(const Duration(seconds: 12));
 
       _logResponse('GET', url, response, startTime);
       return await _checkAndRefreshToken(uri, response, () => getData(uri, headers: headers));

@@ -45,8 +45,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
       final seller = widget.streamData['sellerId'] ?? widget.streamData['seller'] ?? widget.streamData['hostId'] ?? widget.streamData['user'] ?? widget.streamData['host'];
       final sId = (seller is Map) ? (seller['_id'] ?? seller['id'] ?? '') : (seller?.toString() ?? '');
 
-      if ((ctrl.isLive.value && ctrl.isHost.value) || (sId.isNotEmpty && currentUserId.isNotEmpty && sId == currentUserId)) {
-        ctrl.isHost.value = true;
+      if (ctrl.isLive.value && ctrl.isHost.value) {
         Get.offNamed(AppRoute.hostLive);
         return;
       }
@@ -87,8 +86,8 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                         renderMode: RenderModeType.renderModeHidden,
                       ),
                       connection: RtcConnection(channelId: ctrl.channelName.value),
-                      useFlutterTexture: true,
-                      useAndroidSurfaceView: false,
+                      useFlutterTexture: false,
+                      useAndroidSurfaceView: true,
                     ),
                   );
                 }

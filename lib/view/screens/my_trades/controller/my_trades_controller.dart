@@ -47,14 +47,6 @@ class MyTradesController extends GetxController {
         }
       }
 
-      final responses = await Future.wait([
-        _apiClient.getData("/trades/my"),
-        _apiClient.getData(ApiUrl.tradeOffers),
-        if (userId.isNotEmpty) _apiClient.getData("${ApiUrl.tradeOffers}?userId=$userId&type=received"),
-        if (userId.isNotEmpty) _apiClient.getData("${ApiUrl.tradeOffers}?userId=$userId&type=sent"),
-        if (userId.isNotEmpty) _apiClient.getData("${ApiUrl.tradeOffers}?userId=$userId"),
-      ]);
-
       List extractListFromResponse(dynamic response) {
         if (response == null || response.statusCode != 200) return [];
         try {
@@ -74,18 +66,24 @@ class MyTradesController extends GetxController {
         return [];
       }
 
-      final Map<String, dynamic> uniqueTradeItems = {};
+      // 1. Primary query for user trades
+      var response = await _apiClient.getData(ApiUrl.tradeOffers);
+      var list = extractListFromResponse(response);
 
-      for (var res in responses) {
-        final list = extractListFromResponse(res);
-        for (var item in list) {
-          if (item is Map) {
-            final String itemId = (item['_id'] ?? item['id'] ?? item['tradeId'] ?? '').toString();
-            if (itemId.isNotEmpty) {
-              uniqueTradeItems[itemId] = item;
-            } else {
-              uniqueTradeItems[item.hashCode.toString()] = item;
-            }
+      // 2. Fallback only if primary returns empty
+      if (list.isEmpty) {
+        response = await _apiClient.getData("/trades/my");
+        list = extractListFromResponse(response);
+      }
+
+      final Map<String, dynamic> uniqueTradeItems = {};
+      for (var item in list) {
+        if (item is Map) {
+          final String id = (item['_id'] ?? item['id'] ?? '').toString();
+          if (id.isNotEmpty) {
+            uniqueTradeItems[id] = item;
+          } else {
+            uniqueTradeItems[item.hashCode.toString()] = item;
           }
         }
       }

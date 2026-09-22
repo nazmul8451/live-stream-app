@@ -409,50 +409,62 @@ class HomeController extends GetxController {
   Future<void> fetchGiveawayData() async {
     isGiveawayLoading.value = true;
     try {
-      // 1. Fetch public giveaway config
-      final res = await _apiClient.getData(ApiUrl.giveawayConfig);
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final body = jsonDecode(res.body);
-        if (body['success'] == true && body['data'] is Map) {
-          giveawayConfig.assignAll(Map<String, dynamic>.from(body['data']));
-        }
-      }
-
-      // 2. If authenticated, fetch user's entry status
       final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
-      if (token.isNotEmpty) {
-        final statusRes = await _apiClient.getData(ApiUrl.giveawayMyStatus);
-        Get.log("🎁 [Giveaway] my-status code: ${statusRes.statusCode}, body: ${statusRes.body}");
-        if (statusRes.statusCode == 200 || statusRes.statusCode == 201) {
-          final body = jsonDecode(statusRes.body);
-          final data = body['data'] is Map ? body['data'] : body;
-          if (data is Map) {
-            isGiveawayEntered.value = data['hasEntered'] == true ||
-                data['hasEntered'] == 'true' ||
-                data['hasEntered'] == 1 ||
-                data['isEntered'] == true ||
-                data['isEntered'] == 'true' ||
-                data['isEntered'] == 1;
-            giveawayEnteredAt.value = (data['enteredAt'] ?? '').toString();
-            final cfg = data['config'] ?? data['giveaway'];
-            if (cfg is Map && (giveawayConfig.isEmpty || giveawayConfig['prizeTitle'] == null)) {
-              giveawayConfig.assignAll(Map<String, dynamic>.from(cfg));
+
+      // Fetch config, status, and winners in parallel
+      await Future.wait([
+        // 1. Giveaway config
+        _apiClient.getData(ApiUrl.giveawayConfig).then((res) {
+          if (res.statusCode == 200 || res.statusCode == 201) {
+            final body = jsonDecode(res.body);
+            if (body['success'] == true && body['data'] is Map) {
+              giveawayConfig.assignAll(Map<String, dynamic>.from(body['data']));
             }
           }
-        }
-      }
+        }).catchError((e) {
+          Get.log("Giveaway config error: $e");
+          return null;
+        }),
 
-      // 3. Optionally fetch winners
-      try {
-        final winRes = await _apiClient.getData(ApiUrl.giveawayWinners);
-        if (winRes.statusCode == 200 || winRes.statusCode == 201) {
-          final body = jsonDecode(winRes.body);
-          final rawWins = body['data'] ?? body['winners'];
-          if (rawWins is List) {
-            giveawayWinners.assignAll(rawWins);
+        // 2. User's entry status (if logged in)
+        if (token.isNotEmpty)
+          _apiClient.getData(ApiUrl.giveawayMyStatus).then((statusRes) {
+            if (statusRes.statusCode == 200 || statusRes.statusCode == 201) {
+              final body = jsonDecode(statusRes.body);
+              final data = body['data'] is Map ? body['data'] : body;
+              if (data is Map) {
+                isGiveawayEntered.value = data['hasEntered'] == true ||
+                    data['hasEntered'] == 'true' ||
+                    data['hasEntered'] == 1 ||
+                    data['isEntered'] == true ||
+                    data['isEntered'] == 'true' ||
+                    data['isEntered'] == 1;
+                giveawayEnteredAt.value = (data['enteredAt'] ?? '').toString();
+                final cfg = data['config'] ?? data['giveaway'];
+                if (cfg is Map && (giveawayConfig.isEmpty || giveawayConfig['prizeTitle'] == null)) {
+                  giveawayConfig.assignAll(Map<String, dynamic>.from(cfg));
+                }
+              }
+            }
+          }).catchError((e) {
+            Get.log("Giveaway status error: $e");
+            return null;
+          }),
+
+        // 3. Giveaway winners
+        _apiClient.getData(ApiUrl.giveawayWinners).then((winRes) {
+          if (winRes.statusCode == 200 || winRes.statusCode == 201) {
+            final body = jsonDecode(winRes.body);
+            final rawWins = body['data'] ?? body['winners'];
+            if (rawWins is List) {
+              giveawayWinners.assignAll(rawWins);
+            }
           }
-        }
-      } catch (_) {}
+        }).catchError((e) {
+          Get.log("Giveaway winners error: $e");
+          return null;
+        }),
+      ]);
     } catch (e) {
       Get.log("❌ [Giveaway] Error loading giveaway data: $e");
     } finally {
@@ -557,6 +569,11 @@ class HomeController extends GetxController {
   }
 
   Future<void> fetchUnreadNotificationCount() async {
+    final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
+    if (token.isEmpty || SharePrefsHelper.isGuest) {
+      unreadNotificationCount.value = 0;
+      return;
+    }
     try {
       final response = await _apiClient.getData(ApiUrl.myNotifications);
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -630,6 +647,11 @@ class HomeController extends GetxController {
   }
 
   Future<void> fetchProfileData() async {
+    final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
+    if (token.isEmpty || SharePrefsHelper.isGuest) {
+      isLoading.value = false;
+      return;
+    }
     isLoading.value = true;
     try {
       final response = await _apiClient.getData(ApiUrl.profile);
@@ -667,7 +689,7 @@ class HomeController extends GetxController {
     try {
       var response = await _apiClient.getData("${ApiUrl.liveStreams}?status=live");
       if (response.statusCode != 200) {
-        response = await _apiClient.getData(ApiUrl.liveStreams);
+        response = await _apiClient.getData("${ApiUrl.liveStreams}?status=active");
       }
 
       if (response.statusCode == 200) {
@@ -1029,18 +1051,18 @@ class HomeController extends GetxController {
   }
 
   Future<void> refreshHome() async {
-    _categoryProductsCache.clear();
     currentProductPage.value = 1;
     hasMoreProducts.value = true;
     await Future.wait([
-      fetchProfileData(),
-      fetchLiveStreams(),
-      fetchScheduledShows(),
-      fetchCategories(),
-      fetchSavedShows(),
-      fetchGiveawayData(),
+      fetchProfileData().catchError((e) => Get.log("Profile refresh error: $e")),
+      fetchLiveStreams().catchError((e) => Get.log("Live streams refresh error: $e")),
+      fetchScheduledShows().catchError((e) => Get.log("Scheduled shows refresh error: $e")),
+      fetchCategories().catchError((e) => Get.log("Categories refresh error: $e")),
+      fetchSavedShows().catchError((e) => Get.log("Saved shows refresh error: $e")),
+      fetchGiveawayData().catchError((e) => Get.log("Giveaway refresh error: $e")),
+      fetchProducts(showLoading: false).catchError((e) => Get.log("Products refresh error: $e")),
+      fetchRecentTrades().catchError((e) => Get.log("Trades refresh error: $e")),
     ]);
-    await fetchProducts(showLoading: true);
   }
 }
 

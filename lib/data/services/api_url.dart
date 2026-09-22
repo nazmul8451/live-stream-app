@@ -111,4 +111,7 @@ class ApiUrl {
   static const String giveawayMyStatus = "/giveaway/my-status";
   static const String giveawayEnter = "/giveaway/enter";
   static const String giveawayWinners = "/giveaway/winners";
+
+  // Upload Presigned URL
+  static const String uploadPresign = "/upload/presign";
 }

@@ -310,7 +310,6 @@ class MessageDetailsController extends GetxController {
 
   Future<void> _pollNewMessages() async {
     try {
-      fetchAssociatedTrades();
       final response = await _apiClient.getData('${ApiUrl.message}/${chatId.value}');
       if (response.statusCode != 200) return;
 

@@ -1203,9 +1203,13 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
       }
     }
     final cleanUrl = imgStr.startsWith('http') ? imgStr : "${ApiUrl.imageBaseUrl}${imgStr.startsWith('/') ? imgStr : '/$imgStr'}";
+    debugPrint("🖼️ [TradeDetailsImage] Loading image: $cleanUrl");
     return Image.network(cleanUrl, fit: fit,
       loadingBuilder: (_, child, progress) => progress == null ? child : Container(color: const Color(0xFF1A1A2E), child: Center(child: SizedBox(width: 22.r, height: 22.r, child: CircularProgressIndicator(strokeWidth: 2, color: const Color(0xFF8B9BFF).withOpacity(0.4))))),
-      errorBuilder: (_, __, ___) => Container(color: const Color(0xFF1A1A2E), child: Center(child: Icon(Icons.image_not_supported_outlined, color: Colors.white12, size: 32.sp))));
+      errorBuilder: (_, error, ___) {
+        debugPrint("❌ [TradeDetailsImage] Failed to load image: $cleanUrl (Error: $error)");
+        return Container(color: const Color(0xFF1A1A2E), child: Center(child: Icon(Icons.image_not_supported_outlined, color: Colors.white12, size: 32.sp)));
+      });
   }
 
   // ── Make Offer Dialog / BottomSheet (Feature 2) ──────────────────────────

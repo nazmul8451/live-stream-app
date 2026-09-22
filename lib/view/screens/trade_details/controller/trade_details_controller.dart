@@ -29,6 +29,8 @@ class TradeDetailsController extends GetxController {
       if (Get.arguments is Map) {
         Future.microtask(() {
           product.assignAll(Map<String, dynamic>.from(Get.arguments));
+          debugPrint("🖼️ [TradeDetailsController] Opened Product: ${product['title']} (ID: ${product['_id'] ?? product['id']})");
+          debugPrint("🖼️ [TradeDetailsController] Product Images: ${product['images']}");
           final pId = productId;
           if (pId.isNotEmpty && product.length <= 2) {
             _fetchFullProductDetails(pId);

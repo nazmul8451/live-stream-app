@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
 import '../../../../data/helpers/image_helper.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
+import '../../../../data/services/s3_upload_service.dart';
 import '../../../../data/services/socket_service.dart';
 import '../../../../core/app_route.dart';
 import '../../messages/controller/messages_controller.dart';
@@ -187,36 +187,10 @@ class MakeOfferController extends GetxController {
   }
 
   Future<String?> _uploadImageToS3(File file) async {
-    try {
-      final fileName = file.path.split('/').last.split('\\').last;
-      final ext = fileName.split('.').last.toLowerCase();
-      final contentType = ext == 'png' ? 'image/png' : 'image/jpeg';
-
-      final response = await _apiClient.postData("/upload/presign", {
-        "fileName": fileName,
-        "contentType": contentType,
-      });
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true && body['data'] != null) {
-          final uploadUrl = body['data']['url'].toString();
-          final fileBytes = await file.readAsBytes();
-          final s3Response = await http.put(
-            Uri.parse(uploadUrl),
-            headers: {"Content-Type": contentType},
-            body: fileBytes,
-          );
-
-          if (s3Response.statusCode == 200 || s3Response.statusCode == 201) {
-            return uploadUrl.split('?').first;
-          }
-        }
-      }
-    } catch (e) {
-      Get.log("S3 upload error: $e");
-    }
-    return null;
+    return await S3UploadService.uploadToS3(
+      imageFile: file,
+      folder: 'products',
+    );
   }
 
   Future<void> sendOffer() async {

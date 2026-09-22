@@ -133,20 +133,24 @@ class DiscoverController extends GetxController {
         final List<Map<String, dynamic>> parsedFeatured = [];
         for (var item in data.take(2)) {
           String prodId = "";
+          Map<String, dynamic>? prod;
+
           if (item['productId'] is Map) {
-            prodId = (item['productId']['_id'] ?? item['productId']['id'] ?? "").toString();
+            prod = Map<String, dynamic>.from(item['productId']);
+            prodId = (prod['_id'] ?? prod['id'] ?? "").toString();
           } else if (item['productId'] != null) {
             prodId = item['productId'].toString();
           }
 
           final auctionItems = item['auctionItems'];
-          if (auctionItems is List && auctionItems.isNotEmpty) {
+          if (prod == null && auctionItems is List && auctionItems.isNotEmpty) {
             final firstAuctionItem = auctionItems[0];
             if (firstAuctionItem is Map) {
               final prodData = firstAuctionItem['productId'];
               if (prodData is Map) {
+                prod = Map<String, dynamic>.from(prodData);
                 if (prodId.isEmpty) {
-                  prodId = (prodData['_id'] ?? prodData['id'] ?? "").toString();
+                  prodId = (prod['_id'] ?? prod['id'] ?? "").toString();
                 }
               } else if (prodData != null && prodId.isEmpty) {
                 prodId = prodData.toString();
@@ -154,8 +158,8 @@ class DiscoverController extends GetxController {
             }
           }
 
-          Map<String, dynamic>? prod;
-          if (prodId.isNotEmpty) {
+          // Only fetch from API if product is completely missing from stream payload
+          if (prod == null && prodId.isNotEmpty) {
             try {
               final pRes = await _apiClient.getData("/products/$prodId");
               if (pRes.statusCode == 200) {
@@ -168,10 +172,6 @@ class DiscoverController extends GetxController {
             } catch (e) {
               debugPrint("Error fetching product details for discover: $e");
             }
-          }
-
-          if (prod == null && item['productId'] is Map) {
-            prod = Map<String, dynamic>.from(item['productId']);
           }
 
           final title = item['title'] ?? (prod != null ? (prod['title'] ?? prod['name']) : null) ?? "Live Item";

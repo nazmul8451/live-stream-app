@@ -40,13 +40,6 @@ class PurchasesController extends GetxController {
         }
       }
 
-      final responses = await Future.wait([
-        _apiClient.getData("${ApiUrl.userOrders}?role=buyer"),
-        _apiClient.getData(ApiUrl.userOrders),
-        if (userId.isNotEmpty) _apiClient.getData("${ApiUrl.userOrders}?userId=$userId&role=buyer"),
-        if (userId.isNotEmpty) _apiClient.getData("${ApiUrl.userOrders}?userId=$userId"),
-      ]);
-
       List extractListFromResponse(dynamic response) {
         if (response == null || response.statusCode != 200) return [];
         try {
@@ -66,18 +59,24 @@ class PurchasesController extends GetxController {
         return [];
       }
 
-      final Map<String, dynamic> uniqueOrders = {};
+      // 1. Primary query for buyer orders
+      var response = await _apiClient.getData("${ApiUrl.userOrders}?role=buyer");
+      var list = extractListFromResponse(response);
 
-      for (var res in responses) {
-        final list = extractListFromResponse(res);
-        for (var item in list) {
-          if (item is Map) {
-            final String itemId = (item['_id'] ?? item['id'] ?? item['orderId'] ?? '').toString();
-            if (itemId.isNotEmpty) {
-              uniqueOrders[itemId] = item;
-            } else {
-              uniqueOrders[item.hashCode.toString()] = item;
-            }
+      // 2. Only fallback if primary endpoint returned empty
+      if (list.isEmpty) {
+        response = await _apiClient.getData(ApiUrl.userOrders);
+        list = extractListFromResponse(response);
+      }
+
+      final Map<String, dynamic> uniqueOrders = {};
+      for (var item in list) {
+        if (item is Map) {
+          final String itemId = (item['_id'] ?? item['id'] ?? item['orderId'] ?? '').toString();
+          if (itemId.isNotEmpty) {
+            uniqueOrders[itemId] = item;
+          } else {
+            uniqueOrders[item.hashCode.toString()] = item;
           }
         }
       }
