@@ -12,6 +12,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/helpers/product_cache.dart';
 import '../../../../data/services/api_client.dart';
 import '../../profile/controller/profile_controller.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HostLiveScreen extends StatefulWidget {
   const HostLiveScreen({super.key});
@@ -424,6 +425,10 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   SizedBox(height: 10.h),
                   _sideButton(Icons.stars_rounded, const Color(0xFFFFB800), onTap: () {
                     _confirmGiveawayDraw(ctrl);
+                  }),
+                  SizedBox(height: 10.h),
+                  _sideButton(Icons.receipt_long_rounded, const Color(0xFF00D2FF), onTap: () {
+                    _showLiveSalesSheet(ctrl);
                   }),
                 ],
               )),
@@ -3051,6 +3056,347 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
     );
   }
 
+  // ─── LIVE SALES VIEW (Task 12) ──────────────────────────────
+  void _showLiveSalesSheet(AgoraLiveController ctrl) {
+    ctrl.fetchStreamSales();
+    Get.bottomSheet(
+      Container(
+        height: 620.h,
+        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 20.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F111D),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          border: Border.all(color: const Color(0xFF22283F)),
+        ),
+        child: Column(
+          children: [
+            Center(
+              child: Container(
+                width: 44.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: 14.h),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(6.r),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00D2FF).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Icon(Icons.receipt_long_rounded, color: const Color(0xFF00D2FF), size: 18.sp),
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  "Live Show Sales",
+                  style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                ),
+                const Spacer(),
+                IconButton(
+                  tooltip: "Refresh Sales",
+                  onPressed: () => ctrl.fetchStreamSales(),
+                  icon: Icon(Icons.refresh_rounded, color: const Color(0xFF00D2FF), size: 20.sp),
+                ),
+                IconButton(
+                  onPressed: () => Get.back(),
+                  icon: Icon(Icons.close_rounded, color: Colors.white60, size: 20.sp),
+                ),
+              ],
+            ),
+            SizedBox(height: 10.h),
+            Obx(() {
+              final rev = ctrl.streamTotalRevenue.value;
+              final count = ctrl.streamSalesList.length;
+              final paidCount = ctrl.streamPaidOrdersCount.value;
+
+              return Container(
+                padding: EdgeInsets.all(14.r),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E2640), Color(0xFF14192A)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16.r),
+                  border: Border.all(color: const Color(0xFF2E3B66)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("TOTAL REVENUE", style: TextStyle(color: Colors.white54, fontSize: 10.sp, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                          SizedBox(height: 4.h),
+                          Text(
+                            "\$${rev.toStringAsFixed(2)}",
+                            style: TextStyle(color: const Color(0xFF10B981), fontSize: 22.sp, fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(height: 36.h, width: 1, color: const Color(0xFF2E3B66)),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(left: 14.w),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("ITEMS SOLD", style: TextStyle(color: Colors.white54, fontSize: 10.sp, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                            SizedBox(height: 4.h),
+                            Text(
+                              "$count items ($paidCount paid)",
+                              style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            SizedBox(height: 14.h),
+            Expanded(
+              child: Obx(() {
+                if (ctrl.isLoadingSales.value && ctrl.streamSalesList.isEmpty) {
+                  return const Center(child: CircularProgressIndicator(color: Color(0xFF00D2FF)));
+                }
+
+                if (ctrl.streamSalesList.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.point_of_sale_rounded, color: Colors.white24, size: 48.sp),
+                        SizedBox(height: 12.h),
+                        Text(
+                          "No sales recorded yet for this show",
+                          style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w700),
+                        ),
+                        SizedBox(height: 6.h),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24.w),
+                          child: Text(
+                            "When buyers win auctions or claim giveaways, sales details and payment status appear here in real time.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white38, fontSize: 11.5.sp),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: ctrl.streamSalesList.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                  itemBuilder: (context, index) {
+                    final order = ctrl.streamSalesList[index];
+                    final product = (order['product'] as Map<String, dynamic>?) ?? {};
+                    final buyer = (order['user'] as Map<String, dynamic>?) ?? {};
+                    final title = product['title'] ?? product['name'] ?? order['productName'] ?? 'Auction Item';
+                    final buyerName = buyer['userName'] ?? buyer['name'] ?? buyer['email'] ?? 'Buyer';
+                    final price = (order['totalAmount'] is num) ? (order['totalAmount'] as num).toDouble() : 0.0;
+                    final paymentStatus = (order['paymentStatus'] ?? order['status'] ?? 'pending').toString().toLowerCase();
+                    final isGiveaway = order['isGiveaway'] == true;
+                    final spinPrize = (order['spinWheelPrize'] ?? '').toString();
+                    final tracking = (order['trackingNumber'] ?? '').toString();
+                    final labelUrl = (order['shippingLabelUrl'] ?? '').toString();
+
+                    Color statusColor;
+                    String statusText;
+                    if (paymentStatus == 'paid' || paymentStatus == 'completed') {
+                      statusColor = const Color(0xFF10B981);
+                      statusText = "PAID";
+                    } else if (paymentStatus == 'failed') {
+                      statusColor = Colors.redAccent;
+                      statusText = "FAILED";
+                    } else {
+                      statusColor = const Color(0xFFFFB800);
+                      statusText = "PENDING";
+                    }
+
+                    return Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161B2E),
+                        borderRadius: BorderRadius.circular(14.r),
+                        border: Border.all(color: const Color(0xFF22283F)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(8.r),
+                                decoration: BoxDecoration(
+                                  color: isGiveaway
+                                      ? const Color(0xFFFFB800).withValues(alpha: 0.15)
+                                      : const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10.r),
+                                ),
+                                child: Icon(
+                                  isGiveaway ? Icons.card_giftcard_rounded : Icons.gavel_rounded,
+                                  color: isGiveaway ? const Color(0xFFFFB800) : const Color(0xFF8B9BFF),
+                                  size: 18.sp,
+                                ),
+                              ),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 3.h),
+                                    Text(
+                                      "Buyer: @$buyerName",
+                                      style: TextStyle(color: Colors.white60, fontSize: 11.sp),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    isGiveaway ? "FREE" : "\$${price.toStringAsFixed(2)}",
+                                    style: TextStyle(
+                                      color: isGiveaway ? const Color(0xFFFFB800) : Colors.white,
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4.h),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 2.h),
+                                    decoration: BoxDecoration(
+                                      color: statusColor.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6.r),
+                                      border: Border.all(color: statusColor.withValues(alpha: 0.4)),
+                                    ),
+                                    child: Text(
+                                      statusText,
+                                      style: TextStyle(color: statusColor, fontSize: 9.5.sp, fontWeight: FontWeight.w900),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          if (isGiveaway || spinPrize.isNotEmpty || tracking.isNotEmpty) ...[
+                            SizedBox(height: 8.h),
+                            Wrap(
+                              spacing: 6.w,
+                              runSpacing: 4.h,
+                              children: [
+                                if (isGiveaway)
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFB800).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6.r),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.stars_rounded, color: const Color(0xFFFFB800), size: 12.sp),
+                                        SizedBox(width: 4.w),
+                                        Text(
+                                          "Giveaway Claimed",
+                                          style: TextStyle(color: const Color(0xFFFFB800), fontSize: 10.sp, fontWeight: FontWeight.w800),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (spinPrize.isNotEmpty)
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF6584).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6.r),
+                                      border: Border.all(color: const Color(0xFFFF6584).withValues(alpha: 0.4)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.casino_rounded, color: const Color(0xFFFF6584), size: 12.sp),
+                                        SizedBox(width: 4.w),
+                                        Text(
+                                          "Spin Prize: $spinPrize",
+                                          style: TextStyle(color: const Color(0xFFFF6584), fontSize: 10.sp, fontWeight: FontWeight.w800),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                if (tracking.isNotEmpty)
+                                  Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(6.r),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.local_shipping_outlined, color: const Color(0xFF10B981), size: 12.sp),
+                                        SizedBox(width: 4.w),
+                                        Text(
+                                          "Tracking: $tracking",
+                                          style: TextStyle(color: const Color(0xFF10B981), fontSize: 10.sp, fontWeight: FontWeight.w700),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                          if (labelUrl.isNotEmpty) ...[
+                            SizedBox(height: 6.h),
+                            GestureDetector(
+                              onTap: () async {
+                                final fullUrl = labelUrl.startsWith('http')
+                                    ? labelUrl
+                                    : "${ApiUrl.imageBaseUrl}${labelUrl.startsWith('/') ? labelUrl : '/$labelUrl'}";
+                                final uri = Uri.tryParse(fullUrl);
+                                if (uri != null) {
+                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                }
+                              },
+                              child: Text(
+                                "📄 View USPS Shipping Label PDF",
+                                style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w700, decoration: TextDecoration.underline),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
   // ─── SPIN WHEEL / RANDOMIZER (Task 11) ──────────────────────
   void _showSpinWheelRandomizerSheet({String? targetBuyerName, String? targetBuyerId}) {
     Get.bottomSheet(
@@ -3108,15 +3454,23 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
 
   void _addEntry() {
     final text = _itemInputController.text.trim();
-    if (text.isNotEmpty) {
-      setState(() {
-        _wheelItems.add(text);
-        _itemInputController.clear();
-      });
+    if (text.isEmpty) return;
+    if (_wheelItems.length >= 4) {
+      Get.snackbar(
+        "Limit Reached",
+        "A maximum of 4 entries are allowed on the spin wheel.",
+        backgroundColor: Colors.amber.shade900,
+        colorText: Colors.white,
+      );
+      return;
     }
+    setState(() {
+      _wheelItems.add(text);
+      _itemInputController.clear();
+    });
   }
 
-  void _spinWheel({bool isShuffle = false}) {
+  Future<void> _spinWheel({bool isShuffle = false}) async {
     if (_isSpinning) return;
     if (_wheelItems.length < 2) {
       Get.snackbar(
@@ -3127,13 +3481,48 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
       );
       return;
     }
+    if (_wheelItems.length > 4) {
+      Get.snackbar(
+        "Too Many Items",
+        "Please keep a maximum of 4 items on the wheel.",
+        backgroundColor: Colors.amber.shade900,
+        colorText: Colors.white,
+      );
+      return;
+    }
 
     setState(() {
       _isSpinning = true;
     });
 
-    final random = math.Random();
-    final targetIndex = random.nextInt(_wheelItems.length);
+    final ctrl = Get.find<AgoraLiveController>();
+    final buyerId = widget.targetBuyerId ?? ctrl.lastBidderId.value;
+
+    int targetIndex = 0;
+    String winningItemName = '';
+
+    // Call server authoritative spin
+    try {
+      final res = await ctrl.spinWheelOnServer(
+        _wheelItems,
+        buyerId: buyerId.isNotEmpty ? buyerId : null,
+      );
+      if (res != null && res['winningIndex'] != null) {
+        targetIndex = (res['winningIndex'] as num).toInt();
+        winningItemName = res['winningItem']?.toString() ?? _wheelItems[targetIndex];
+      } else {
+        targetIndex = math.Random().nextInt(_wheelItems.length);
+        winningItemName = _wheelItems[targetIndex];
+      }
+    } catch (_) {
+      targetIndex = math.Random().nextInt(_wheelItems.length);
+      winningItemName = _wheelItems[targetIndex];
+    }
+
+    if (targetIndex < 0 || targetIndex >= _wheelItems.length) {
+      targetIndex = 0;
+      winningItemName = _wheelItems[0];
+    }
 
     final sliceAngle = (2 * math.pi) / _wheelItems.length;
     final extraFullTurns = (isShuffle ? 3 : 5) * 2 * math.pi;
@@ -3151,30 +3540,30 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
       });
 
     _animController.reset();
-    _animController.forward().then((_) {
-      setState(() {
-        _isSpinning = false;
-      });
-      _onSpinCompleted(targetIndex);
+    await _animController.forward();
+    if (!mounted) return;
+    setState(() {
+      _isSpinning = false;
     });
+    _onSpinCompleted(targetIndex, customItemName: winningItemName);
   }
 
-  void _onSpinCompleted(int selectedIndex) {
+  void _onSpinCompleted(int selectedIndex, {String? customItemName}) {
     if (selectedIndex < 0 || selectedIndex >= _wheelItems.length) return;
-    final selectedItem = _wheelItems[selectedIndex];
+    final selectedItem = customItemName ?? _wheelItems[selectedIndex];
     final ctrl = Get.find<AgoraLiveController>();
 
     final buyerName = widget.targetBuyerName ??
         (ctrl.lastBidderName.value.isNotEmpty ? ctrl.lastBidderName.value : "Winning Buyer");
     final buyerId = widget.targetBuyerId ?? ctrl.lastBidderId.value;
 
-    // Attach to buyer order
+    // Attach to buyer order locally as fallback
     ctrl.attachSpinWheelPrizeToOrder(
       itemName: selectedItem,
       buyerId: buyerId,
     );
 
-    // Show result dialog with option to remove or keep item
+    // Show result dialog with option to remove or keep / reshuffle
     Get.dialog(
       Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
@@ -3206,13 +3595,13 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Text(
-                  "Attached to @$buyerName's order",
+                  "Saved to @$buyerName's purchase on server",
                   style: TextStyle(color: const Color(0xFF10B981), fontSize: 11.5.sp, fontWeight: FontWeight.bold),
                 ),
               ),
               SizedBox(height: 20.h),
               Text(
-                "Would you like to remove this item from the wheel for future spins?",
+                "Would you like to remove this prize from the wheel, or reshuffle for another round?",
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white60, fontSize: 12.sp),
               ),
@@ -3222,13 +3611,13 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
-                        Get.back(); // Close prompt
+                        Get.back();
                         setState(() {
                           _wheelItems.removeAt(selectedIndex);
                         });
                         Get.snackbar(
                           "Item Removed",
-                          "'$selectedItem' removed from future wheel spins.",
+                          "'$selectedItem' removed from wheel.",
                           backgroundColor: const Color(0xFF222845),
                           colorText: Colors.white,
                           snackPosition: SnackPosition.BOTTOM,
@@ -3249,7 +3638,17 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        Get.back(); // Close prompt, keep on wheel
+                        Get.back();
+                        setState(() {
+                          _wheelItems.shuffle();
+                        });
+                        Get.snackbar(
+                          "Entries Reshuffled",
+                          "Wheel entries have been shuffled for the next round.",
+                          backgroundColor: const Color(0xFF222845),
+                          colorText: Colors.white,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF8B9BFF),
@@ -3258,7 +3657,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                       ),
                       child: Text(
-                        "Keep 🔄",
+                        "Reshuffle 🔄",
                         style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -3355,17 +3754,45 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
 
           SizedBox(height: 6.h),
 
+          // Entry Count & Max 4 indicator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Entries (up to 4 items):",
+                style: TextStyle(color: Colors.white70, fontSize: 11.5.sp, fontWeight: FontWeight.bold),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                decoration: BoxDecoration(
+                  color: _wheelItems.length >= 4 ? const Color(0xFFFF6584).withValues(alpha: 0.2) : const Color(0xFF10B981).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6.r),
+                ),
+                child: Text(
+                  "${_wheelItems.length} / 4 items",
+                  style: TextStyle(
+                    color: _wheelItems.length >= 4 ? const Color(0xFFFF6584) : const Color(0xFF10B981),
+                    fontSize: 10.5.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+
           // Input field: Type item name & press Return
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _itemInputController,
+                  enabled: _wheelItems.length < 4,
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _addEntry(),
                   style: TextStyle(color: Colors.white, fontSize: 12.5.sp),
                   decoration: InputDecoration(
-                    hintText: "Enter item name (press Return to add)...",
+                    hintText: _wheelItems.length >= 4 ? "Max 4 items reached" : "Enter item name (e.g. Kobe Bryant)...",
                     hintStyle: TextStyle(color: Colors.white30, fontSize: 11.5.sp),
                     filled: true,
                     fillColor: const Color(0xFF161B2E),
@@ -3376,8 +3803,8 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
               ),
               SizedBox(width: 8.w),
               IconButton(
-                onPressed: _addEntry,
-                icon: Icon(Icons.add_circle, color: const Color(0xFF8B9BFF), size: 28.sp),
+                onPressed: _wheelItems.length >= 4 ? null : _addEntry,
+                icon: Icon(Icons.add_circle, color: _wheelItems.length >= 4 ? Colors.white24 : const Color(0xFF8B9BFF), size: 28.sp),
               ),
             ],
           ),

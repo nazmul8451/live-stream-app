@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../../data/services/api_url.dart';
 import '../controller/agora_live_controller.dart';
 import '../../../../core/app_route.dart';
@@ -1847,17 +1846,24 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
               Positioned(
                 top: -6.h,
                 left: -6.w,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF52C5),
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
-                  child: Text(
-                    "HOT",
-                    style: TextStyle(color: Colors.white, fontSize: 8.sp, fontWeight: FontWeight.w900),
-                  ),
-                ),
+                child: Obx(() {
+                  final isGiveaway = ctrl.currentProductIsGiveaway.value;
+                  return Container(
+                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                    decoration: BoxDecoration(
+                      color: isGiveaway ? const Color(0xFFFFB800) : const Color(0xFFFF52C5),
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                    child: Text(
+                      isGiveaway ? "🎁 GIVEAWAY" : "HOT",
+                      style: TextStyle(
+                        color: isGiveaway ? Colors.black : Colors.white,
+                        fontSize: 8.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  );
+                }),
               ),
             ],
           ),
@@ -2044,7 +2050,45 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
         ),
         SizedBox(width: 8.w),
 
-
+        // Live Products Tray Button (Update 1 & 2)
+        GestureDetector(
+          onTap: () => _showLiveProductsSheet(),
+          child: Container(
+            height: 48.r,
+            width: 48.r,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.4),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 20.sp),
+                Obx(() {
+                  final count = ctrl.streamInventoryItems.length;
+                  if (count == 0) return const SizedBox.shrink();
+                  return Positioned(
+                    top: 6.r,
+                    right: 6.r,
+                    child: Container(
+                      padding: EdgeInsets.all(2.r),
+                      decoration: const BoxDecoration(color: Color(0xFFFF52C5), shape: BoxShape.circle),
+                      constraints: BoxConstraints(minWidth: 15.r, minHeight: 15.r),
+                      alignment: Alignment.center,
+                      child: Text(
+                        count > 99 ? '99+' : '$count',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white, fontSize: 8.sp, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(width: 8.w),
 
         Obx(() {
           if (!ctrl.auctionActive.value) return const SizedBox.shrink();
@@ -2555,6 +2599,199 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showLiveProductsSheet() {
+    Get.bottomSheet(
+      Container(
+        height: 580.h,
+        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 20.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F111D),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          border: Border.all(color: const Color(0xFF22283F)),
+        ),
+        child: Column(
+          children: [
+            Center(
+              child: Container(
+                width: 44.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: 14.h),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(6.r),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B9BFF).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Icon(Icons.inventory_2_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
+                ),
+                SizedBox(width: 8.w),
+                Obx(() => Text(
+                  "Show Inventory (${ctrl.streamInventoryItems.length})",
+                  style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                )),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Get.back(),
+                  icon: Icon(Icons.close_rounded, color: Colors.white60, size: 20.sp),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Expanded(
+              child: Obx(() {
+                if (ctrl.streamInventoryItems.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.inventory_2_outlined, color: Colors.white24, size: 48.sp),
+                        SizedBox(height: 12.h),
+                        Text(
+                          "No products listed yet",
+                          style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w700),
+                        ),
+                        SizedBox(height: 6.h),
+                        Text(
+                          "When the host lists products or giveaways, they appear here live.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.white38, fontSize: 11.5.sp),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: ctrl.streamInventoryItems.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                  itemBuilder: (context, index) {
+                    final item = ctrl.streamInventoryItems[index];
+                    final title = item['title'] ?? item['name'] ?? 'Product';
+                    final category = item['category'] ?? 'Item';
+                    final price = item['buyNowPrice'] ?? item['price'] ?? item['startingBid'] ?? 0;
+                    final isGiveaway = item['isGiveaway'] == true;
+                    final condition = item['condition'] ?? '';
+                    final image = (item['images'] is List && (item['images'] as List).isNotEmpty)
+                        ? item['images'][0].toString()
+                        : (item['image'] ?? '');
+                    final pid = (item['_id'] ?? item['id'] ?? '').toString();
+                    final isCurrentlyLive = ctrl.currentProductId.value.isNotEmpty && ctrl.currentProductId.value == pid;
+
+                    return Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161B2E),
+                        borderRadius: BorderRadius.circular(14.r),
+                        border: Border.all(
+                          color: isCurrentlyLive ? const Color(0xFFFF52C5) : const Color(0xFF22283F),
+                          width: isCurrentlyLive ? 1.5 : 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 52.r,
+                            height: 52.r,
+                            clipBehavior: Clip.antiAlias,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E2640),
+                              borderRadius: BorderRadius.circular(10.r),
+                            ),
+                            child: image.isNotEmpty
+                                ? Image.network(
+                                    image.startsWith('http')
+                                        ? image
+                                        : "${ApiUrl.imageBaseUrl}${image.startsWith('/') ? image : '/$image'}",
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Icon(Icons.image, color: Colors.white24, size: 20.sp),
+                                  )
+                                : Icon(Icons.image, color: Colors.white24, size: 20.sp),
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    if (isCurrentlyLive)
+                                      Container(
+                                        margin: EdgeInsets.only(right: 6.w),
+                                        padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.5.h),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFF52C5),
+                                          borderRadius: BorderRadius.circular(4.r),
+                                        ),
+                                        child: Text(
+                                          "LIVE",
+                                          style: TextStyle(color: Colors.white, fontSize: 8.5.sp, fontWeight: FontWeight.w900),
+                                        ),
+                                      ),
+                                    if (isGiveaway)
+                                      Container(
+                                        margin: EdgeInsets.only(right: 6.w),
+                                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFFB800).withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(4.r),
+                                          border: Border.all(color: const Color(0xFFFFB800).withValues(alpha: 0.5)),
+                                        ),
+                                        child: Text(
+                                          "🎁 GIVEAWAY",
+                                          style: TextStyle(color: const Color(0xFFFFB800), fontSize: 8.5.sp, fontWeight: FontWeight.w900),
+                                        ),
+                                      ),
+                                    Expanded(
+                                      child: Text(
+                                        title,
+                                        style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 4.h),
+                                Text(
+                                  condition.isNotEmpty ? "$category • $condition" : "$category",
+                                  style: TextStyle(color: Colors.white54, fontSize: 10.5.sp),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Text(
+                            isGiveaway ? "FREE" : "\$$price",
+                            style: TextStyle(
+                              color: isGiveaway ? const Color(0xFFFFB800) : const Color(0xFF10B981),
+                              fontSize: 13.5.sp,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
     );
   }
 }
