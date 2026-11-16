@@ -10,7 +10,7 @@ class BidShwapController extends GetxController {
   final RxBool isLoading = false.obs;
 
   var selectedFilter = 0.obs;
-  final RxList<String> filters = <String>["ALL TRADES"].obs;
+  final RxList<String> filters = <String>["All"].obs;
   final Map<String, String> categoryNameToId = {};
   final Map<String, String> categoryIdToName = {};
 
@@ -112,7 +112,7 @@ class BidShwapController extends GetxController {
         }
 
         if (parsed.isNotEmpty) {
-          filters.assignAll(["ALL TRADES", ...parsed]);
+          filters.assignAll(["All", ...parsed]);
           if (selectedFilter.value >= filters.length) {
             selectedFilter.value = 0;
           }
