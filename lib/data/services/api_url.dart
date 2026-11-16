@@ -62,6 +62,8 @@ class ApiUrl {
 
   // Category
   static const String category = "/category";
+  // All top-level categories (API default page size is 10)
+  static const String categoryList = "/category?limit=100&type=category";
   static const String popularCategories = "/category/popular-categories";
 
   // Safety & Compliance Disclaimer

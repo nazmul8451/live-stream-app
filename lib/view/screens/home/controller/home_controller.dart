@@ -596,7 +596,7 @@ class HomeController extends GetxController {
   Future<void> fetchCategories() async {
     try {
       Get.log("🔄 [Home] Fetching categories from API: ${ApiUrl.category}");
-      var response = await _apiClient.getData(ApiUrl.category);
+      var response = await _apiClient.getData(ApiUrl.categoryList);
 
       if (response.statusCode != 200) {
         Get.log("🔄 [Home] Primary category endpoint failed (${response.statusCode}), trying fallback: ${ApiUrl.popularCategories}");
@@ -608,6 +608,9 @@ class HomeController extends GetxController {
         List data = [];
         if (resBody['data'] is List) {
           data = resBody['data'];
+        } else if (resBody['data'] is Map && resBody['data']['data'] is List) {
+          // Paginated shape: { data: { meta, data: [...] } }
+          data = resBody['data']['data'];
         } else if (resBody['categories'] is List) {
           data = resBody['categories'];
         }

@@ -25,7 +25,7 @@ class CategoryScreen extends GetView<CategoryController> {
                     icon: Icon(Icons.close, color: Colors.white, size: 28.sp),
                   ),
                   Text(
-                    "Auction Live",
+                    "Marketplace",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18.sp,

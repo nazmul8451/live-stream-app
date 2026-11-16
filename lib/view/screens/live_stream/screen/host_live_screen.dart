@@ -1,5 +1,6 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/cupertino.dart' show CupertinoSwitch;
 import 'dart:math' as math;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -2487,49 +2488,32 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
     final titleController = TextEditingController();
     final priceController = TextEditingController();
     final isGiveaway = false.obs;
-    final List<String> categories = [];
-    if (Get.isRegistered<HomeController>()) {
-      final hCtrl = Get.find<HomeController>();
-      final dynamicCats = hCtrl.categories.where((c) => c != "All" && c.trim().isNotEmpty).toList();
-      if (dynamicCats.isNotEmpty) {
-        categories.addAll(dynamicCats);
-      }
-    }
-    if (categories.isEmpty) {
-      categories.addAll(const [
-        "Trading Cards & TCG",
-        "Sports Memorabilia",
-        "Toys & Collectibles",
-        "Sneakers & Streetwear",
-        "Fashion & Apparel",
-        "Watches & Luxury",
-        "Jewelry & Accessories",
-        "Electronics & Tech",
-        "Coins & Currency",
-        "Comics, Anime & Manga",
-        "Video Games",
-        "Vintage & Antiques",
-        "Home & Lifestyle",
-        "Beauty & Personal Care",
-        "Books, Music & Media",
-        "Other / Not Listed",
-      ]);
-    }
+    // Client spec: the 16 AREIS marketplace categories (backend resolves by name)
+    const categories = [
+      "Trading Cards & TCG",
+      "Sports Memorabilia",
+      "Toys & Collectibles",
+      "Sneakers & Streetwear",
+      "Fashion & Apparel",
+      "Watches & Luxury",
+      "Jewelry & Accessories",
+      "Electronics & Tech",
+      "Coins & Currency",
+      "Comics, Anime & Manga",
+      "Video Games",
+      "Vintage & Antiques",
+      "Home & Lifestyle",
+      "Beauty & Personal Care",
+      "Books, Music & Media",
+      "Other / Not Listed",
+    ];
 
-    final selectedCategory = (categories.isNotEmpty ? categories.first : "Trading Cards & TCG").obs;
-    final selectedCondition = "PSA 10".obs;
+    final selectedCategory = categories.first.obs;
+    final selectedCondition = "Near Mint".obs;
     final isSubmitting = false.obs;
 
-    const conditions = [
-      "PSA 10",
-      "PSA 9",
-      "BGS 9.5",
-      "CGC 9.5",
-      "Raw Gem Mint",
-      "Near Mint - Mint",
-      "Excellent",
-      "Brand New / Sealed",
-    ];
+    // Must match the backend Product.condition enum
+    const conditions = ["Mint", "Near Mint", "Excellent", "Good", "Fair"];
 
     // Fetch Inventory for Tab 1
     final sellerId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
@@ -3435,17 +3419,14 @@ class _SpinWheelSheetWidget extends StatefulWidget {
 }
 
 class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with SingleTickerProviderStateMixin {
-  final List<String> _wheelItems = [
-    "Mystery Pack",
-    "Silver Foil Rare",
-    "\$15 Coupon",
-    "Holo Charizard",
-  ];
+  // Seller enters their own entries (client spec: up to 4 names/items)
+  final List<String> _wheelItems = [];
   final TextEditingController _itemInputController = TextEditingController();
   late AnimationController _animController;
   Animation<double>? _spinAnim;
   double _currentRotation = 0.0;
   bool _isSpinning = false;
+  bool _lastPrizeAttached = false;
 
   @override
   void initState() {
@@ -3509,38 +3490,38 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
     final ctrl = Get.find<AgoraLiveController>();
     final buyerId = widget.targetBuyerId ?? ctrl.lastBidderId.value;
 
-    int targetIndex = 0;
-    String winningItemName = '';
+    int targetIndex;
+    String winningItemName;
 
-    // Call server authoritative spin
-    try {
-      final res = await ctrl.spinWheelOnServer(
-        _wheelItems,
-        buyerId: buyerId.isNotEmpty ? buyerId : null,
+    // The server is the only source of truth for the result (fair + auditable).
+    final res = await ctrl.spinWheelOnServer(
+      _wheelItems,
+      buyerId: buyerId.isNotEmpty ? buyerId : null,
+    );
+    if (res == null || res['winningIndex'] == null) {
+      if (mounted) setState(() => _isSpinning = false);
+      Get.snackbar(
+        "Spin failed",
+        "Couldn't reach the server. Nothing was awarded — please try again.",
+        backgroundColor: const Color(0xFFE11D48),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
       );
-      if (res != null && res['winningIndex'] != null) {
-        targetIndex = (res['winningIndex'] as num).toInt();
-        winningItemName = res['winningItem']?.toString() ?? _wheelItems[targetIndex];
-      } else {
-        targetIndex = math.Random().nextInt(_wheelItems.length);
-        winningItemName = _wheelItems[targetIndex];
-      }
-    } catch (_) {
-      targetIndex = math.Random().nextInt(_wheelItems.length);
-      winningItemName = _wheelItems[targetIndex];
+      return;
     }
+    targetIndex = (res['winningIndex'] as num).toInt();
+    if (targetIndex < 0 || targetIndex >= _wheelItems.length) targetIndex = 0;
+    winningItemName = res['winningItem']?.toString() ?? _wheelItems[targetIndex];
+    _lastPrizeAttached = res['orderId'] != null || res['attachedToOrder'] == true;
 
-    if (targetIndex < 0 || targetIndex >= _wheelItems.length) {
-      targetIndex = 0;
-      winningItemName = _wheelItems[0];
-    }
-
+    // Slices are drawn clockwise from 3 o'clock; the needle sits at 12 o'clock.
+    // Rotate so the CENTER of the winning slice ends exactly under the needle.
     final sliceAngle = (2 * math.pi) / _wheelItems.length;
-    final extraFullTurns = (isShuffle ? 3 : 5) * 2 * math.pi;
-    final landingAngle = extraFullTurns + (_wheelItems.length - targetIndex) * sliceAngle - (sliceAngle / 2);
-
-    final startAngle = _currentRotation % (2 * math.pi);
-    final endAngle = startAngle + landingAngle;
+    const twoPi = 2 * math.pi;
+    final startAngle = _currentRotation % twoPi;
+    final targetRotation = (-math.pi / 2 - (targetIndex + 0.5) * sliceAngle) % twoPi;
+    final delta = (targetRotation - startAngle) % twoPi;
+    final endAngle = startAngle + 5 * twoPi + delta;
 
     _spinAnim = Tween<double>(begin: startAngle, end: endAngle).animate(
       CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
@@ -3568,11 +3549,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
         (ctrl.lastBidderName.value.isNotEmpty ? ctrl.lastBidderName.value : "Winning Buyer");
     final buyerId = widget.targetBuyerId ?? ctrl.lastBidderId.value;
 
-    // Attach to buyer order locally as fallback
-    ctrl.attachSpinWheelPrizeToOrder(
-      itemName: selectedItem,
-      buyerId: buyerId,
-    );
+    final hasBuyer = buyerId.isNotEmpty;
 
     // Show result dialog with option to remove or keep / reshuffle
     Get.dialog(
@@ -3606,7 +3583,11 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Text(
-                  "Saved to @$buyerName's purchase on server",
+                  _lastPrizeAttached
+                      ? "Added to @$buyerName's order"
+                      : (hasBuyer
+                          ? "Will be added to @$buyerName's order at checkout"
+                          : "No winning bidder yet — result not attached to an order"),
                   style: TextStyle(color: const Color(0xFF10B981), fontSize: 11.5.sp, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -3872,7 +3853,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                     angle: _currentRotation,
                     child: CustomPaint(
                       size: Size(220.r, 220.r),
-                      painter: _WheelPainter(items: _wheelItems),
+                      painter: _WheelPainter(items: List.of(_wheelItems)),
                     ),
                   ),
                   // Center Hub
@@ -3930,7 +3911,9 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
               SizedBox(width: 10.w),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _isSpinning ? null : () => _spinWheel(isShuffle: true),
+                  onPressed: _isSpinning || _wheelItems.length < 2
+                      ? null
+                      : () => setState(() => _wheelItems.shuffle()),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF8B9BFF),
                     side: const BorderSide(color: Color(0xFF8B9BFF), width: 1.2),
@@ -4019,6 +4002,6 @@ class _WheelPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WheelPainter oldDelegate) {
-    return oldDelegate.items != items;
+    return !listEquals(oldDelegate.items, items);
   }
 }

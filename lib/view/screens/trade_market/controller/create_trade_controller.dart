@@ -140,6 +140,11 @@ class CreateTradeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Opened from the Sell chooser: 0 = Trading, 1 = Add to Inventory
+    final args = Get.arguments;
+    if (args is Map && args['mode'] is int) {
+      listingMode.value = args['mode'] as int;
+    }
     fetchCategories();
   }
 
@@ -155,7 +160,7 @@ class CreateTradeController extends GetxController {
       // Fallback: try singular /category if /categories fails
       if (response.statusCode != 200 && response.statusCode != 201) {
         Get.log("🔄 [fetchCategories] /categories failed, trying fallback: ${ApiUrl.category}");
-        response = await _apiClient.getData(ApiUrl.category);
+        response = await _apiClient.getData(ApiUrl.categoryList);
         Get.log("🔄 [fetchCategories] /category fallback status code: ${response.statusCode}");
       }
 
@@ -178,7 +183,7 @@ class CreateTradeController extends GetxController {
         // If categories are empty, try the other endpoint just in case
         if (dataList.isEmpty && response.request?.url.path.endsWith("/categories") == true) {
           Get.log("🔄 [fetchCategories] /categories was empty, trying fallback: ${ApiUrl.category}");
-          response = await _apiClient.getData(ApiUrl.category);
+          response = await _apiClient.getData(ApiUrl.categoryList);
           decoded = jsonDecode(response.body);
           if (decoded is List) {
             dataList = decoded;

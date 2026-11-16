@@ -231,15 +231,107 @@ class CustomBottomNavbar extends StatelessWidget {
     });
   }
 
+  /// Client spec: Sell offers TRADING or ADD TO Inventory.
+  void _showSellOptions() {
+    Widget option({
+      required IconData icon,
+      required Color color,
+      required String title,
+      required String subtitle,
+      required int mode,
+    }) {
+      return InkWell(
+        borderRadius: BorderRadius.circular(16.r),
+        onTap: () {
+          Get.back();
+          Get.toNamed('/create_trade', arguments: {'mode': mode});
+        },
+        child: Container(
+          padding: EdgeInsets.all(16.r),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1F35),
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(color: color.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
+                child: Icon(icon, color: color, size: 22.sp),
+              ),
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                    SizedBox(height: 4.h),
+                    Text(subtitle, style: TextStyle(color: Colors.white60, fontSize: 12.sp, height: 1.35)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 22.sp),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Get.bottomSheet(
+      SafeArea(
+        child: Container(
+          padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F1222),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2.r)),
+                ),
+              ),
+              SizedBox(height: 16.h),
+              Text("What would you like to do?", style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w900)),
+              SizedBox(height: 16.h),
+              option(
+                icon: Icons.swap_horiz_rounded,
+                color: const Color(0xFF8B9BFF),
+                title: "TRADING",
+                subtitle: "List an item specifically for trading with another user.",
+                mode: 0,
+              ),
+              SizedBox(height: 12.h),
+              option(
+                icon: Icons.inventory_2_rounded,
+                color: const Color(0xFF10B981),
+                title: "ADD TO Inventory",
+                subtitle: "Upload and save products to your personal inventory for future giveaways and auctions in your live shows.",
+                mode: 1,
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
   /// Center "Sell" Action Button with glowing icon and label underneath
   Widget _sellNavItem(BuildContext context) {
     return Expanded(
       child: InkWell(
         onTap: () {
           AuthGuard.check(
-            title: "Sign in to Create a Trade",
-            message: "Guest mode is browse-only. Sign in to list items and start trading with others.",
-            onAuthorized: () => Get.toNamed('/create_trade'),
+            title: "Sign in to Sell",
+            message: "Guest mode is browse-only. Sign in to add inventory and start trading with others.",
+            onAuthorized: _showSellOptions,
           );
         },
         splashColor: Colors.transparent,

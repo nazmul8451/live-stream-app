@@ -71,7 +71,7 @@ class BidShwapController extends GetxController {
 
   Future<void> fetchCategories() async {
     try {
-      var response = await _apiClient.getData(ApiUrl.category);
+      var response = await _apiClient.getData(ApiUrl.categoryList);
       if (response.statusCode != 200 && response.statusCode != 201) {
         response = await _apiClient.getData("/categories");
       }

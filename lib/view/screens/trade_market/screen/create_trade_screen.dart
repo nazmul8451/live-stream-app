@@ -21,7 +21,7 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
             onPressed: () => Get.back(),
           ),
           title: Text(
-            "List Item / Create Trade",
+            "Add Inventory",
             style: TextStyle(
               color: Colors.white,
               fontSize: 16.sp,
@@ -38,6 +38,13 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
             children: [
               SizedBox(height: 14.h),
 
+              // Client spec: main heading
+              Text(
+                "Add to Your Inventory",
+                style: TextStyle(color: Colors.white, fontSize: 22.sp, fontWeight: FontWeight.w900),
+              ),
+              SizedBox(height: 16.h),
+
               // ── 1. CLEAR MODE SELECTOR ──
               _buildModeSwitcher(),
 
@@ -46,6 +53,7 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
               // ── 2. ITEM DETAILS CARD ──
               _buildSectionCard(
                 title: "Item Details",
+                subtitle: "List items in your personal inventory for future live shows, or make them available to buyers through the AREIS Trade Marketplace.",
                 icon: Icons.inventory_2_outlined,
                 children: [
                   _buildUploadBox(),

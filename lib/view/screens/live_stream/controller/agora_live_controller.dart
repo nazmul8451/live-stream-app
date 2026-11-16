@@ -764,9 +764,17 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           : Map<String, dynamic>.from(data as Map);
       if (resMap['product'] != null) {
         final prod = Map<String, dynamic>.from(resMap['product'] as Map);
+        // Keep the giveaway flag so the viewer's inventory shows the 🎁 badge
+        prod['isGiveaway'] = resMap['isGiveaway'] == true || prod['isGiveaway'] == true;
         final pid = (prod['_id'] ?? prod['id'] ?? '').toString();
         if (pid.isNotEmpty && !streamInventoryItems.any((e) => (e['_id'] ?? e['id']).toString() == pid)) {
           streamInventoryItems.add(prod);
+          if (!isHost.value) {
+            _showLiveToast(
+              prod['isGiveaway'] == true ? "New giveaway item 🎁" : "New item in this show 📦",
+              (prod['title'] ?? 'A new item').toString(),
+            );
+          }
         }
       }
     } catch (e) {
@@ -919,8 +927,15 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       }
 
       final reactionType = rMap['reactionType']?.toString() ?? 'heart';
+      final myId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+      final fromMe = myId.isNotEmpty && rMap['fromUserId']?.toString() == myId;
       if (reactionType == 'heart') {
-        triggerFloatingHeart();
+        if (!fromMe) {
+          final n = (int.tryParse('${rMap['count'] ?? 1}') ?? 1).clamp(1, 5);
+          for (var i = 0; i < n; i++) {
+            Future.delayed(Duration(milliseconds: 120 * i), triggerFloatingHeart);
+          }
+        }
       } else {
         triggerFloatingEmoji(reactionType);
       }
@@ -1310,6 +1325,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
                   streamBody['id'] ?? 
                   '';
       debugPrint('🔑 [AgoraLiveController] Parsed streamId: ' + sid);
+      _resetPerStreamState();
       streamId.value = sid;
       channelName.value = channel;
       streamTitle.value = title;
@@ -1406,8 +1422,11 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       activeStreamData = streamData;
       final sid = (streamData['_id'] ?? streamData['id'] ?? streamData['streamId'] ?? '').toString();
       isHost.value = false;
+      if (streamId.value != sid) _resetPerStreamState();
       streamId.value = sid;
       streamTitle.value = streamData['title']?.toString() ?? "Live Stream";
+      // Late joiners must see items the host already added
+      fetchStreamInventory();
 
       // Fetch fresh stream to get fully-populated auctionItems
       Map<String, dynamic> activeStream = streamData;
@@ -2513,8 +2532,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   Future<bool> addLiveStreamItem({
     required String title,
     double price = 0.0,
-    String category = 'Trading Cards & TCG',
-    String condition = 'PSA 10',
+    String category = 'Other / Not Listed',
+    String condition = 'Near Mint',
     bool isGiveaway = false,
     String? image,
   }) async {
@@ -2527,7 +2546,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         "category": category,
         "condition": condition,
         "isGiveaway": isGiveaway,
-        "images": (image != null && image.isNotEmpty) ? [image] : [],
+        if (image != null && image.isNotEmpty) "images": [image],
       };
       final res = await _apiClient.postData(ApiUrl.addStreamInventory(streamId.value), payload);
       if (res.statusCode == 200 || res.statusCode == 201) {
@@ -2536,7 +2555,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         if (prod != null) {
           final pid = (prod['_id'] ?? prod['id'] ?? '').toString();
           if (pid.isNotEmpty && !streamInventoryItems.any((e) => (e['_id'] ?? e['id']).toString() == pid)) {
-            streamInventoryItems.add(prod);
+            streamInventoryItems.add({...prod, 'isGiveaway': isGiveaway});
           }
         }
         if (isGiveaway) {
@@ -2546,61 +2565,44 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
             itemImage: image,
           );
         }
-        Get.snackbar(
-          "Item Added! 📦",
-          "'$title' added to live inventory without stopping stream.",
-          backgroundColor: const Color(0xFF10B981),
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
+        _showLiveToast(
+          isGiveaway ? "Giveaway item added 🎁" : "Item added 📦",
+          "'${title.trim()}' is now visible to your viewers.",
         );
         return true;
-      } else {
-        // Fallback: create product then patch inventory
-        final prodPayload = {
-          "title": title.trim(),
-          "buyNowPrice": price,
-          "startingBid": price,
-          "category": category,
-          "condition": condition,
-          "allowTrade": false,
-          "images": (image != null && image.isNotEmpty) ? [image] : [],
-        };
-        final pRes = await _apiClient.postData(ApiUrl.products, prodPayload);
-        if (pRes.statusCode == 200 || pRes.statusCode == 201) {
-          final pBody = jsonDecode(pRes.body);
-          final pData = pBody['data'] is Map ? Map<String, dynamic>.from(pBody['data']) : null;
-          if (pData != null) {
-            final pid = (pData['_id'] ?? pData['id'] ?? '').toString();
-            streamInventoryItems.add(pData);
-            if (pid.isNotEmpty) {
-              final currentIds = streamInventoryItems
-                  .map((e) => (e['_id'] ?? e['id'] ?? '').toString())
-                  .where((id) => id.isNotEmpty)
-                  .toList();
-              await _apiClient.patchData(ApiUrl.streamInventory(streamId.value), {"inventoryIds": currentIds});
-            }
-            if (isGiveaway) {
-              runItemGiveaway(
-                itemTitle: title.trim(),
-                productId: pid,
-                itemImage: image,
-              );
-            }
-            Get.snackbar(
-              "Item Added! 📦",
-              "'$title' added to live inventory.",
-              backgroundColor: const Color(0xFF10B981),
-              colorText: Colors.white,
-              snackPosition: SnackPosition.TOP,
-            );
-            return true;
-          }
-        }
       }
+      _showLiveToast("Couldn't add item", _serverMessage(res.body, "Please check the details and try again."), isError: true);
     } catch (e) {
       debugPrint("❌ [AgoraLiveController] addLiveStreamItem error: $e");
+      _showLiveToast("Couldn't add item", "Network problem — please try again.", isError: true);
     }
     return false;
+  }
+
+  /// Extracts a human-readable message from an API error body.
+  String _serverMessage(String body, String fallback) {
+    try {
+      final j = jsonDecode(body);
+      final msg = (j is Map ? (j['message'] ?? j['error']) : null)?.toString() ?? '';
+      if (msg.isNotEmpty && msg.length < 160 && !msg.contains('Error:')) return msg;
+    } catch (_) {}
+    return fallback;
+  }
+
+  /// Consistent, short in-stream toast (doesn't cover the host's controls).
+  void _showLiveToast(String title, String message, {bool isError = false}) {
+    if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: isError ? const Color(0xFFE11D48) : const Color(0xFF10B981),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(12),
+      borderRadius: 14,
+      duration: Duration(seconds: isError ? 4 : 2),
+      icon: Icon(isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded, color: Colors.white),
+    );
   }
 
   // ─── RUN INVENTORY ITEM AS GIVEAWAY (Task 10) ───
@@ -3276,47 +3278,47 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  // Hearts: every tap animates locally; taps are batched and sent ~1/sec.
+  int _pendingHearts = 0;
+  Timer? _heartFlushTimer;
+
   void sendLike() {
-    // 1. Always trigger local floating heart animation for visual user feedback
     triggerFloatingHeart();
-
-    // 2. If user has ALREADY liked, do NOT send socket/network events again
-    if (isLiked.value) return;
-
-    // 3. Mark as liked and increment like count ONCE
     isLiked.value = true;
     likeCount.value++;
+    _pendingHearts++;
+    _heartFlushTimer ??= Timer(const Duration(milliseconds: 900), _flushHearts);
+  }
 
-    // 4. Send socket event ONLY ONCE
+  void _flushHearts() {
+    _heartFlushTimer = null;
+    final count = _pendingHearts;
+    _pendingHearts = 0;
+    if (count <= 0 || streamId.value.isEmpty) return;
     try {
       if (Get.isRegistered<SocketService>()) {
-        final socketService = Get.find<SocketService>();
-        socketService.emitEvent('stream-reaction', {
+        Get.find<SocketService>().emitEvent('stream-reaction', {
           'streamId': streamId.value,
           'reactionType': 'heart',
+          'count': count,
         });
       }
     } catch (e) {
       debugPrint("❌ Failed to emit stream-reaction: $e");
     }
+  }
 
-    // 5. Send data stream event ONLY ONCE
-    if (engine != null && _dataStreamId != null) {
-      try {
-        final payload = jsonEncode({
-          "type": "like",
-        });
-        final bytes = utf8.encode(payload);
-        engine!.sendStreamMessage(
-          streamId: _dataStreamId!,
-          data: Uint8List.fromList(bytes),
-          length: bytes.length,
-        );
-        debugPrint("✅ Broadcasted initial like event");
-      } catch (e) {
-        debugPrint("❌ Failed to broadcast like: $e");
-      }
-    }
+  /// Clears everything that belongs to a single show so nothing leaks into
+  /// the next stream (controller is a permanent singleton).
+  void _resetPerStreamState() {
+    _heartFlushTimer?.cancel();
+    _heartFlushTimer = null;
+    _pendingHearts = 0;
+    isLiked.value = false;
+    likeCount.value = 0;
+    streamInventoryItems.clear();
+    currentProductIsGiveaway.value = false;
+    giveawayPrizeName.value = '';
   }
 
   @override

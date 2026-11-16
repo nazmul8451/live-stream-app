@@ -463,7 +463,7 @@ class MakeOfferController extends GetxController {
     try {
       var response = await _apiClient.getData("/categories");
       if (response.statusCode != 200 && response.statusCode != 201) {
-        response = await _apiClient.getData(ApiUrl.category);
+        response = await _apiClient.getData(ApiUrl.categoryList);
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
