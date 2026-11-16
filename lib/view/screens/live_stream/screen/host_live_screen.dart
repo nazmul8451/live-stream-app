@@ -12,6 +12,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/helpers/product_cache.dart';
 import '../../../../data/services/api_client.dart';
 import '../../profile/controller/profile_controller.dart';
+import '../../home/controller/home_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class HostLiveScreen extends StatefulWidget {
@@ -2486,28 +2487,38 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
     final titleController = TextEditingController();
     final priceController = TextEditingController();
     final isGiveaway = false.obs;
-    final selectedCategory = "Trading Cards & TCG".obs;
+    final List<String> categories = [];
+    if (Get.isRegistered<HomeController>()) {
+      final hCtrl = Get.find<HomeController>();
+      final dynamicCats = hCtrl.categories.where((c) => c != "All" && c.trim().isNotEmpty).toList();
+      if (dynamicCats.isNotEmpty) {
+        categories.addAll(dynamicCats);
+      }
+    }
+    if (categories.isEmpty) {
+      categories.addAll(const [
+        "Trading Cards & TCG",
+        "Sports Memorabilia",
+        "Toys & Collectibles",
+        "Sneakers & Streetwear",
+        "Fashion & Apparel",
+        "Watches & Luxury",
+        "Jewelry & Accessories",
+        "Electronics & Tech",
+        "Coins & Currency",
+        "Comics, Anime & Manga",
+        "Video Games",
+        "Vintage & Antiques",
+        "Home & Lifestyle",
+        "Beauty & Personal Care",
+        "Books, Music & Media",
+        "Other / Not Listed",
+      ]);
+    }
+
+    final selectedCategory = (categories.isNotEmpty ? categories.first : "Trading Cards & TCG").obs;
     final selectedCondition = "PSA 10".obs;
     final isSubmitting = false.obs;
-
-    const categories = [
-      "Trading Cards & TCG",
-      "Sports Memorabilia",
-      "Toys & Collectibles",
-      "Sneakers & Streetwear",
-      "Fashion & Apparel",
-      "Watches & Luxury",
-      "Jewelry & Accessories",
-      "Electronics & Tech",
-      "Coins & Currency",
-      "Comics, Anime & Manga",
-      "Video Games",
-      "Vintage & Antiques",
-      "Home & Lifestyle",
-      "Beauty & Personal Care",
-      "Books, Music & Media",
-      "Other / Not Listed",
-    ];
 
     const conditions = [
       "PSA 10",
