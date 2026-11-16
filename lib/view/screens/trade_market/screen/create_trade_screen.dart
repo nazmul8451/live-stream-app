@@ -21,7 +21,7 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
             onPressed: () => Get.back(),
           ),
           title: Text(
-            "Create Trade",
+            "List Item / Create Trade",
             style: TextStyle(
               color: Colors.white,
               fontSize: 16.sp,
@@ -38,39 +38,28 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
             children: [
               SizedBox(height: 20.h),
               Text(
-                "Create Trade",
+                "List Item / Create Trade",
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 32.sp,
+                  fontSize: 28.sp,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: -1,
+                  letterSpacing: -0.5,
                 ),
               ),
               SizedBox(height: 8.h),
               Text(
-                "Curate your exchange. Offer excellence,\nreceive value.",
+                "List an item to your inventory or create a trade offer.",
                 style: TextStyle(
                   color: Colors.white60,
-                  fontSize: 16.sp,
+                  fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
                   height: 1.4,
                 ),
               ),
 
-              SizedBox(height: 40.h),
+              SizedBox(height: 32.h),
               _buildSectionTitle("Your Item"),
-              SizedBox(height: 8.h),
-              Text(
-                "Present your masterpiece. High-quality imagery and detailed provenance attract the most prestigious offers.",
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w500,
-                  height: 1.4,
-                ),
-              ),
-
-              SizedBox(height: 24.h),
+              SizedBox(height: 16.h),
               _buildUploadBox(),
 
               SizedBox(height: 32.h),
@@ -917,82 +906,111 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
     List<String> options,
     Function(String) onSelect,
   ) {
+    final searchCtrl = TextEditingController();
+    final filteredOptions = List<String>.from(options).obs;
+
     Get.bottomSheet(
       Container(
-        padding: EdgeInsets.all(24.r),
+        constraints: BoxConstraints(maxHeight: 0.85.sh),
+        padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 16.h),
         decoration: BoxDecoration(
-          color: const Color(0xFF11111A),
+          color: const Color(0xFF161622),
           borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+          border: Border.all(color: const Color(0xFF2E1E5D), width: 1.5),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20.sp,
-                fontWeight: FontWeight.w900,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                  onPressed: () => Get.back(),
+                ),
+              ],
             ),
-            SizedBox(height: 24.h),
-            Flexible(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: options.map((opt) {
-                    IconData icon;
-                    String listings;
-                    switch (opt) {
-                      case "Sneakers":
-                        icon = Icons.directions_run;
-                        listings = "1234 listings";
-                        break;
-                      case "Trading Cards":
-                        icon = Icons.style;
-                        listings = "892 listings";
-                        break;
-                      case "Tech":
-                        icon = Icons.devices;
-                        listings = "678 listings";
-                        break;
-                      case "Watches":
-                        icon = Icons.watch;
-                        listings = "456 listings";
-                        break;
-                      default:
-                        icon = Icons.category_outlined;
-                        listings = "0 listings";
+            SizedBox(height: 16.h),
+
+            // Purple-Themed Search Bar
+            if (options.length > 5) ...[
+              Container(
+                height: 48.h,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0F0B1E),
+                  borderRadius: BorderRadius.circular(16.r),
+                  border: Border.all(color: const Color(0xFF2E1E5D), width: 1.2),
+                ),
+                child: TextField(
+                  controller: searchCtrl,
+                  style: TextStyle(color: Colors.white, fontSize: 14.sp),
+                  onChanged: (query) {
+                    final q = query.toLowerCase().trim();
+                    if (q.isEmpty) {
+                      filteredOptions.assignAll(options);
+                    } else {
+                      filteredOptions.assignAll(
+                        options.where((opt) => opt.toLowerCase().contains(q)).toList(),
+                      );
                     }
+                  },
+                  decoration: InputDecoration(
+                    hintText: "Search categories...",
+                    hintStyle: TextStyle(color: Colors.white38, fontSize: 13.sp),
+                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF8B9BFF), size: 20),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16.h),
+            ],
+
+            Flexible(
+              child: Obx(() {
+                if (filteredOptions.isEmpty) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: 30.h),
+                    child: Center(
+                      child: Text(
+                        "No matching categories found",
+                        style: TextStyle(color: Colors.white38, fontSize: 13.sp),
+                      ),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: filteredOptions.length,
+                  itemBuilder: (context, index) {
+                    final opt = filteredOptions[index];
+                    IconData icon = _getCategoryIcon(opt);
                     return ListTile(
-                      contentPadding: EdgeInsets.symmetric(vertical: 4.h),
+                      contentPadding: EdgeInsets.symmetric(vertical: 2.h),
                       leading: Container(
                         padding: EdgeInsets.all(10.r),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
+                          color: const Color(0xFF2E1E5D),
                           borderRadius: BorderRadius.circular(12.r),
                         ),
-                        child: Icon(
-                          icon,
-                          color: const Color(0xFF8B9BFF),
-                          size: 20.sp,
-                        ),
+                        child: Icon(icon, color: const Color(0xFF8B9BFF), size: 20.sp),
                       ),
                       title: Text(
                         opt,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 16.sp,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Text(
-                        listings,
-                        style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       onTap: () {
@@ -1000,63 +1018,124 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
                         Get.back();
                       },
                     );
-                  }).toList(),
-                ),
-              ),
+                  },
+                );
+              }),
             ),
-            SizedBox(height: 20.h),
+            SizedBox(height: 10.h),
           ],
         ),
       ),
+      isScrollControlled: true,
     );
   }
 
+  IconData _getCategoryIcon(String opt) {
+    final lower = opt.toLowerCase();
+    if (lower.contains("card") || lower.contains("tcg")) return Icons.style_rounded;
+    if (lower.contains("memorabilia") || lower.contains("jersey")) return Icons.sports_basketball_rounded;
+    if (lower.contains("toy") || lower.contains("collectible")) return Icons.toys_rounded;
+    if (lower.contains("sneaker") || lower.contains("streetwear")) return Icons.directions_run_rounded;
+    if (lower.contains("fashion") || lower.contains("apparel")) return Icons.checkroom_rounded;
+    if (lower.contains("watch") || lower.contains("luxury")) return Icons.watch_rounded;
+    if (lower.contains("jewel")) return Icons.diamond_rounded;
+    if (lower.contains("electronic") || lower.contains("tech")) return Icons.devices_rounded;
+    if (lower.contains("coin") || lower.contains("currency")) return Icons.monetization_on_rounded;
+    if (lower.contains("comic") || lower.contains("anime")) return Icons.auto_stories_rounded;
+    if (lower.contains("game")) return Icons.sports_esports_rounded;
+    if (lower.contains("vintage") || lower.contains("antique")) return Icons.history_edu_rounded;
+    if (lower.contains("home") || lower.contains("lifestyle")) return Icons.home_rounded;
+    if (lower.contains("beauty")) return Icons.spa_rounded;
+    if (lower.contains("book") || lower.contains("music")) return Icons.library_music_rounded;
+    return Icons.category_rounded;
+  }
+
   Widget _buildPostButton() {
-    return Container(
-      width: double.infinity,
-      height: 64.h,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32.r),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF8B9BFF).withOpacity(0.3),
-            blurRadius: 20.r,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Obx(
-        () => ElevatedButton(
-          onPressed: controller.isLoading.value
-              ? null
-              : () => controller.postTrade(),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF8B9BFF),
-            disabledBackgroundColor: const Color(0xFF8B9BFF).withOpacity(0.7),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(32.r),
-            ),
-            elevation: 0,
-          ),
-          child: controller.isLoading.value
-              ? SizedBox(
-                  width: 24.w,
-                  height: 24.h,
-                  child: const CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2.5,
-                  ),
-                )
-              : Text(
-                  "Post Trade",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
+    return Column(
+      children: [
+        // ── 1. ADD TO INVENTORY BUTTON (Above Post Trade) ──
+        SizedBox(
+          width: double.infinity,
+          height: 60.h,
+          child: Obx(
+            () => ElevatedButton.icon(
+              onPressed: controller.isLoading.value
+                  ? null
+                  : () => controller.addToInventory(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2E1E5D),
+                disabledBackgroundColor: const Color(0xFF2E1E5D).withOpacity(0.5),
+                foregroundColor: const Color(0xFF8B9BFF),
+                side: const BorderSide(color: Color(0xFF8B9BFF), width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.r),
                 ),
+                elevation: 0,
+              ),
+              icon: const Icon(Icons.inventory_2_outlined, color: Color(0xFF8B9BFF)),
+              label: Text(
+                "ADD TO INVENTORY",
+                style: TextStyle(
+                  color: const Color(0xFF8B9BFF),
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ),
         ),
-      ),
+
+        SizedBox(height: 16.h),
+
+        // ── 2. POST TRADE BUTTON ──
+        Container(
+          width: double.infinity,
+          height: 64.h,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32.r),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8B9BFF).withOpacity(0.3),
+                blurRadius: 20.r,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Obx(
+            () => ElevatedButton(
+              onPressed: controller.isLoading.value
+                  ? null
+                  : () => controller.postTrade(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF8B9BFF),
+                disabledBackgroundColor: const Color(0xFF8B9BFF).withOpacity(0.7),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(32.r),
+                ),
+                elevation: 0,
+              ),
+              child: controller.isLoading.value
+                  ? SizedBox(
+                      width: 24.w,
+                      height: 24.h,
+                      child: const CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2.5,
+                      ),
+                    )
+                  : Text(
+                      "Post Trade",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

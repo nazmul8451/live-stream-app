@@ -10,6 +10,8 @@ import '../../../../data/services/api_url.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../global/helper/auth_guard.dart';
 import '../../../../global/helper/share_helper.dart';
+import '../../../../data/services/api_client.dart';
+import '../../profile/controller/profile_controller.dart';
 
 class TradeDetailsScreen extends GetView<TradeDetailsController> {
   const TradeDetailsScreen({super.key});
@@ -247,9 +249,91 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
 
               final currentUserId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
               final seller = product['sellerId'];
-              final sellerId = (seller is Map) ? (seller['_id'] ?? seller['id'] ?? '') : seller.toString();
-              final isOwner = currentUserId.isNotEmpty && currentUserId == sellerId;
-              if (isOwner) return const SizedBox.shrink();
+              final String sellerId = (seller is Map ? (seller['_id'] ?? seller['id']) : seller)?.toString() ?? '';
+              final bool isOwner = currentUserId.isNotEmpty && (currentUserId == sellerId || currentUserId == (product['userId'] ?? '').toString());
+
+              if (isOwner) {
+                return Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    padding: EdgeInsets.fromLTRB(24.w, 20.h, 24.w, 32.h),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.black.withOpacity(0.0), Colors.black.withOpacity(0.95), Colors.black],
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Edit Listing Button
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showEditListingDialog(context, product, controller),
+                            child: Container(
+                              height: 56.h,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2E1E5D),
+                                borderRadius: BorderRadius.circular(28.r),
+                                border: Border.all(color: const Color(0xFF8B9BFF), width: 1.5),
+                              ),
+                              alignment: Alignment.center,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.edit_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
+                                  SizedBox(width: 8.w),
+                                  Text(
+                                    "Edit Listing",
+                                    style: TextStyle(
+                                      color: const Color(0xFF8B9BFF),
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16.w),
+                        // Delete Listing Button
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showDeleteConfirmation(context, product, controller),
+                            child: Container(
+                              height: 56.h,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF3B1219),
+                                borderRadius: BorderRadius.circular(28.r),
+                                border: Border.all(color: const Color(0xFFEF4444), width: 1.5),
+                              ),
+                              alignment: Alignment.center,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.delete_outline_rounded, color: const Color(0xFFEF4444), size: 18.sp),
+                                  SizedBox(width: 8.w),
+                                  Text(
+                                    "Delete Listing",
+                                    style: TextStyle(
+                                      color: const Color(0xFFEF4444),
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
 
               final buyNowPriceVal = product['buyNowPrice'] ?? product['price'];
               final hasBuyNow = buyNowPriceVal != null &&
@@ -1680,6 +1764,226 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    Map<String, dynamic> product,
+    TradeDetailsController controller,
+  ) {
+    final String productId = (product['_id'] ?? product['id'] ?? '').toString();
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        title: Row(
+          children: [
+            const Icon(Icons.delete_forever_rounded, color: Color(0xFFEF4444)),
+            SizedBox(width: 10.w),
+            const Text("Delete Listing", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          "Are you sure you want to delete this listing? It will be permanently removed from your inventory and the marketplace.",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text("Cancel", style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back(); // close dialog
+              final apiClient = Get.find<ApiClient>();
+              try {
+                final res = await apiClient.deleteData("${ApiUrl.products}/$productId");
+                if (res.statusCode == 200 || res.statusCode == 204) {
+                  if (Get.isRegistered<ProfileController>()) {
+                    Get.find<ProfileController>().userListings.removeWhere(
+                      (item) => (item['_id'] ?? item['id']).toString() == productId,
+                    );
+                  }
+                  Get.back(); // pop trade details
+                  Get.snackbar(
+                    "Deleted",
+                    "Listing deleted successfully",
+                    backgroundColor: const Color(0xFF22C55E),
+                    colorText: Colors.white,
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                } else {
+                  Get.snackbar("Error", "Failed to delete listing (${res.statusCode})");
+                }
+              } catch (e) {
+                Get.snackbar("Error", "Error deleting listing: $e");
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+            ),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditListingDialog(
+    BuildContext context,
+    Map<String, dynamic> product,
+    TradeDetailsController controller,
+  ) {
+    final String productId = (product['_id'] ?? product['id'] ?? '').toString();
+    final titleCtrl = TextEditingController(text: product['title']?.toString() ?? '');
+    final descCtrl = TextEditingController(text: product['description']?.toString() ?? '');
+    final priceCtrl = TextEditingController(text: (product['buyNowPrice'] ?? product['estValue'] ?? '').toString());
+    final estValueCtrl = TextEditingController(text: (product['estValue'] ?? '').toString());
+    final allowTradeRx = ((product['allowTrade'] == true || product['allowTrade'] == 'true')).obs;
+    final allowOffersRx = ((product['allowOffers'] == true || product['allowOffers'] == 'true')).obs;
+    final isSaving = false.obs;
+
+    Get.bottomSheet(
+      Container(
+        constraints: BoxConstraints(maxHeight: 0.85.sh),
+        padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 24.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161622),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+          border: Border.all(color: const Color(0xFF2E1E5D), width: 1.5),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Edit Listing", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.bold)),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Get.back()),
+                ],
+              ),
+              SizedBox(height: 16.h),
+              _buildEditTextField("Item Title", titleCtrl),
+              SizedBox(height: 12.h),
+              _buildEditTextField("Description", descCtrl, maxLines: 3),
+              SizedBox(height: 12.h),
+              Row(
+                children: [
+                  Expanded(child: _buildEditTextField("Est Value (\$)", estValueCtrl, keyboardType: TextInputType.number)),
+                  SizedBox(width: 12.w),
+                  Expanded(child: _buildEditTextField("Buy Now (\$)", priceCtrl, keyboardType: TextInputType.number)),
+                ],
+              ),
+              SizedBox(height: 16.h),
+              Obx(() => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFF8B9BFF),
+                title: const Text("List on Trade Market", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                subtitle: const Text("Allow other users to offer trades for this item", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                value: allowTradeRx.value,
+                onChanged: (v) => allowTradeRx.value = v,
+              )),
+              Obx(() => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFF8B9BFF),
+                title: const Text("Allow Offers", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                subtitle: const Text("Accept price negotiation offers", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                value: allowOffersRx.value,
+                onChanged: (v) => allowOffersRx.value = v,
+              )),
+              SizedBox(height: 20.h),
+              SizedBox(
+                width: double.infinity,
+                height: 54.h,
+                child: Obx(() => ElevatedButton(
+                  onPressed: isSaving.value ? null : () async {
+                    if (titleCtrl.text.trim().isEmpty) {
+                      Get.snackbar("Error", "Title cannot be empty");
+                      return;
+                    }
+                    isSaving.value = true;
+                    final apiClient = Get.find<ApiClient>();
+                    try {
+                      final updatePayload = {
+                        "title": titleCtrl.text.trim(),
+                        "description": descCtrl.text.trim(),
+                        if (double.tryParse(estValueCtrl.text.trim()) != null)
+                          "estValue": double.parse(estValueCtrl.text.trim()),
+                        if (double.tryParse(priceCtrl.text.trim()) != null)
+                          "buyNowPrice": double.parse(priceCtrl.text.trim()),
+                        "allowTrade": allowTradeRx.value,
+                        "allowOffers": allowOffersRx.value,
+                      };
+                      final res = await apiClient.patchData("${ApiUrl.products}/$productId", updatePayload);
+                      if (res.statusCode == 200 || res.statusCode == 201) {
+                        final updated = Map<String, dynamic>.from(product);
+                        updated.addAll(updatePayload);
+                        product.assignAll(updated);
+                        if (Get.isRegistered<ProfileController>()) {
+                          final pCtrl = Get.find<ProfileController>();
+                          final idx = pCtrl.userListings.indexWhere((i) => (i['_id'] ?? i['id']).toString() == productId);
+                          if (idx != -1) {
+                            final old = Map<String, dynamic>.from(pCtrl.userListings[idx]);
+                            old.addAll(updatePayload);
+                            pCtrl.userListings[idx] = old;
+                          }
+                        }
+                        Get.back(); // close sheet
+                        Get.snackbar("Success", "Listing updated successfully!", backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
+                      } else {
+                        Get.snackbar("Error", "Failed to update listing (${res.statusCode})");
+                      }
+                    } catch (e) {
+                      Get.snackbar("Error", "Failed to update listing: $e");
+                    } finally {
+                      isSaving.value = false;
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8B9BFF),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(27.r)),
+                  ),
+                  child: isSaving.value
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text("Save Changes", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                )),
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildEditTextField(String label, TextEditingController ctrl, {int maxLines = 1, TextInputType? keyboardType}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: Colors.white70, fontSize: 13.sp, fontWeight: FontWeight.w600)),
+        SizedBox(height: 6.h),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 14.w),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F0B1E),
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(color: const Color(0xFF2E1E5D), width: 1.2),
+          ),
+          child: TextField(
+            controller: ctrl,
+            maxLines: maxLines,
+            keyboardType: keyboardType,
+            style: TextStyle(color: Colors.white, fontSize: 14.sp),
+            decoration: const InputDecoration(border: InputBorder.none),
+          ),
+        ),
+      ],
     );
   }
 }

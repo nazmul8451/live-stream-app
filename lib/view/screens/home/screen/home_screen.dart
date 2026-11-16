@@ -578,6 +578,7 @@ class HomeScreen extends StatelessWidget {
   // ─── DYNAMIC EXCLUSIVE GIVEAWAY CARD (Matching Client Mockup Exactly) ───
   Widget _buildExclusiveGiveawayCard(HomeController controller, BuildContext context) {
     return Obx(() {
+      if (!controller.isGiveawayActive) return const SizedBox.shrink();
       final isEntered = controller.isGiveawayEntered.value;
       final isEntering = controller.isEnteringGiveaway.value;
       final title = controller.giveawayTitle;

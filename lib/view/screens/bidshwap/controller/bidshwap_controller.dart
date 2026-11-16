@@ -10,7 +10,25 @@ class BidShwapController extends GetxController {
   final RxBool isLoading = false.obs;
 
   var selectedFilter = 0.obs;
-  final filters = ["ALL TRADES", "TRADING CARDS", "SNEAKERS"];
+  final filters = [
+    "ALL TRADES",
+    "Trading Cards & TCG",
+    "Sports Memorabilia",
+    "Toys & Collectibles",
+    "Sneakers & Streetwear",
+    "Fashion & Apparel",
+    "Watches & Luxury",
+    "Jewelry & Accessories",
+    "Electronics & Tech",
+    "Coins & Currency",
+    "Comics, Anime & Manga",
+    "Video Games",
+    "Vintage & Antiques",
+    "Home & Lifestyle",
+    "Beauty & Personal Care",
+    "Books, Music & Media",
+    "Other / Not Listed",
+  ];
 
   // Search parameters
   final searchQuery = "".obs;
@@ -212,15 +230,53 @@ class BidShwapController extends GetxController {
 
     // 1. Filter by Category
     if (filterIndex > 0) {
-      final selectedCategory = filters[filterIndex].toUpperCase(); // "TRADING CARDS" or "SNEAKERS"
+      final selectedCategory = filters[filterIndex].toLowerCase();
       results = results.where((trade) {
-        final category = (trade.rawProduct?['category'] ?? "").toString().toUpperCase();
-        if (selectedCategory == "TRADING CARDS") {
-          return category == "TCG" || category.contains("CARD");
-        } else if (selectedCategory == "SNEAKERS") {
-          return category == "SNEAKERS" || category == "STREETWEAR" || category == "APPAREL";
+        final rawCat = (trade.rawProduct?['category'] ?? "").toString().toLowerCase();
+        final rawTitle = (trade.offeredItemName).toLowerCase();
+
+        // Direct matching
+        if (rawCat.contains(selectedCategory) || selectedCategory.contains(rawCat)) {
+          return true;
         }
-        return false;
+
+        // Semantic keyword matching for the 16 categories
+        switch (filterIndex) {
+          case 1: // Trading Cards & TCG
+            return rawCat.contains("card") || rawCat.contains("tcg") || rawCat.contains("pokemon") || rawCat.contains("mtg") || rawTitle.contains("card") || rawTitle.contains("pokemon");
+          case 2: // Sports Memorabilia
+            return rawCat.contains("memorabilia") || rawCat.contains("jersey") || rawCat.contains("autograph") || rawTitle.contains("jersey") || rawTitle.contains("autograph");
+          case 3: // Toys & Collectibles
+            return rawCat.contains("toy") || rawCat.contains("collectible") || rawCat.contains("lego") || rawCat.contains("figure") || rawCat.contains("plush");
+          case 4: // Sneakers & Streetwear
+            return rawCat.contains("sneaker") || rawCat.contains("streetwear") || rawCat.contains("kicks") || rawTitle.contains("jordan") || rawTitle.contains("dunk") || rawTitle.contains("yeezy");
+          case 5: // Fashion & Apparel
+            return rawCat.contains("fashion") || rawCat.contains("apparel") || rawCat.contains("clothing") || rawCat.contains("bag") || rawCat.contains("designer");
+          case 6: // Watches & Luxury
+            return rawCat.contains("watch") || rawCat.contains("luxury") || rawCat.contains("rolex");
+          case 7: // Jewelry & Accessories
+            return rawCat.contains("jewel") || rawCat.contains("accessory") || rawCat.contains("ring") || rawCat.contains("chain");
+          case 8: // Electronics & Tech
+            return rawCat.contains("electronic") || rawCat.contains("tech") || rawCat.contains("phone") || rawCat.contains("tablet");
+          case 9: // Coins & Currency
+            return rawCat.contains("coin") || rawCat.contains("currency") || rawCat.contains("bullion");
+          case 10: // Comics, Anime & Manga
+            return rawCat.contains("comic") || rawCat.contains("anime") || rawCat.contains("manga");
+          case 11: // Video Games
+            return rawCat.contains("game") || rawCat.contains("gaming") || rawCat.contains("nintendo") || rawCat.contains("playstation") || rawCat.contains("xbox");
+          case 12: // Vintage & Antiques
+            return rawCat.contains("vintage") || rawCat.contains("antique");
+          case 13: // Home & Lifestyle
+            return rawCat.contains("home") || rawCat.contains("lifestyle");
+          case 14: // Beauty & Personal Care
+            return rawCat.contains("beauty") || rawCat.contains("cosmetic") || rawCat.contains("care");
+          case 15: // Books, Music & Media
+            return rawCat.contains("book") || rawCat.contains("music") || rawCat.contains("media") || rawCat.contains("vinyl");
+          case 16: // Other / Not Listed
+            return rawCat.contains("other") || rawCat.isEmpty;
+          default:
+            return true;
+        }
       }).toList();
     }
 
@@ -303,6 +359,7 @@ class BidShwapController extends GetxController {
 
   void changeFilter(int index) {
     selectedFilter.value = index;
+    applyFilterAndSearch();
   }
 
   @override

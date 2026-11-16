@@ -96,7 +96,12 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
 
   Future<void> _pickThumbnail(ImageSource source) async {
     try {
-      final picked = await _picker.pickImage(source: source, imageQuality: 85, maxWidth: 1080);
+      final picked = await _picker.pickImage(
+        source: source,
+        imageQuality: 70,
+        maxWidth: 800,
+        maxHeight: 800,
+      );
       if (picked != null) {
         final bytes = await picked.readAsBytes();
         final base64String = "data:image/jpeg;base64,${base64Encode(bytes)}";
@@ -398,6 +403,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
 
         final payload = {
           "title": title,
+          if (_descController.text.trim().isNotEmpty) "description": _descController.text.trim(),
           "coverImage": coverImage,
           if (_promoVideoController.text.trim().isNotEmpty) "promoVideo": _promoVideoController.text.trim(),
           "scheduledStartTime": _scheduledDateTime!.toUtc().toIso8601String(),

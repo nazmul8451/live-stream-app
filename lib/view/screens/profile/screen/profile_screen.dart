@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import '../../../../core/app_route.dart';
 import '../../../../global/widgets/custom_background.dart';
@@ -12,6 +11,7 @@ import '../../../../data/services/api_url.dart';
 import '../../../../global/widgets/custom_shimmer.dart';
 import '../../../../global/widgets/custom_empty_state.dart';
 import '../../../../data/helpers/shared_prefe.dart';
+import '../../../../data/services/api_client.dart';
 import '../../live_stream/controller/agora_live_controller.dart';
 
 class ProfileScreen extends GetView<ProfileController> {
@@ -335,24 +335,6 @@ class ProfileScreen extends GetView<ProfileController> {
                   ),
                 ],
 
-                if (controller.email.value.isNotEmpty) ...[
-                  SizedBox(height: 4.h),
-                  Row(
-                    children: [
-                      Icon(Icons.email_outlined, color: Colors.white38, size: 13.sp),
-                      SizedBox(width: 5.w),
-                      Text(
-                        controller.email.value,
-                        style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-
                 if (controller.description.value.isNotEmpty) ...[
                   SizedBox(height: 8.h),
                   Text(
@@ -662,6 +644,8 @@ class ProfileScreen extends GetView<ProfileController> {
                 }
                 Get.toNamed('/trade_details', arguments: itemWithSeller);
               },
+              onEdit: () => _showEditListingDialogFromProfile(item),
+              onDelete: () => _showDeleteConfirmationFromProfile(item),
             );
           },
         ),
@@ -1548,6 +1532,8 @@ class ProfileScreen extends GetView<ProfileController> {
     bool hasTrade = false,
     bool isSold = false,
     VoidCallback? onTap,
+    VoidCallback? onEdit,
+    VoidCallback? onDelete,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -1576,6 +1562,51 @@ class ProfileScreen extends GetView<ProfileController> {
                     child: _buildProfileProductImage(imageUrl),
                   ),
                 ),
+                if (onEdit != null || onDelete != null)
+                  Positioned(
+                    top: 8.h,
+                    right: 8.w,
+                    child: PopupMenuButton<String>(
+                      icon: Container(
+                        padding: EdgeInsets.all(4.r),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.65),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.more_vert_rounded, color: Colors.white, size: 16.sp),
+                      ),
+                      color: const Color(0xFF1E1E2C),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                      onSelected: (val) {
+                        if (val == 'edit' && onEdit != null) onEdit();
+                        if (val == 'delete' && onDelete != null) onDelete();
+                      },
+                      itemBuilder: (context) => [
+                        if (onEdit != null)
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.edit_rounded, color: Color(0xFF8B9BFF), size: 18),
+                                SizedBox(width: 8.w),
+                                const Text("Edit Listing", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                        if (onDelete != null)
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 18),
+                                SizedBox(width: 8.w),
+                                const Text("Delete Listing", style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 if (isLive)
                   Positioned(
                     top: 12.h,
@@ -2571,6 +2602,209 @@ class ProfileScreen extends GetView<ProfileController> {
         "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
         fit: BoxFit.cover,
       ),
+    );
+  }
+
+  void _showDeleteConfirmationFromProfile(Map<String, dynamic> product) {
+    final String productId = (product['_id'] ?? product['id'] ?? '').toString();
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: const Color(0xFF1E1E2C),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        title: Row(
+          children: [
+            const Icon(Icons.delete_forever_rounded, color: Color(0xFFEF4444)),
+            SizedBox(width: 10.w),
+            const Text("Delete Listing", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          "Are you sure you want to delete this listing? It will be permanently removed from your inventory and the marketplace.",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text("Cancel", style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back(); // close dialog
+              final apiClient = Get.find<ApiClient>();
+              try {
+                final res = await apiClient.deleteData("${ApiUrl.products}/$productId");
+                if (res.statusCode == 200 || res.statusCode == 204) {
+                  controller.userListings.removeWhere(
+                    (item) => (item['_id'] ?? item['id']).toString() == productId,
+                  );
+                  Get.snackbar(
+                    "Deleted",
+                    "Listing deleted successfully",
+                    backgroundColor: const Color(0xFF22C55E),
+                    colorText: Colors.white,
+                    snackPosition: SnackPosition.BOTTOM,
+                  );
+                } else {
+                  Get.snackbar("Error", "Failed to delete listing (${res.statusCode})");
+                }
+              } catch (e) {
+                Get.snackbar("Error", "Error deleting listing: $e");
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+            ),
+            child: const Text("Delete"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditListingDialogFromProfile(Map<String, dynamic> product) {
+    final String productId = (product['_id'] ?? product['id'] ?? '').toString();
+    final titleCtrl = TextEditingController(text: product['title']?.toString() ?? '');
+    final descCtrl = TextEditingController(text: product['description']?.toString() ?? '');
+    final priceCtrl = TextEditingController(text: (product['buyNowPrice'] ?? product['estValue'] ?? '').toString());
+    final estValueCtrl = TextEditingController(text: (product['estValue'] ?? '').toString());
+    final allowTradeRx = ((product['allowTrade'] == true || product['allowTrade'] == 'true')).obs;
+    final allowOffersRx = ((product['allowOffers'] == true || product['allowOffers'] == 'true')).obs;
+    final isSaving = false.obs;
+
+    Get.bottomSheet(
+      Container(
+        constraints: BoxConstraints(maxHeight: 0.85.sh),
+        padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 24.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161622),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+          border: Border.all(color: const Color(0xFF2E1E5D), width: 1.5),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text("Edit Listing", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.bold)),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Get.back()),
+                ],
+              ),
+              SizedBox(height: 16.h),
+              _buildProfileEditField("Item Title", titleCtrl),
+              SizedBox(height: 12.h),
+              _buildProfileEditField("Description", descCtrl, maxLines: 3),
+              SizedBox(height: 12.h),
+              Row(
+                children: [
+                  Expanded(child: _buildProfileEditField("Est Value (\$)", estValueCtrl, keyboardType: TextInputType.number)),
+                  SizedBox(width: 12.w),
+                  Expanded(child: _buildProfileEditField("Buy Now (\$)", priceCtrl, keyboardType: TextInputType.number)),
+                ],
+              ),
+              SizedBox(height: 16.h),
+              Obx(() => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFF8B9BFF),
+                title: const Text("List on Trade Market", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                subtitle: const Text("Allow other users to offer trades for this item", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                value: allowTradeRx.value,
+                onChanged: (v) => allowTradeRx.value = v,
+              )),
+              Obx(() => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                activeColor: const Color(0xFF8B9BFF),
+                title: const Text("Allow Offers", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                subtitle: const Text("Accept price negotiation offers", style: TextStyle(color: Colors.white38, fontSize: 11)),
+                value: allowOffersRx.value,
+                onChanged: (v) => allowOffersRx.value = v,
+              )),
+              SizedBox(height: 20.h),
+              SizedBox(
+                width: double.infinity,
+                height: 54.h,
+                child: Obx(() => ElevatedButton(
+                  onPressed: isSaving.value ? null : () async {
+                    if (titleCtrl.text.trim().isEmpty) {
+                      Get.snackbar("Error", "Title cannot be empty");
+                      return;
+                    }
+                    isSaving.value = true;
+                    final apiClient = Get.find<ApiClient>();
+                    try {
+                      final updatePayload = {
+                        "title": titleCtrl.text.trim(),
+                        "description": descCtrl.text.trim(),
+                        if (double.tryParse(estValueCtrl.text.trim()) != null)
+                          "estValue": double.parse(estValueCtrl.text.trim()),
+                        if (double.tryParse(priceCtrl.text.trim()) != null)
+                          "buyNowPrice": double.parse(priceCtrl.text.trim()),
+                        "allowTrade": allowTradeRx.value,
+                        "allowOffers": allowOffersRx.value,
+                      };
+                      final res = await apiClient.patchData("${ApiUrl.products}/$productId", updatePayload);
+                      if (res.statusCode == 200 || res.statusCode == 201) {
+                        final idx = controller.userListings.indexWhere((i) => (i['_id'] ?? i['id']).toString() == productId);
+                        if (idx != -1) {
+                          final old = Map<String, dynamic>.from(controller.userListings[idx]);
+                          old.addAll(updatePayload);
+                          controller.userListings[idx] = old;
+                        }
+                        Get.back(); // close sheet
+                        Get.snackbar("Success", "Listing updated successfully!", backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
+                      } else {
+                        Get.snackbar("Error", "Failed to update listing (${res.statusCode})");
+                      }
+                    } catch (e) {
+                      Get.snackbar("Error", "Failed to update listing: $e");
+                    } finally {
+                      isSaving.value = false;
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8B9BFF),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(27.r)),
+                  ),
+                  child: isSaving.value
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text("Save Changes", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                )),
+              ),
+            ],
+          ),
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  Widget _buildProfileEditField(String label, TextEditingController ctrl, {int maxLines = 1, TextInputType? keyboardType}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(color: Colors.white70, fontSize: 13.sp, fontWeight: FontWeight.w600)),
+        SizedBox(height: 6.h),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 14.w),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F0B1E),
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(color: const Color(0xFF2E1E5D), width: 1.2),
+          ),
+          child: TextField(
+            controller: ctrl,
+            maxLines: maxLines,
+            keyboardType: keyboardType,
+            style: TextStyle(color: Colors.white, fontSize: 14.sp),
+            decoration: const InputDecoration(border: InputBorder.none),
+          ),
+        ),
+      ],
     );
   }
 }

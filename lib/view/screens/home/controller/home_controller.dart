@@ -79,7 +79,7 @@ class HomeController extends GetxController {
   String get giveawayTitle {
     final t = giveawayConfig['title']?.toString();
     if (t != null && t.trim().isNotEmpty) return t;
-    return "Michael Vick Jersey Giveaway";
+    return "Giannis Antetokounmpo Jersey Giveaway";
   }
 
   String get giveawayPrizeTitle {
@@ -87,22 +87,22 @@ class HomeController extends GetxController {
     if (pt != null && pt.trim().isNotEmpty) return pt;
     final t = giveawayConfig['title']?.toString();
     if (t != null && t.trim().isNotEmpty) return t;
-    return "Official Signed Michael Vick Jersey";
+    return "Official Signed Giannis Antetokounmpo Jersey";
   }
 
   String get giveawayDescription {
     final d = giveawayConfig['description']?.toString();
     if (d != null && d.trim().isNotEmpty) return d;
-    return "Enter for a chance to win! Winner will be drawn on September 25th.";
+    return "Enter for a chance to win! Winner will be drawn on December 5th.";
   }
 
   String get giveawayPrizeImage {
-    return (giveawayConfig['prizeImage'] ?? giveawayConfig['image'] ?? '').toString();
+    return (giveawayConfig['prizeImage'] ?? giveawayConfig['bannerUrl'] ?? giveawayConfig['image'] ?? '').toString();
   }
 
   String get giveawayDrawDateFormatted {
     final raw = giveawayConfig['drawDate']?.toString();
-    if (raw == null || raw.isEmpty) return "September 25th, 2026";
+    if (raw == null || raw.isEmpty) return "December 5th, 2026";
     try {
       final dt = DateTime.parse(raw).toLocal();
       final months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -123,7 +123,8 @@ class HomeController extends GetxController {
   }
 
   bool get isGiveawayActive {
-    return giveawayConfig['isActive'] != false;
+    if (giveawayConfig.isEmpty) return true;
+    return giveawayConfig['isActive'] == true || giveawayConfig['isActive'] == 'true';
   }
 
   String get giveawayEnteredAtFormatted {

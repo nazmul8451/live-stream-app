@@ -30,10 +30,46 @@ class CreateTradeController extends GetxController {
   final RxBool allowOffers = true.obs; // Toggle for accepting custom offers
   final minOfferAmountController = TextEditingController(); // Minimum acceptable offer amount
 
-  var selectedCategory = "Streetwear".obs;
+  static const List<String> default16Categories = [
+    "Trading Cards & TCG (Sports Cards, Pokémon, MTG)",
+    "Sports Memorabilia (Jerseys, Autographs, Memorabilia)",
+    "Toys & Collectibles (Action Figures, LEGO, Die-Cast, Plush)",
+    "Sneakers & Streetwear",
+    "Fashion & Apparel (Designer Bags, Clothing, Accessories)",
+    "Watches & Luxury",
+    "Jewelry & Accessories",
+    "Electronics & Tech (Phones, Tablets, Technology)",
+    "Coins & Currency",
+    "Comics, Anime & Manga",
+    "Video Games",
+    "Vintage & Antiques",
+    "Home & Lifestyle",
+    "Beauty & Personal Care",
+    "Books, Music & Media",
+    "Other / Not Listed",
+  ];
+
+  var selectedCategory = "Trading Cards & TCG (Sports Cards, Pokémon, MTG)".obs;
   var selectedCondition = "Mint".obs;
 
-  final RxList<String> categories = <String>[].obs;
+  final RxList<String> categories = <String>[
+    "Trading Cards & TCG (Sports Cards, Pokémon, MTG)",
+    "Sports Memorabilia (Jerseys, Autographs, Memorabilia)",
+    "Toys & Collectibles (Action Figures, LEGO, Die-Cast, Plush)",
+    "Sneakers & Streetwear",
+    "Fashion & Apparel (Designer Bags, Clothing, Accessories)",
+    "Watches & Luxury",
+    "Jewelry & Accessories",
+    "Electronics & Tech (Phones, Tablets, Technology)",
+    "Coins & Currency",
+    "Comics, Anime & Manga",
+    "Video Games",
+    "Vintage & Antiques",
+    "Home & Lifestyle",
+    "Beauty & Personal Care",
+    "Books, Music & Media",
+    "Other / Not Listed",
+  ].obs;
   final RxMap<String, String> categoryNameToId = <String, String>{}.obs;
   final conditions = ["Mint", "Near Mint", "Excellent", "Good", "Fair"];
 
@@ -48,7 +84,25 @@ class CreateTradeController extends GetxController {
   final maxValueController = TextEditingController();
 
   var targetCategory = "Any Category".obs;
-  final RxList<String> targetCategories = <String>["Any Category"].obs;
+  final RxList<String> targetCategories = <String>[
+    "Any Category",
+    "Trading Cards & TCG (Sports Cards, Pokémon, MTG)",
+    "Sports Memorabilia (Jerseys, Autographs, Memorabilia)",
+    "Toys & Collectibles (Action Figures, LEGO, Die-Cast, Plush)",
+    "Sneakers & Streetwear",
+    "Fashion & Apparel (Designer Bags, Clothing, Accessories)",
+    "Watches & Luxury",
+    "Jewelry & Accessories",
+    "Electronics & Tech (Phones, Tablets, Technology)",
+    "Coins & Currency",
+    "Comics, Anime & Manga",
+    "Video Games",
+    "Vintage & Antiques",
+    "Home & Lifestyle",
+    "Beauty & Personal Care",
+    "Books, Music & Media",
+    "Other / Not Listed",
+  ].obs;
 
   Future<void> pickImages() async {
     try {
@@ -170,7 +224,15 @@ class CreateTradeController extends GetxController {
     );
   }
 
+  Future<void> addToInventory() async {
+    await _submitProduct(isTradeMarket: false);
+  }
+
   Future<void> postTrade() async {
+    await _submitProduct(isTradeMarket: true);
+  }
+
+  Future<void> _submitProduct({required bool isTradeMarket}) async {
     final title = itemNameController.text.trim();
     final description = descriptionController.text.trim();
     final estValue = estValueController.text.trim();
@@ -236,7 +298,7 @@ class CreateTradeController extends GetxController {
       final Map<String, dynamic> requestBody = {
         "title": title,
         "description": description,
-        "category": selectedCategoryId, // ✅ Passes valid MongoDB ObjectId reference
+        "category": selectedCategoryId, // ✅ Passes valid category reference
         "condition": selectedCondition.value,
         "estValue": double.tryParse(estValue) ?? 0.0,
         if (buyNowParsed != null) "buyNowPrice": buyNowParsed,
@@ -244,13 +306,13 @@ class CreateTradeController extends GetxController {
         if (minOfferParsed != null) "minOfferAmount": minOfferParsed,
         if (shippingWeightParsed > 0) "shippingWeight": shippingWeightParsed,
         "shippingWeightUnit": shippingWeightUnit.value,
-        "allowTrade": true,
+        "allowTrade": isTradeMarket, // true: published to Trade Market, false: personal inventory
         "sellerId": userId,
         "images": imageUrls,
-        "lookingFor": desiredItemController.text.trim(),
-        "targetCategory": targetCategory.value,
-        "minValue": double.tryParse(minValueController.text.trim()) ?? 0.0,
-        "maxValue": double.tryParse(maxValueController.text.trim()) ?? 0.0,
+        "lookingFor": isTradeMarket ? desiredItemController.text.trim() : "",
+        "targetCategory": isTradeMarket ? targetCategory.value : "Any Category",
+        "minValue": isTradeMarket ? (double.tryParse(minValueController.text.trim()) ?? 0.0) : 0.0,
+        "maxValue": isTradeMarket ? (double.tryParse(maxValueController.text.trim()) ?? 0.0) : 0.0,
       };
 
       final response = await _apiClient.postData(
@@ -268,14 +330,17 @@ class CreateTradeController extends GetxController {
 
         Get.back();
         Get.snackbar(
-          "Success",
-          "Your trade has been posted successfully!",
+          isTradeMarket ? "Trade Posted! 🚀" : "Saved to Inventory! 📦",
+          isTradeMarket
+              ? "Your item is now live on the Trade Market."
+              : "Item saved to your inventory. You can run it during live streams!",
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: const Color(0xFF8B9BFF),
-          colorText: Colors.black,
+          backgroundColor: const Color(0xFF22C55E),
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
         );
       } else {
-        String errorMessage = "Failed to post trade";
+        String errorMessage = isTradeMarket ? "Failed to post trade" : "Failed to save to inventory";
         try {
           final data = jsonDecode(response.body);
           errorMessage = data['message'] ?? errorMessage;
@@ -290,7 +355,7 @@ class CreateTradeController extends GetxController {
     } catch (e) {
       Get.snackbar(
         "Error",
-        "An unexpected error occurred",
+        "An unexpected error occurred: $e",
         backgroundColor: Colors.red.withOpacity(0.8),
         colorText: Colors.white,
       );

@@ -51,3 +51,5 @@ config.bat
 node_modules
 ios/build/
 android/build/
+backend/
+dashboard/

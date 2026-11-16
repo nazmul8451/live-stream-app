@@ -291,24 +291,6 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
           ),
         ],
 
-        if (controller.displayEmail.isNotEmpty) ...[
-          SizedBox(height: 5.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.email_outlined, color: Colors.white38, size: 13.sp),
-              SizedBox(width: 6.w),
-              Text(
-                controller.displayEmail,
-                style: TextStyle(
-                    color: Colors.white38,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ],
-
         SizedBox(height: 10.h),
 
         // Role + Member Since row

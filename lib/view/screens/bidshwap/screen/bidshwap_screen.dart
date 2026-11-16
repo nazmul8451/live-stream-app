@@ -18,7 +18,6 @@ class BidShwapScreen extends GetView<BidShwapController> {
   @override
   Widget build(BuildContext context) {
     Get.put(BidShwapController());
-    final profileController = Get.isRegistered<ProfileController>() ? Get.find<ProfileController>() : null;
     return CustomBackground(
       child: SafeArea(
         child: Column(
@@ -26,36 +25,32 @@ class BidShwapScreen extends GetView<BidShwapController> {
             // Header
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 15.h),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  profileController != null
-                      ? Obx(() {
-                          final imageUrl = profileController.profileImageUrl.value;
-                          return CircleAvatar(
-                            radius: 20.r,
-                            backgroundImage: imageUrl.isNotEmpty
-                                ? NetworkImage(imageUrl)
-                                : const NetworkImage("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop") as ImageProvider,
-                          );
-                        })
-                      : CircleAvatar(
-                          radius: 20.r,
-                          backgroundImage: const NetworkImage("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1974&auto=format&fit=crop"),
-                        ),
-                  Text(
-                    "Auction Live",
-                    style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold),
+                  Center(
+                    child: Text(
+                      "MARKETPLACE",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      AuthGuard.check(
-                        title: "Sign in to view Notifications",
-                        message: "Guest mode is browse-only. Sign in to view your activity and notifications.",
-                        onAuthorized: () => Get.toNamed(AppRoute.notifications),
-                      );
-                    },
-                    child: Icon(Icons.notifications_none_rounded, color: Colors.white, size: 26.sp),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () {
+                        AuthGuard.check(
+                          title: "Sign in to view Notifications",
+                          message: "Guest mode is browse-only. Sign in to view your activity and notifications.",
+                          onAuthorized: () => Get.toNamed(AppRoute.notifications),
+                        );
+                      },
+                      child: Icon(Icons.notifications_none_rounded, color: Colors.white, size: 26.sp),
+                    ),
                   ),
                 ],
               ),

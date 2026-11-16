@@ -77,6 +77,9 @@ class ApiUrl {
   static String bookmarkStream(String streamId) => "/auctions/stream/$streamId/bookmark";
   static const String savedShows = "/auctions/saved-shows";
   static String streamInventory(String streamId) => "/auctions/stream/$streamId/inventory";
+  static String addStreamInventory(String streamId) => "/auctions/stream/$streamId/inventory/add";
+  static String attachSpinWheelPrize(String streamId) => "/auctions/stream/$streamId/attach-spin-prize";
+  static String runStreamGiveawayItem(String streamId) => "/auctions/stream/$streamId/giveaway-item";
   static const String quickStartAuction = "/auctions/item/quick-start";
   static const String addAuctionItem = "/auctions/item";
   static const String placeBid = "/auctions/bid";

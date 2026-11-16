@@ -372,6 +372,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.on('auction-won', _handleAuctionWonEvent);
       socketService.on('auction-payment-received', _handleAuctionPaymentReceivedEvent);
       socketService.on('new-reaction', _handleNewReactionEvent);
+      socketService.on('stream-inventory-item-added', _handleStreamInventoryAddedEvent);
+      socketService.on('spin-prize-attached', _handleSpinPrizeAttachedEvent);
       socketService.on('spin-result', _handleSpinResultEvent);
       socketService.on('spin_result', _handleSpinResultEvent);
       socketService.on('giveaway-winner', _handleSpinResultEvent);
@@ -652,6 +654,43 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  void _handleStreamInventoryAddedEvent(dynamic data) {
+    if (data == null) return;
+    try {
+      final Map<String, dynamic> resMap = (data is String)
+          ? Map<String, dynamic>.from(jsonDecode(data))
+          : Map<String, dynamic>.from(data as Map);
+      if (resMap['product'] != null) {
+        final prod = Map<String, dynamic>.from(resMap['product'] as Map);
+        final pid = (prod['_id'] ?? prod['id'] ?? '').toString();
+        if (pid.isNotEmpty && !streamInventoryItems.any((e) => (e['_id'] ?? e['id']).toString() == pid)) {
+          streamInventoryItems.add(prod);
+        }
+      }
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] _handleStreamInventoryAddedEvent error: $e");
+    }
+  }
+
+  void _handleSpinPrizeAttachedEvent(dynamic data) {
+    if (data == null) return;
+    try {
+      final Map<String, dynamic> resMap = (data is String)
+          ? Map<String, dynamic>.from(jsonDecode(data))
+          : Map<String, dynamic>.from(data as Map);
+      final itemName = resMap['itemName']?.toString() ?? 'Prize';
+      Get.snackbar(
+        "Wheel Prize Awarded! 🎁",
+        "$itemName was awarded and attached to winner's order!",
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] _handleSpinPrizeAttachedEvent error: $e");
+    }
+  }
+
   void broadcastJoin() {
     String usernameStr = "Viewer";
     String avatarUrl = "";
@@ -720,6 +759,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.off('auction-won', _handleAuctionWonEvent);
       socketService.off('auction-payment-received', _handleAuctionPaymentReceivedEvent);
       socketService.off('new-reaction', _handleNewReactionEvent);
+      socketService.off('stream-inventory-item-added', _handleStreamInventoryAddedEvent);
+      socketService.off('spin-prize-attached', _handleSpinPrizeAttachedEvent);
       socketService.off('spin-result', _handleSpinResultEvent);
       socketService.off('spin_result', _handleSpinResultEvent);
       socketService.off('giveaway-winner', _handleSpinResultEvent);
@@ -2332,8 +2373,11 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   }
 
   // ─── GIVEAWAY / SPIN-WHEEL SYSTEM (Feature 2) ───
-  Future<void> drawGiveawayWinner() async {
+  Future<void> drawGiveawayWinner({String? prizeName}) async {
     if (streamId.value.isEmpty) return;
+    if (prizeName != null && prizeName.isNotEmpty) {
+      giveawayPrizeName.value = prizeName;
+    }
     try {
       // 1. Trigger via Socket
       try {
@@ -2341,6 +2385,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         s.emitEvent('trigger-spin', {
           "streamId": streamId.value,
           "sellerId": SharePrefsHelper.getString(SharePrefsHelper.userIdKey),
+          "prizeName": giveawayPrizeName.value,
         });
       } catch (_) {}
 
@@ -2357,6 +2402,192 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       }
     } catch (e) {
       debugPrint("❌ [AgoraLiveController] drawGiveawayWinner error: $e");
+    }
+  }
+
+  // ─── LIVE STREAM ADD ITEM WITHOUT ENDING STREAM (Task 10) ───
+  Future<bool> addLiveStreamItem({
+    required String title,
+    double price = 0.0,
+    String category = 'Trading Cards & TCG',
+    String condition = 'PSA 10',
+    bool isGiveaway = false,
+    String? image,
+  }) async {
+    if (streamId.value.isEmpty || title.trim().isEmpty) return false;
+    try {
+      final payload = {
+        "title": title.trim(),
+        "buyNowPrice": price,
+        "startingBid": price,
+        "category": category,
+        "condition": condition,
+        "isGiveaway": isGiveaway,
+        "images": (image != null && image.isNotEmpty) ? [image] : [],
+      };
+      final res = await _apiClient.postData(ApiUrl.addStreamInventory(streamId.value), payload);
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        final prod = body['data'] is Map ? Map<String, dynamic>.from(body['data']) : null;
+        if (prod != null) {
+          final pid = (prod['_id'] ?? prod['id'] ?? '').toString();
+          if (pid.isNotEmpty && !streamInventoryItems.any((e) => (e['_id'] ?? e['id']).toString() == pid)) {
+            streamInventoryItems.add(prod);
+          }
+        }
+        if (isGiveaway) {
+          runItemGiveaway(
+            itemTitle: title.trim(),
+            productId: (prod?['_id'] ?? prod?['id'] ?? '').toString(),
+            itemImage: image,
+          );
+        }
+        Get.snackbar(
+          "Item Added! 📦",
+          "'$title' added to live inventory without stopping stream.",
+          backgroundColor: const Color(0xFF10B981),
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+        );
+        return true;
+      } else {
+        // Fallback: create product then patch inventory
+        final prodPayload = {
+          "title": title.trim(),
+          "buyNowPrice": price,
+          "startingBid": price,
+          "category": category,
+          "condition": condition,
+          "allowTrade": false,
+          "images": (image != null && image.isNotEmpty) ? [image] : [],
+        };
+        final pRes = await _apiClient.postData(ApiUrl.products, prodPayload);
+        if (pRes.statusCode == 200 || pRes.statusCode == 201) {
+          final pBody = jsonDecode(pRes.body);
+          final pData = pBody['data'] is Map ? Map<String, dynamic>.from(pBody['data']) : null;
+          if (pData != null) {
+            final pid = (pData['_id'] ?? pData['id'] ?? '').toString();
+            streamInventoryItems.add(pData);
+            if (pid.isNotEmpty) {
+              final currentIds = streamInventoryItems
+                  .map((e) => (e['_id'] ?? e['id'] ?? '').toString())
+                  .where((id) => id.isNotEmpty)
+                  .toList();
+              await _apiClient.patchData(ApiUrl.streamInventory(streamId.value), {"inventoryIds": currentIds});
+            }
+            if (isGiveaway) {
+              runItemGiveaway(
+                itemTitle: title.trim(),
+                productId: pid,
+                itemImage: image,
+              );
+            }
+            Get.snackbar(
+              "Item Added! 📦",
+              "'$title' added to live inventory.",
+              backgroundColor: const Color(0xFF10B981),
+              colorText: Colors.white,
+              snackPosition: SnackPosition.TOP,
+            );
+            return true;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] addLiveStreamItem error: $e");
+    }
+    return false;
+  }
+
+  // ─── RUN INVENTORY ITEM AS GIVEAWAY (Task 10) ───
+  Future<void> runItemGiveaway({
+    required String itemTitle,
+    String? productId,
+    String? itemImage,
+  }) async {
+    if (streamId.value.isEmpty || itemTitle.trim().isEmpty) return;
+    try {
+      giveawayPrizeName.value = itemTitle.trim();
+
+      // 1. Socket emit for real-time room update
+      try {
+        final s = Get.find<SocketService>();
+        s.emitEvent('run-giveaway-item', {
+          "streamId": streamId.value,
+          "itemTitle": itemTitle.trim(),
+          "productId": productId,
+          "itemImage": itemImage,
+        });
+      } catch (_) {}
+
+      // 2. Call backend endpoint
+      final res = await _apiClient.postData(ApiUrl.runStreamGiveawayItem(streamId.value), {
+        "itemTitle": itemTitle.trim(),
+        "productId": productId,
+        "itemImage": itemImage,
+      });
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = jsonDecode(res.body);
+        final wData = body['data'] is Map ? body['data'] : body;
+        final winnerObj = wData['winner'];
+        final name = (winnerObj is Map)
+            ? (winnerObj['name'] ?? 'Lucky Winner')
+            : (wData['winnerName'] ?? 'Lucky Winner');
+        giveawayWinnerName.value = name.toString();
+        showGiveawayWinnerOverlay.value = true;
+      } else {
+        // Fallback to standard draw
+        drawGiveawayWinner(prizeName: itemTitle.trim());
+      }
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] runItemGiveaway error: $e");
+      drawGiveawayWinner(prizeName: itemTitle.trim());
+    }
+  }
+
+  // ─── ATTACH SPIN WHEEL PRIZE TO ORDER (Task 11) ───
+  Future<bool> attachSpinWheelPrizeToOrder({
+    required String itemName,
+    String? buyerId,
+    String? auctionItemId,
+  }) async {
+    if (streamId.value.isEmpty || itemName.trim().isEmpty) return false;
+    try {
+      final targetBuyerId = (buyerId != null && buyerId.isNotEmpty) ? buyerId : lastBidderId.value;
+      final targetAuctionItemId = (auctionItemId != null && auctionItemId.isNotEmpty)
+          ? auctionItemId
+          : this.auctionItemId.value;
+
+      // 1. Socket emit for real-time room banner
+      try {
+        final s = Get.find<SocketService>();
+        s.emitEvent('attach-spin-prize', {
+          "streamId": streamId.value,
+          "itemName": itemName.trim(),
+          "buyerId": targetBuyerId,
+          "auctionItemId": targetAuctionItemId,
+        });
+      } catch (_) {}
+
+      // 2. Call backend API
+      final res = await _apiClient.postData(ApiUrl.attachSpinWheelPrize(streamId.value), {
+        "itemName": itemName.trim(),
+        "buyerId": targetBuyerId,
+        "auctionItemId": targetAuctionItemId,
+      });
+
+      Get.snackbar(
+        "Prize Attached! 🎁",
+        "'$itemName' attached to buyer's order!",
+        backgroundColor: const Color(0xFF10B981),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+      return res.statusCode == 200 || res.statusCode == 201;
+    } catch (e) {
+      debugPrint("❌ [AgoraLiveController] attachSpinWheelPrizeToOrder error: $e");
+      return false;
     }
   }
 

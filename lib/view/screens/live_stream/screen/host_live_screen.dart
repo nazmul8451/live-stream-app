@@ -391,7 +391,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
             // ── Right Side Controls (Moved below bottom card overlay to make them clickable)
             Positioned(
               right: 16.w,
-              bottom: 200.h,
+              bottom: 140.h,
               child: Obx(() => Column(
                 children: [
                   _sideButton(
@@ -399,21 +399,29 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     ctrl.isCameraOn.value ? Colors.white24 : Colors.red.withValues(alpha: 0.6),
                     onTap: ctrl.toggleCamera,
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 10.h),
                   _sideButton(
                     ctrl.isMicOn.value ? Icons.mic_rounded : Icons.mic_off_rounded,
                     ctrl.isMicOn.value ? Colors.white24 : Colors.red.withValues(alpha: 0.6),
                     onTap: ctrl.toggleMic,
                   ),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 10.h),
                   _sideButton(Icons.flip_camera_ios_rounded, Colors.white24, onTap: () {
                     ctrl.engine?.switchCamera();
                   }),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 10.h),
                   _sideButton(Icons.gavel_rounded, const Color(0xFF8B9BFF), onTap: () {
                     _showStartNewAuctionSheet();
                   }),
-                  SizedBox(height: 16.h),
+                  SizedBox(height: 10.h),
+                  _sideButton(Icons.add_box_rounded, const Color(0xFF10B981), onTap: () {
+                    _showLiveItemManagerSheet();
+                  }),
+                  SizedBox(height: 10.h),
+                  _sideButton(Icons.casino_rounded, const Color(0xFFFF6584), onTap: () {
+                    _showSpinWheelRandomizerSheet();
+                  }),
+                  SizedBox(height: 10.h),
                   _sideButton(Icons.stars_rounded, const Color(0xFFFFB800), onTap: () {
                     _confirmGiveawayDraw(ctrl);
                   }),
@@ -577,6 +585,30 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
               ],
               SizedBox(height: 24.h),
               if (hasWinner) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      ctrl.showWinnerOverlay.value = false;
+                      _showSpinWheelRandomizerSheet(
+                        targetBuyerName: winnerName,
+                        targetBuyerId: ctrl.lastBidderId.value,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6584),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+                    ),
+                    icon: Icon(Icons.casino_rounded, color: Colors.white, size: 18.sp),
+                    label: Text(
+                      "Spin Wheel / Randomize for Winner",
+                      style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 10.h),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -2439,5 +2471,1116 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
         Text(value, style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 16.sp, fontWeight: FontWeight.w900)),
       ],
     );
+  }
+
+  // ─── LIVE ITEM MANAGER (Task 10) ──────────────────────────
+  void _showLiveItemManagerSheet() {
+    final selectedTabIndex = 0.obs;
+
+    // New Item Form Controllers
+    final titleController = TextEditingController();
+    final priceController = TextEditingController();
+    final isGiveaway = false.obs;
+    final selectedCategory = "Trading Cards & TCG".obs;
+    final selectedCondition = "PSA 10".obs;
+    final isSubmitting = false.obs;
+
+    const categories = [
+      "Trading Cards & TCG",
+      "Sports Memorabilia",
+      "Toys & Collectibles",
+      "Sneakers & Streetwear",
+      "Fashion & Apparel",
+      "Watches & Luxury",
+      "Jewelry & Accessories",
+      "Electronics & Tech",
+      "Coins & Currency",
+      "Comics, Anime & Manga",
+      "Video Games",
+      "Vintage & Antiques",
+      "Home & Lifestyle",
+      "Beauty & Personal Care",
+      "Books, Music & Media",
+      "Other / Not Listed",
+    ];
+
+    const conditions = [
+      "PSA 10",
+      "PSA 9",
+      "BGS 9.5",
+      "CGC 9.5",
+      "Raw Gem Mint",
+      "Near Mint - Mint",
+      "Excellent",
+      "Brand New / Sealed",
+    ];
+
+    // Fetch Inventory for Tab 1
+    final sellerId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+    final inventoryList = <Map<String, dynamic>>[].obs;
+    final loadingInventory = true.obs;
+
+    void loadInventory() {
+      if (ctrl.streamInventoryItems.isNotEmpty) {
+        inventoryList.assignAll(ctrl.streamInventoryItems);
+      }
+      if (Get.isRegistered<ProfileController>()) {
+        final pCtrl = Get.find<ProfileController>();
+        if (pCtrl.userListings.isNotEmpty) {
+          for (final item in pCtrl.userListings) {
+            final pid = (item['_id'] ?? item['id'] ?? '').toString();
+            if (!inventoryList.any((e) => (e['_id'] ?? e['id']).toString() == pid)) {
+              inventoryList.add(Map<String, dynamic>.from(item));
+            }
+          }
+        }
+      }
+      if (Get.isRegistered<ApiClient>()) {
+        ProductCache.fetchMyProducts(Get.find<ApiClient>(), sellerId).then((products) {
+          for (final p in products) {
+            final pid = (p['_id'] ?? p['id'] ?? '').toString();
+            if (!inventoryList.any((e) => (e['_id'] ?? e['id']).toString() == pid)) {
+              inventoryList.add(p);
+            }
+          }
+          loadingInventory.value = false;
+        }).catchError((_) {
+          loadingInventory.value = false;
+        });
+      } else {
+        loadingInventory.value = false;
+      }
+    }
+
+    loadInventory();
+
+    Get.bottomSheet(
+      Container(
+        height: 600.h,
+        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 20.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F111D),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          border: Border.all(color: const Color(0xFF22283F)),
+        ),
+        child: Column(
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 44.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: 14.h),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            // Title + Close
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(6.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Icon(Icons.add_box_rounded, color: const Color(0xFF10B981), size: 18.sp),
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      "Live Inventory & Giveaways",
+                      style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  onPressed: () => Get.back(),
+                  icon: Icon(Icons.close_rounded, color: Colors.white60, size: 20.sp),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+
+            // Tab Switcher
+            Obx(() => Container(
+              padding: EdgeInsets.all(4.r),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161B2E),
+                borderRadius: BorderRadius.circular(14.r),
+                border: Border.all(color: const Color(0xFF22283F)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => selectedTabIndex.value = 0,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 10.h),
+                        decoration: BoxDecoration(
+                          color: selectedTabIndex.value == 0 ? const Color(0xFF10B981) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "+ Add New Item",
+                          style: TextStyle(
+                            color: selectedTabIndex.value == 0 ? Colors.white : Colors.white60,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => selectedTabIndex.value = 1,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 10.h),
+                        decoration: BoxDecoration(
+                          color: selectedTabIndex.value == 1 ? const Color(0xFF8B9BFF) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          "Pick from Inventory (${inventoryList.length})",
+                          style: TextStyle(
+                            color: selectedTabIndex.value == 1 ? const Color(0xFF0F0B1E) : Colors.white60,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
+            SizedBox(height: 14.h),
+
+            // Content
+            Expanded(
+              child: Obx(() {
+                if (selectedTabIndex.value == 0) {
+                  // ADD NEW ITEM TAB
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Item Title
+                        Text("Item Title", style: TextStyle(color: Colors.white70, fontSize: 11.sp, fontWeight: FontWeight.w700)),
+                        SizedBox(height: 6.h),
+                        TextField(
+                          controller: titleController,
+                          style: TextStyle(color: Colors.white, fontSize: 13.sp),
+                          decoration: InputDecoration(
+                            hintText: "e.g. 2020 Panini Prizm Justin Herbert RC",
+                            hintStyle: TextStyle(color: Colors.white30, fontSize: 12.sp),
+                            filled: true,
+                            fillColor: const Color(0xFF161B2E),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                          ),
+                        ),
+                        SizedBox(height: 12.h),
+
+                        // Price / Starting Bid & Condition
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("Price / Starting Bid (\$)", style: TextStyle(color: Colors.white70, fontSize: 11.sp, fontWeight: FontWeight.w700)),
+                                  SizedBox(height: 6.h),
+                                  TextField(
+                                    controller: priceController,
+                                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                    style: TextStyle(color: Colors.white, fontSize: 13.sp),
+                                    decoration: InputDecoration(
+                                      hintText: "100.0",
+                                      hintStyle: TextStyle(color: Colors.white30, fontSize: 12.sp),
+                                      prefixText: "\$ ",
+                                      prefixStyle: TextStyle(color: const Color(0xFF10B981), fontSize: 13.sp, fontWeight: FontWeight.bold),
+                                      filled: true,
+                                      fillColor: const Color(0xFF161B2E),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("Condition", style: TextStyle(color: Colors.white70, fontSize: 11.sp, fontWeight: FontWeight.w700)),
+                                  SizedBox(height: 6.h),
+                                  Obx(() => Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 12.w),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF161B2E),
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: selectedCondition.value,
+                                        isExpanded: true,
+                                        dropdownColor: const Color(0xFF1A223E),
+                                        icon: const Icon(Icons.arrow_drop_down, color: Colors.white60),
+                                        style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                                        items: conditions.map((c) => DropdownMenuItem(value: c, child: Text(c, overflow: TextOverflow.ellipsis))).toList(),
+                                        onChanged: (val) {
+                                          if (val != null) selectedCondition.value = val;
+                                        },
+                                      ),
+                                    ),
+                                  )),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 12.h),
+
+                        // Category Dropdown
+                        Text("Category", style: TextStyle(color: Colors.white70, fontSize: 11.sp, fontWeight: FontWeight.w700)),
+                        SizedBox(height: 6.h),
+                        Obx(() => Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12.w),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF161B2E),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedCategory.value,
+                              isExpanded: true,
+                              dropdownColor: const Color(0xFF1A223E),
+                              icon: const Icon(Icons.arrow_drop_down, color: Colors.white60),
+                              style: TextStyle(color: Colors.white, fontSize: 12.sp),
+                              items: categories.map((cat) => DropdownMenuItem(value: cat, child: Text(cat, overflow: TextOverflow.ellipsis))).toList(),
+                              onChanged: (val) {
+                                if (val != null) selectedCategory.value = val;
+                              },
+                            ),
+                          ),
+                        )),
+                        SizedBox(height: 14.h),
+
+                        // Checkbox: "Mark as Giveaway 🎁"
+                        Container(
+                          padding: EdgeInsets.all(12.r),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF181D33),
+                            borderRadius: BorderRadius.circular(14.r),
+                            border: Border.all(color: isGiveaway.value ? const Color(0xFFFFB800) : const Color(0xFF22283F)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(6.r),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF2E2210),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(Icons.card_giftcard_rounded, color: const Color(0xFFFFB800), size: 18.sp),
+                              ),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Mark as Giveaway Item 🎁",
+                                      style: TextStyle(color: Colors.white, fontSize: 12.5.sp, fontWeight: FontWeight.w800),
+                                    ),
+                                    SizedBox(height: 2.h),
+                                    Text(
+                                      "Add & immediately run as live giveaway prize",
+                                      style: TextStyle(color: Colors.white54, fontSize: 10.5.sp),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              CupertinoSwitch(
+                                value: isGiveaway.value,
+                                activeTrackColor: const Color(0xFFFFB800),
+                                onChanged: (val) => isGiveaway.value = val,
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 18.h),
+
+                        // Submit Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50.h,
+                          child: ElevatedButton.icon(
+                            onPressed: isSubmitting.value
+                                ? null
+                                : () async {
+                                    final title = titleController.text.trim();
+                                    if (title.isEmpty) {
+                                      Get.snackbar("Missing Title", "Please enter an item title", backgroundColor: Colors.redAccent, colorText: Colors.white);
+                                      return;
+                                    }
+                                    final price = double.tryParse(priceController.text.trim()) ?? 0.0;
+                                    isSubmitting.value = true;
+                                    final ok = await ctrl.addLiveStreamItem(
+                                      title: title,
+                                      price: price,
+                                      category: selectedCategory.value,
+                                      condition: selectedCondition.value,
+                                      isGiveaway: isGiveaway.value,
+                                    );
+                                    isSubmitting.value = false;
+                                    if (ok) {
+                                      Get.back();
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isGiveaway.value ? const Color(0xFFFFB800) : const Color(0xFF10B981),
+                              foregroundColor: isGiveaway.value ? Colors.black : Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                            ),
+                            icon: isSubmitting.value
+                                ? SizedBox(width: 16.r, height: 16.r, child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                : Icon(isGiveaway.value ? Icons.stars_rounded : Icons.add_circle_outline_rounded, size: 18.sp),
+                            label: Text(
+                              isSubmitting.value
+                                  ? "Adding Item..."
+                                  : (isGiveaway.value ? "Add & Run Giveaway 🎁" : "Add to Live Inventory 📦"),
+                              style: TextStyle(fontSize: 13.5.sp, fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                } else {
+                  // EXISTING INVENTORY TAB
+                  if (loadingInventory.value && inventoryList.isEmpty) {
+                    return const Center(child: CircularProgressIndicator(color: Color(0xFF8B9BFF)));
+                  }
+                  if (inventoryList.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.inventory_2_outlined, color: Colors.white24, size: 48.sp),
+                          SizedBox(height: 8.h),
+                          Text("No inventory items found", style: TextStyle(color: Colors.white54, fontSize: 13.sp)),
+                          SizedBox(height: 6.h),
+                          TextButton(
+                            onPressed: () => selectedTabIndex.value = 0,
+                            child: const Text("+ Add a new item now", style: TextStyle(color: Color(0xFF10B981))),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: inventoryList.length,
+                    physics: const BouncingScrollPhysics(),
+                    itemBuilder: (context, i) {
+                      final item = inventoryList[i];
+                      final title = item['title'] ?? item['name'] ?? 'Product';
+                      final category = item['category'] ?? 'Item';
+                      final price = item['buyNowPrice'] ?? item['price'] ?? item['startingBid'] ?? 0;
+                      final image = (item['images'] is List && (item['images'] as List).isNotEmpty)
+                          ? item['images'][0].toString()
+                          : (item['image'] ?? '');
+                      final pid = (item['_id'] ?? item['id'] ?? '').toString();
+
+                      return Container(
+                        margin: EdgeInsets.only(bottom: 10.h),
+                        padding: EdgeInsets.all(10.r),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF161B2E),
+                          borderRadius: BorderRadius.circular(14.r),
+                          border: Border.all(color: const Color(0xFF22283F)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 50.r,
+                              height: 50.r,
+                              clipBehavior: Clip.antiAlias,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E2640),
+                                borderRadius: BorderRadius.circular(10.r),
+                              ),
+                              child: image.isNotEmpty
+                                  ? Image.network(
+                                      image.startsWith('http') ? image : "${ApiUrl.imageBaseUrl}${image.startsWith('/') ? image : '/$image'}",
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Icon(Icons.image, color: Colors.white24, size: 20.sp),
+                                    )
+                                  : Icon(Icons.image, color: Colors.white24, size: 20.sp),
+                            ),
+                            SizedBox(width: 10.w),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w700),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: 3.h),
+                                  Text(
+                                    "$category • \$$price",
+                                    style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            // Auction Button
+                            GestureDetector(
+                              onTap: () {
+                                Get.back();
+                                _showStartNewAuctionSheet();
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF222845),
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  border: Border.all(color: const Color(0xFF323D66)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.gavel_rounded, color: const Color(0xFF8B9BFF), size: 12.sp),
+                                    SizedBox(width: 4.w),
+                                    Text("Auction", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w800)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 6.w),
+                            // Giveaway Button
+                            GestureDetector(
+                              onTap: () {
+                                Get.back();
+                                Get.dialog(
+                                  Dialog(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+                                    backgroundColor: const Color(0xFF1E1E2C),
+                                    child: Padding(
+                                      padding: EdgeInsets.all(20.r),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.stars_rounded, color: const Color(0xFFFFB800), size: 40.sp),
+                                          SizedBox(height: 12.h),
+                                          Text("Run as Giveaway Prize? 🎁", style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900)),
+                                          SizedBox(height: 8.h),
+                                          Text("This will broadcast '$title' as the active giveaway prize and draw a lucky winner!", textAlign: TextAlign.center, style: TextStyle(color: Colors.white60, fontSize: 12.sp)),
+                                          SizedBox(height: 20.h),
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: TextButton(onPressed: () => Get.back(), child: const Text("Cancel", style: TextStyle(color: Colors.white60))),
+                                              ),
+                                              Expanded(
+                                                child: ElevatedButton(
+                                                  onPressed: () {
+                                                    Get.back();
+                                                    ctrl.runItemGiveaway(itemTitle: title, productId: pid, itemImage: image);
+                                                  },
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: const Color(0xFFFFB800),
+                                                    foregroundColor: Colors.black,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                                                  ),
+                                                  child: const Text("Run Giveaway", style: TextStyle(fontWeight: FontWeight.bold)),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF332612),
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  border: Border.all(color: const Color(0xFFFFB800).withValues(alpha: 0.5)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.card_giftcard_rounded, color: const Color(0xFFFFB800), size: 12.sp),
+                                    SizedBox(width: 4.w),
+                                    Text("Giveaway", style: TextStyle(color: const Color(0xFFFFB800), fontSize: 10.5.sp, fontWeight: FontWeight.w800)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                }
+              }),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  // ─── SPIN WHEEL / RANDOMIZER (Task 11) ──────────────────────
+  void _showSpinWheelRandomizerSheet({String? targetBuyerName, String? targetBuyerId}) {
+    Get.bottomSheet(
+      _SpinWheelSheetWidget(
+        targetBuyerName: targetBuyerName,
+        targetBuyerId: targetBuyerId,
+      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+}
+
+class _SpinWheelSheetWidget extends StatefulWidget {
+  final String? targetBuyerName;
+  final String? targetBuyerId;
+
+  const _SpinWheelSheetWidget({
+    this.targetBuyerName,
+    this.targetBuyerId,
+  });
+
+  @override
+  State<_SpinWheelSheetWidget> createState() => _SpinWheelSheetWidgetState();
+}
+
+class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with SingleTickerProviderStateMixin {
+  final List<String> _wheelItems = [
+    "Mystery Pack",
+    "Silver Foil Rare",
+    "\$15 Coupon",
+    "Holo Charizard",
+  ];
+  final TextEditingController _itemInputController = TextEditingController();
+  late AnimationController _animController;
+  Animation<double>? _spinAnim;
+  double _currentRotation = 0.0;
+  bool _isSpinning = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3500),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    _itemInputController.dispose();
+    super.dispose();
+  }
+
+  void _addEntry() {
+    final text = _itemInputController.text.trim();
+    if (text.isNotEmpty) {
+      setState(() {
+        _wheelItems.add(text);
+        _itemInputController.clear();
+      });
+    }
+  }
+
+  void _spinWheel({bool isShuffle = false}) {
+    if (_isSpinning) return;
+    if (_wheelItems.length < 2) {
+      Get.snackbar(
+        "Need More Items",
+        "Please enter at least 2 items to spin or randomize.",
+        backgroundColor: Colors.amber.shade900,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    setState(() {
+      _isSpinning = true;
+    });
+
+    final random = math.Random();
+    final targetIndex = random.nextInt(_wheelItems.length);
+
+    final sliceAngle = (2 * math.pi) / _wheelItems.length;
+    final extraFullTurns = (isShuffle ? 3 : 5) * 2 * math.pi;
+    final landingAngle = extraFullTurns + (_wheelItems.length - targetIndex) * sliceAngle - (sliceAngle / 2);
+
+    final startAngle = _currentRotation % (2 * math.pi);
+    final endAngle = startAngle + landingAngle;
+
+    _spinAnim = Tween<double>(begin: startAngle, end: endAngle).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+    )..addListener(() {
+        setState(() {
+          _currentRotation = _spinAnim!.value;
+        });
+      });
+
+    _animController.reset();
+    _animController.forward().then((_) {
+      setState(() {
+        _isSpinning = false;
+      });
+      _onSpinCompleted(targetIndex);
+    });
+  }
+
+  void _onSpinCompleted(int selectedIndex) {
+    if (selectedIndex < 0 || selectedIndex >= _wheelItems.length) return;
+    final selectedItem = _wheelItems[selectedIndex];
+    final ctrl = Get.find<AgoraLiveController>();
+
+    final buyerName = widget.targetBuyerName ??
+        (ctrl.lastBidderName.value.isNotEmpty ? ctrl.lastBidderName.value : "Winning Buyer");
+    final buyerId = widget.targetBuyerId ?? ctrl.lastBidderId.value;
+
+    // Attach to buyer order
+    ctrl.attachSpinWheelPrizeToOrder(
+      itemName: selectedItem,
+      buyerId: buyerId,
+    );
+
+    // Show result dialog with option to remove or keep item
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        backgroundColor: const Color(0xFF1B1B2A),
+        child: Padding(
+          padding: EdgeInsets.all(22.r),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(16.r),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(colors: [Color(0xFFFF6584), Color(0xFFBD8BFF)]),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.emoji_events_rounded, color: Colors.white, size: 36.sp),
+              ),
+              SizedBox(height: 14.h),
+              Text(
+                "Selected: $selectedItem!",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900),
+              ),
+              SizedBox(height: 8.h),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Text(
+                  "Attached to @$buyerName's order",
+                  style: TextStyle(color: const Color(0xFF10B981), fontSize: 11.5.sp, fontWeight: FontWeight.bold),
+                ),
+              ),
+              SizedBox(height: 20.h),
+              Text(
+                "Would you like to remove this item from the wheel for future spins?",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white60, fontSize: 12.sp),
+              ),
+              SizedBox(height: 20.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Get.back(); // Close prompt
+                        setState(() {
+                          _wheelItems.removeAt(selectedIndex);
+                        });
+                        Get.snackbar(
+                          "Item Removed",
+                          "'$selectedItem' removed from future wheel spins.",
+                          backgroundColor: const Color(0xFF222845),
+                          colorText: Colors.white,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFFF6584)),
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      ),
+                      child: Text(
+                        "Remove ❌",
+                        style: TextStyle(color: const Color(0xFFFF6584), fontSize: 12.sp, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Get.back(); // Close prompt, keep on wheel
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B9BFF),
+                        foregroundColor: const Color(0xFF0F0B1E),
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                      ),
+                      child: Text(
+                        "Keep 🔄",
+                        style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = Get.find<AgoraLiveController>();
+    final targetBuyer = widget.targetBuyerName ??
+        (ctrl.lastBidderName.value.isNotEmpty ? ctrl.lastBidderName.value : "");
+
+    return Container(
+      height: 640.h,
+      padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 20.h),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F111D),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+        border: Border.all(color: const Color(0xFF22283F)),
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Center(
+            child: Container(
+              width: 44.w,
+              height: 4.h,
+              margin: EdgeInsets.only(bottom: 12.h),
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2.r),
+              ),
+            ),
+          ),
+          // Title + Close
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(6.r),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF6584).withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(Icons.casino_rounded, color: const Color(0xFFFF6584), size: 18.sp),
+                  ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    "Spin Wheel / Randomizer",
+                    style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                  ),
+                ],
+              ),
+              IconButton(
+                onPressed: () => Get.back(),
+                icon: Icon(Icons.close_rounded, color: Colors.white60, size: 20.sp),
+              ),
+            ],
+          ),
+
+          if (targetBuyer.isNotEmpty) ...[
+            Container(
+              margin: EdgeInsets.symmetric(vertical: 6.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle_outline, color: const Color(0xFF10B981), size: 14.sp),
+                  SizedBox(width: 6.w),
+                  Expanded(
+                    child: Text(
+                      "Target Winner: @$targetBuyer (Prize attaches to order)",
+                      style: TextStyle(color: const Color(0xFF10B981), fontSize: 11.sp, fontWeight: FontWeight.bold),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          SizedBox(height: 6.h),
+
+          // Input field: Type item name & press Return
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _itemInputController,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _addEntry(),
+                  style: TextStyle(color: Colors.white, fontSize: 12.5.sp),
+                  decoration: InputDecoration(
+                    hintText: "Enter item name (press Return to add)...",
+                    hintStyle: TextStyle(color: Colors.white30, fontSize: 11.5.sp),
+                    filled: true,
+                    fillColor: const Color(0xFF161B2E),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12.r), borderSide: BorderSide.none),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+                  ),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              IconButton(
+                onPressed: _addEntry,
+                icon: Icon(Icons.add_circle, color: const Color(0xFF8B9BFF), size: 28.sp),
+              ),
+            ],
+          ),
+
+          // Chips of entered items
+          Container(
+            height: 36.h,
+            margin: EdgeInsets.symmetric(vertical: 8.h),
+            child: _wheelItems.isEmpty
+                ? Center(child: Text("No items on wheel yet. Type above to add entries.", style: TextStyle(color: Colors.white30, fontSize: 11.sp)))
+                : ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _wheelItems.length,
+                    itemBuilder: (context, i) {
+                      return Container(
+                        margin: EdgeInsets.only(right: 6.w),
+                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E2640),
+                          borderRadius: BorderRadius.circular(20.r),
+                          border: Border.all(color: const Color(0xFF2E3B66)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _wheelItems[i],
+                              style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w600),
+                            ),
+                            SizedBox(width: 4.w),
+                            GestureDetector(
+                              onTap: () {
+                                if (!_isSpinning) {
+                                  setState(() => _wheelItems.removeAt(i));
+                                }
+                              },
+                              child: Icon(Icons.close_rounded, color: Colors.white54, size: 14.sp),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+
+          // The Generated Wheel Section
+          Expanded(
+            child: Center(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Transform.rotate(
+                    angle: _currentRotation,
+                    child: CustomPaint(
+                      size: Size(220.r, 220.r),
+                      painter: _WheelPainter(items: _wheelItems),
+                    ),
+                  ),
+                  // Center Hub
+                  Container(
+                    width: 44.r,
+                    height: 44.r,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F111D),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFFF6584), width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6584).withValues(alpha: 0.4),
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: Icon(Icons.stars_rounded, color: const Color(0xFFFF6584), size: 22.sp),
+                  ),
+                  // Top Needle Pointer
+                  Positioned(
+                    top: 0,
+                    child: Icon(
+                      Icons.arrow_drop_down,
+                      color: const Color(0xFFFFB800),
+                      size: 38.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          SizedBox(height: 10.h),
+
+          // Action Buttons: Spin Wheel / Shuffle Randomizer
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isSpinning ? null : () => _spinWheel(isShuffle: false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFF6584),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 13.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                  ),
+                  icon: Icon(Icons.casino_rounded, size: 18.sp),
+                  label: Text(
+                    _isSpinning ? "Spinning..." : "Spin Wheel 🎡",
+                    style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _isSpinning ? null : () => _spinWheel(isShuffle: true),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF8B9BFF),
+                    side: const BorderSide(color: Color(0xFF8B9BFF), width: 1.2),
+                    padding: EdgeInsets.symmetric(vertical: 13.h),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                  ),
+                  icon: Icon(Icons.shuffle_rounded, size: 18.sp),
+                  label: Text(
+                    "Shuffle 🎲",
+                    style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WheelPainter extends CustomPainter {
+  final List<String> items;
+
+  const _WheelPainter({required this.items});
+
+  static const List<Color> _colors = [
+    Color(0xFF7C3AED),
+    Color(0xFF3B82F6),
+    Color(0xFF10B981),
+    Color(0xFFF59E0B),
+    Color(0xFFEC4899),
+    Color(0xFF06B6D4),
+    Color(0xFF8B5CF6),
+    Color(0xFFF43F5E),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (items.isEmpty) return;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    final sliceAngle = (2 * math.pi) / items.length;
+
+    final paint = Paint()..style = PaintingStyle.fill;
+    final linePaint = Paint()
+      ..color = Colors.black26
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    for (int i = 0; i < items.length; i++) {
+      final startAngle = i * sliceAngle;
+      paint.color = _colors[i % _colors.length];
+
+      // Draw slice
+      canvas.drawArc(rect, startAngle, sliceAngle, true, paint);
+      canvas.drawArc(rect, startAngle, sliceAngle, true, linePaint);
+
+      // Draw text label
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(startAngle + sliceAngle / 2);
+
+      final textSpan = TextSpan(
+        text: items[i],
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
+        ),
+      );
+      final textPainter = TextPainter(
+        text: textSpan,
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+        ellipsis: '...',
+      )..layout(maxWidth: radius * 0.65);
+
+      textPainter.paint(canvas, Offset(radius * 0.25, -textPainter.height / 2));
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _WheelPainter oldDelegate) {
+    return oldDelegate.items != items;
   }
 }
