@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../../../../data/services/api_url.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class ShippingLabelViewerScreen extends StatelessWidget {
   const ShippingLabelViewerScreen({super.key});
@@ -261,7 +262,7 @@ class ShippingLabelViewerScreen extends StatelessWidget {
                         await Future.delayed(const Duration(seconds: 1));
                         isPaying.value = false;
                         Get.back();
-                        Get.snackbar(
+                        showAppSnackbar(
                           "Payment Successful! ⚡",
                           "Your order has been paid and is being prepared for shipment.",
                           backgroundColor: const Color(0xFF22C55E),
@@ -586,7 +587,7 @@ class ShippingLabelViewerScreen extends StatelessWidget {
         return;
       }
     }
-    Get.snackbar(
+    showAppSnackbar(
       "Print Job Sent 🖨️",
       "Shipping label for $orderId has been queued to your default printer.",
       backgroundColor: const Color(0xFF22C55E),
@@ -604,7 +605,7 @@ class ShippingLabelViewerScreen extends StatelessWidget {
         return;
       }
     }
-    Get.snackbar(
+    showAppSnackbar(
       "PDF Downloaded 📥",
       "Shipping label for $orderId downloaded to device storage.",
       backgroundColor: const Color(0xFF8B9BFF),
@@ -614,7 +615,7 @@ class ShippingLabelViewerScreen extends StatelessWidget {
   }
 
   void _shareLabel(String trackingNumber, String orderId) {
-    Get.snackbar(
+    showAppSnackbar(
       "Share Label 🔗",
       "Tracking Number $trackingNumber copied to clipboard.",
       backgroundColor: const Color(0xFF8B9BFF),

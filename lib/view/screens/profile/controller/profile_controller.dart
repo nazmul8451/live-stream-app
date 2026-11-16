@@ -11,6 +11,7 @@ import '../../../../data/services/api_url.dart';
 import '../../../../data/services/push_notification_service.dart';
 import '../../../../data/helpers/api_list.dart';
 import '../../../../data/services/socket_service.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class ProfileController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -193,7 +194,7 @@ class ProfileController extends GetxController {
           } catch (_) {}
           await SharePrefsHelper.clear();
           Get.offAllNamed(AppRoute.login);
-          Get.snackbar(
+          showAppSnackbar(
             "Session Expired",
             "Your session has expired. Please log in again.",
             snackPosition: SnackPosition.BOTTOM,
@@ -315,7 +316,7 @@ class ProfileController extends GetxController {
     try {
       final response = await _apiClient.getData(ApiUrl.myNotifications);
       if (response.statusCode == 200) {
-        final list = jsonDecode(response.body)['data'] as List;
+        final list = extractApiList(jsonDecode(response.body));
         notificationsList.assignAll(list);
       }
     } catch (e) {
@@ -372,7 +373,7 @@ class ProfileController extends GetxController {
         );
 
         if (response.statusCode == 200 || response.statusCode == 201) {
-          Get.snackbar(
+          showAppSnackbar(
             "Success",
             "${isCover ? 'Cover' : 'Profile'} photo updated!",
             backgroundColor: Colors.green.withOpacity(0.8),
@@ -380,7 +381,7 @@ class ProfileController extends GetxController {
           );
           fetchProfileData(); // Refresh UI
         } else {
-          Get.snackbar(
+          showAppSnackbar(
             "Error",
             "Failed to update image",
             backgroundColor: Colors.red.withOpacity(0.8),
@@ -389,7 +390,7 @@ class ProfileController extends GetxController {
         }
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "An error occurred",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -460,7 +461,7 @@ class ProfileController extends GetxController {
         // Fetch updated profile to get new role + sellerVerified values
         await fetchProfileData();
 
-        Get.snackbar(
+        showAppSnackbar(
           targetRole == 'seller' ? "Application Submitted ✅" : "Switched to Buyer ✅",
           targetRole == 'seller'
               ? "Your seller application is under review. You'll be notified once approved."
@@ -483,7 +484,7 @@ class ProfileController extends GetxController {
           errMsg = data['message'] ?? errMsg;
         } catch (_) {}
         Get.log("❌ [switchRole] Error: $errMsg");
-        Get.snackbar(
+        showAppSnackbar(
           "Role Switch Failed",
           errMsg,
           backgroundColor: const Color(0xFF2A0A10),
@@ -496,7 +497,7 @@ class ProfileController extends GetxController {
       }
     } catch (e) {
       Get.log("❌ [switchRole] Exception: $e");
-      Get.snackbar(
+      showAppSnackbar(
         "Network Error",
         "Could not switch role: $e",
         backgroundColor: const Color(0xFF2A0A10),
@@ -517,7 +518,7 @@ class ProfileController extends GetxController {
   Future<bool> applyPromoCode(String code) async {
     final trimmed = code.trim();
     if (trimmed.isEmpty) {
-      Get.snackbar("Required", "Please enter a promo code", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Required", "Please enter a promo code", snackPosition: SnackPosition.BOTTOM);
       return false;
     }
 
@@ -539,7 +540,7 @@ class ProfileController extends GetxController {
         partnerName.value = resPartner;
         referredByPartnerId.value = resPartnerId;
 
-        Get.snackbar(
+        showAppSnackbar(
           "Promo Code Applied! 🎉",
           "You are now linked to partner: $resPartner",
           backgroundColor: const Color(0xFF22C55E),
@@ -552,7 +553,7 @@ class ProfileController extends GetxController {
         // Fallback for demo testing when backend database hasn't seeded partner records yet
         promoCode.value = trimmed.toUpperCase();
         partnerName.value = "CultureCards (Partner)";
-        Get.snackbar(
+        showAppSnackbar(
           "Promo Code Applied! 🎉",
           "You are now linked to partner: CultureCards",
           backgroundColor: const Color(0xFF22C55E),
@@ -567,7 +568,7 @@ class ProfileController extends GetxController {
           final data = jsonDecode(response.body);
           errMsg = data['message'] ?? errMsg;
         } catch (_) {}
-        Get.snackbar(
+        showAppSnackbar(
           "Invalid Promo Code",
           errMsg,
           backgroundColor: Colors.redAccent.withOpacity(0.9),
@@ -577,7 +578,7 @@ class ProfileController extends GetxController {
         return false;
       }
     } catch (e) {
-      Get.snackbar("Error", "Could not apply promo code: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "Could not apply promo code: $e", snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isApplyingPromo.value = false;

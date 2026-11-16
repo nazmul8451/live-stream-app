@@ -11,6 +11,7 @@ import '../../../../core/app_route.dart';
 import '../../purchases/controller/purchases_controller.dart';
 import '../../purchases/model/purchase_model.dart';
 import '../../../../global/helper/auth_guard.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class TradeDetailsController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -164,18 +165,18 @@ class TradeDetailsController extends GetxController {
 
           if (launched) {
             await _createOrderRecordAndNotifySeller();
-            Get.snackbar("Success", "Redirecting to Stripe checkout...", snackPosition: SnackPosition.BOTTOM);
+            showAppSnackbar("Success", "Redirecting to Stripe checkout...", snackPosition: SnackPosition.BOTTOM);
           } else {
-            Get.snackbar("Error", "Could not open Stripe checkout page.", snackPosition: SnackPosition.BOTTOM);
+            showAppSnackbar("Error", "Could not open Stripe checkout page.", snackPosition: SnackPosition.BOTTOM);
           }
         } else {
-          Get.snackbar("Error", resBody['message'] ?? "Failed to initiate payment session", snackPosition: SnackPosition.BOTTOM);
+          showAppSnackbar("Error", resBody['message'] ?? "Failed to initiate payment session", snackPosition: SnackPosition.BOTTOM);
         }
       } else {
-        Get.snackbar("Error", "Failed to initiate payment. Status code: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", "Failed to initiate payment. Status code: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
-      Get.snackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
     } finally {
       isOrdering.value = false;
     }
@@ -218,7 +219,7 @@ class TradeDetailsController extends GetxController {
       await Stripe.instance.presentPaymentSheet();
       await _createOrderRecordAndNotifySeller();
 
-      Get.snackbar(
+      showAppSnackbar(
         "Payment Successful! 🎉",
         "Order request sent to seller! Redirecting to My Purchases...",
         backgroundColor: const Color(0xFF22C55E),
@@ -230,11 +231,11 @@ class TradeDetailsController extends GetxController {
       return true;
     } on StripeException catch (e) {
       Get.log("⚠️ Stripe Exception: ${e.error.localizedMessage}");
-      Get.snackbar("Stripe Error", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Stripe Error", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
       return false;
     } catch (e) {
       Get.log("❌ Stripe Error: $e");
-      Get.snackbar("Error", "$e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "$e", snackPosition: SnackPosition.BOTTOM);
       return false;
     }
   }
@@ -354,7 +355,7 @@ class TradeDetailsController extends GetxController {
       final String productId = (product['_id'] ?? product['id'] ?? '').toString();
 
       if (senderId.isEmpty) {
-        Get.snackbar(
+        showAppSnackbar(
           "Authentication Required",
           "Please sign in to make an offer.",
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -369,7 +370,7 @@ class TradeDetailsController extends GetxController {
       if (minOfferRaw != null) {
         final double minOffer = double.tryParse(minOfferRaw.toString()) ?? 0.0;
         if (minOffer > 0 && offerAmount < minOffer) {
-          Get.snackbar(
+          showAppSnackbar(
             "Offer Too Low",
             "The seller has set a minimum offer threshold of \$${minOffer.toStringAsFixed(0)}.",
             backgroundColor: Colors.red.withOpacity(0.8),
@@ -415,7 +416,7 @@ class TradeDetailsController extends GetxController {
           final data = jsonDecode(response.body);
           errMsg = data['message'] ?? errMsg;
         } catch (_) {}
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           errMsg,
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -425,7 +426,7 @@ class TradeDetailsController extends GetxController {
         return false;
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "Unexpected error: $e",
         backgroundColor: Colors.red.withOpacity(0.8),

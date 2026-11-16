@@ -6,6 +6,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import 'otp_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class ForgotPasswordController extends GetxController {
   TextEditingController emailController = TextEditingController();
@@ -43,7 +44,7 @@ class ForgotPasswordController extends GetxController {
     final email = emailController.text.trim().toLowerCase();
 
     if (email.isEmpty) {
-      Get.snackbar(
+      showAppSnackbar(
         "Required",
         "Email address is required",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -70,7 +71,7 @@ class ForgotPasswordController extends GetxController {
           Get.find<OtpController>().fromForgotPassword.value = true;
         }
 
-        Get.snackbar(
+        showAppSnackbar(
           "Success",
           "Password reset request sent successfully!",
           backgroundColor: Colors.green.withOpacity(0.8),
@@ -94,7 +95,7 @@ class ForgotPasswordController extends GetxController {
           }
         } catch (_) {}
 
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           errorMessage,
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -102,7 +103,7 @@ class ForgotPasswordController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "An unexpected error occurred. Please check your connection.",
         backgroundColor: Colors.red.withOpacity(0.8),

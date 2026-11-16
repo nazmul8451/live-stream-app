@@ -6,6 +6,7 @@ import '../helpers/shared_prefe.dart';
 import 'api_url.dart';
 import '../../view/screens/main/controller/main_controller.dart';
 import '../../view/screens/messages/controller/messages_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class _SocketListener {
   final String event;
@@ -96,7 +97,7 @@ class SocketService extends GetxService {
           final checkoutUrl = data['checkoutUrl']?.toString() ?? '';
           final message = data['message'] ?? 'You won the auction!';
           
-          Get.snackbar(
+          showAppSnackbar(
             "Auction Won! 🏆",
             "$message\nWinning Bid: \$$bid",
             duration: const Duration(seconds: 10),
@@ -121,7 +122,7 @@ class SocketService extends GetxService {
         Get.log('💰 [SocketService] auction-payment-received: $data');
         if (data is Map) {
           final message = data['message'] ?? 'Winner has completed payment!';
-          Get.snackbar(
+          showAppSnackbar(
             "Payment Received 💰",
             message,
             backgroundColor: const Color(0xFF8B9BFF),
@@ -134,7 +135,7 @@ class SocketService extends GetxService {
         Get.log('🤝 [SocketService] trade-accepted: $data');
         if (data is Map) {
           final message = data['message'] ?? 'Your trade offer was accepted!';
-          Get.snackbar(
+          showAppSnackbar(
             "Trade Accepted 🤝",
             message,
             backgroundColor: const Color(0xFF22C55E),
@@ -147,7 +148,7 @@ class SocketService extends GetxService {
         Get.log('❌ [SocketService] trade-declined: $data');
         if (data is Map) {
           final message = data['message'] ?? 'Your trade offer was declined.';
-          Get.snackbar(
+          showAppSnackbar(
             "Trade Declined ❌",
             message,
             backgroundColor: Colors.redAccent,
@@ -160,7 +161,7 @@ class SocketService extends GetxService {
         Get.log('✅ [SocketService] trade-completed: $data');
         if (data is Map) {
           final message = data['message'] ?? 'Trade completed successfully!';
-          Get.snackbar(
+          showAppSnackbar(
             "Trade Completed ✅",
             message,
             backgroundColor: const Color(0xFFBD8BFF),
@@ -173,7 +174,7 @@ class SocketService extends GetxService {
         Get.log('⏳ [SocketService] trade-expired: $data');
         if (data is Map) {
           final message = data['message'] ?? 'Trade offer has expired.';
-          Get.snackbar(
+          showAppSnackbar(
             "Trade Expired ⏳",
             message,
             backgroundColor: Colors.grey,

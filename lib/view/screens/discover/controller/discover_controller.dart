@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
+import 'package:live_stream_app/data/helpers/api_list.dart';
 
 class DiscoverController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -54,7 +55,7 @@ class DiscoverController extends GetxController {
     try {
       final response = await _apiClient.getData("${ApiUrl.liveStreams}?status=live");
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body)['data'] ?? [];
+        final List data = extractApiList(jsonDecode(response.body));
         final parsedShows = data.where((item) => item['status'] == 'live').map((item) {
           final hostName = item['curator'] ?? item['sellerId']?['fullName'] ?? "Curator";
           
@@ -248,7 +249,7 @@ class DiscoverController extends GetxController {
     try {
       final response = await _apiClient.getData("${ApiUrl.products}?page=$targetPage&limit=$tradeLimit");
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body)['data'] ?? [];
+        final List data = extractApiList(jsonDecode(response.body));
         
         if (data.length < tradeLimit) {
           hasMoreTrades.value = false;

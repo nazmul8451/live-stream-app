@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../model/trade_model.dart';
+import 'package:live_stream_app/data/helpers/api_list.dart';
 
 class BidShwapController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -130,9 +131,10 @@ class BidShwapController extends GetxController {
       fetchCategories();
     }
     try {
-      final response = await _apiClient.getData("${ApiUrl.products}?allowTrade=true");
+      // Only items still available for trade (sold/reserved hidden)
+      final response = await _apiClient.getData("${ApiUrl.products}?allowTrade=true&status=active&limit=100");
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body)['data'] ?? [];
+        final List data = extractApiList(jsonDecode(response.body));
         
         // Sort by newest first so newly created trades appear at the top
         data.sort((a, b) {
@@ -145,8 +147,8 @@ class BidShwapController extends GetxController {
           final seller = item['sellerId'];
           final Map<String, dynamic>? sellerMap = seller is Map ? Map<String, dynamic>.from(seller) : null;
           
-          final String name = sellerMap?['username'] ?? sellerMap?['fullName'] ?? sellerMap?['name'] ?? "Julian_D";
-          final String rating = (sellerMap?['rating'] ?? "4.9").toString();
+          final String name = sellerMap?['username'] ?? sellerMap?['fullName'] ?? sellerMap?['name'] ?? "Collector";
+          final String rating = (sellerMap?['rating'] ?? sellerMap?['averageRating'] ?? "New").toString();
           
           String avatarUrl = "";
           final sellerImage = (sellerMap?['profile'] ?? sellerMap?['image'] ?? sellerMap?['profileImageUrl'] ?? sellerMap?['avatar'])?.toString();
@@ -173,14 +175,22 @@ class BidShwapController extends GetxController {
 
           final offeredValue = "\$${(item['estValue'] ?? item['price'] ?? 0).toString()} Est.";
           
-          final lookingForName = item['lookingFor'] ?? (item['category']?.toString().toUpperCase() == 'TCG' ? 'Rolex Submariner Date' : 'Jordan 1 Retro High');
-          final lookingForValue = item['lookingForValue'] ?? 'Value Range: \$11k - \$14k';
+          // Show only what the trader actually entered (no made-up examples)
+          final lookingForName = (item['lookingFor']?.toString().trim().isNotEmpty ?? false)
+              ? item['lookingFor']
+              : 'Open to offers';
+          final minV = item['minValue'];
+          final maxV = item['maxValue'];
+          final lookingForValue = item['lookingForValue'] ??
+              ((minV != null || maxV != null)
+                  ? 'Value Range: \$${minV ?? 0} - \$${maxV ?? 'any'}'
+                  : 'Any value');
 
           return TradeModel(
             userName: name.startsWith('@') ? name : "@$name",
             userAvatar: avatarUrl,
             userRating: rating,
-            tradesCount: "124 trades",
+            tradesCount: sellerMap?['tradesCount'] != null ? "${sellerMap!['tradesCount']} trades" : "",
             offeredItemName: item['title'] ?? "Unknown Item",
             offeredItemValue: offeredValue,
             offeredItemImage: imageUrl,

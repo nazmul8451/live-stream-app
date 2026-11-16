@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/helpers/shared_prefe.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class TraderProfileController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -319,7 +320,7 @@ class TraderProfileController extends GetxController {
             : (followersCount.value - 1).clamp(0, 9999999);
         Get.log('✅ [TraderProfile] Follow API success: isFollowing=${isFollowing.value}');
       } else {
-        Get.snackbar('Error', 'Failed to update follow status (${response.statusCode})');
+        showAppSnackbar('Error', 'Failed to update follow status (${response.statusCode})');
       }
     } catch (e) {
       Get.log('❌ [TraderProfile] toggleFollow error: $e');
@@ -369,14 +370,14 @@ class TraderProfileController extends GetxController {
   void toggleReminder(String showId) {
     if (remindedShowIds.contains(showId)) {
       remindedShowIds.remove(showId);
-      Get.snackbar(
+      showAppSnackbar(
         "Reminder Removed",
         "You will not receive a notification for this show.",
         snackPosition: SnackPosition.BOTTOM,
       );
     } else {
       remindedShowIds.add(showId);
-      Get.snackbar(
+      showAppSnackbar(
         "Reminder Set 🔔",
         "We'll notify you 15 minutes before the show goes live!",
         snackPosition: SnackPosition.BOTTOM,

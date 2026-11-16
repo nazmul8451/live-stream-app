@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../model/notification_model.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class NotificationController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -118,7 +119,7 @@ class NotificationController extends GetxController {
             );
           }
         }
-        Get.snackbar('Done', 'All notifications marked as read',
+        showAppSnackbar('Done', 'All notifications marked as read',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: const Color(0xFF8B9BFF),
             colorText: Colors.black);

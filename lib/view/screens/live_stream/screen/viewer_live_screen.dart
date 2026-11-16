@@ -12,6 +12,7 @@ import '../../../../global/helper/auth_guard.dart';
 import '../../../../global/controllers/safety_controller.dart';
 import '../widgets/swipe_to_bid_button.dart';
 import 'dart:convert';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class ViewerLiveScreen extends StatefulWidget {
   final Map<String, dynamic> streamData;
@@ -1181,7 +1182,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                         
                         _showOrderSuccessDialog(context, ctrl, winningAmount);
                       } else {
-                        Get.snackbar(
+                        showAppSnackbar(
                           "Payment Failed",
                           "Could not process your auction checkout. Please try again.",
                           backgroundColor: Colors.redAccent,
@@ -1989,7 +1990,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
         }),
         SizedBox(height: 12.h),
         GestureDetector(
-          onTap: () => Get.snackbar("Share", "Link copied to clipboard!", snackPosition: SnackPosition.BOTTOM),
+          onTap: () => showAppSnackbar("Share", "Link copied to clipboard!", snackPosition: SnackPosition.BOTTOM),
           child: Container(
             padding: EdgeInsets.all(12.r),
             decoration: BoxDecoration(
@@ -2223,13 +2224,13 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                 final text = bidAmountCtrl.text.trim();
                 debugPrint("Confirm Bid tapped: input='$text'");
                 if (text.isEmpty) {
-                  Get.snackbar("Error", "Please enter a bid amount.", snackPosition: SnackPosition.BOTTOM);
+                  showAppSnackbar("Error", "Please enter a bid amount.", snackPosition: SnackPosition.BOTTOM);
                   return;
                 }
                 final cleanText = text.replaceAll('\$', '').replaceAll(',', '');
                 final amount = double.tryParse(cleanText);
                 if (amount == null) {
-                  Get.snackbar("Error", "Invalid number format.", snackPosition: SnackPosition.BOTTOM);
+                  showAppSnackbar("Error", "Invalid number format.", snackPosition: SnackPosition.BOTTOM);
                   return;
                 }
                 debugPrint("Confirm Bid parsed amount: $amount. Placing bid...");
@@ -2360,13 +2361,13 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
               onTap: () {
                 final text = offerAmountCtrl.text.trim();
                 if (text.isEmpty) {
-                  Get.snackbar("Error", "Please enter an offer amount.", snackPosition: SnackPosition.BOTTOM);
+                  showAppSnackbar("Error", "Please enter an offer amount.", snackPosition: SnackPosition.BOTTOM);
                   return;
                 }
                 final cleanText = text.replaceAll('\$', '').replaceAll(',', '');
                 final amount = double.tryParse(cleanText);
                 if (amount == null || amount <= 0) {
-                  Get.snackbar("Error", "Invalid offer amount.", snackPosition: SnackPosition.BOTTOM);
+                  showAppSnackbar("Error", "Invalid offer amount.", snackPosition: SnackPosition.BOTTOM);
                   return;
                 }
                 ctrl.sendCustomOffer(offerPrice: amount, message: noteCtrl.text.trim());

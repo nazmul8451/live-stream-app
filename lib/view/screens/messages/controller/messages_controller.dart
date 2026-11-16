@@ -6,6 +6,7 @@ import '../../../../data/services/api_url.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/helpers/user_cache.dart';
 import '../../main/controller/main_controller.dart';
+import 'package:live_stream_app/data/helpers/api_list.dart';
 
 class MessagesController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -323,7 +324,7 @@ class MessagesController extends GetxController {
     try {
       final response = await _apiClient.getData(ApiUrl.myNotifications);
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body)['data'] ?? [];
+        final List data = extractApiList(jsonDecode(response.body));
         if (data.isNotEmpty) {
           final List<Map<String, dynamic>> parsedUpdates = [];
           for (var item in data) {

@@ -8,6 +8,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/socket_service.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class OrderCheckoutController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -123,7 +124,7 @@ class OrderCheckoutController extends GetxController {
     if (isProcessing.value) return;
 
     if (streetController.text.trim().isEmpty || cityController.text.trim().isEmpty || zipCodeController.text.trim().isEmpty) {
-      Get.snackbar(
+      showAppSnackbar(
         "Address Required",
         "Please fill in your delivery street, city, and ZIP code.",
         backgroundColor: const Color(0xFFFF6B35),
@@ -166,7 +167,7 @@ class OrderCheckoutController extends GetxController {
             final data1Tap = body1Tap['data'] is Map ? body1Tap['data'] : body1Tap;
             if (data1Tap['status'] == 'succeeded') {
               await _createOrderRecordAndNotifySeller();
-              Get.snackbar(
+              showAppSnackbar(
                 "Payment Successful! 🎉",
                 "1-Tap checkout completed with saved card! Redirecting to Purchases...",
                 backgroundColor: const Color(0xFF22C55E),
@@ -223,18 +224,18 @@ class OrderCheckoutController extends GetxController {
 
           if (launched) {
             await _createOrderRecordAndNotifySeller();
-            Get.snackbar("Success", "Redirecting to Stripe checkout...", snackPosition: SnackPosition.BOTTOM);
+            showAppSnackbar("Success", "Redirecting to Stripe checkout...", snackPosition: SnackPosition.BOTTOM);
           } else {
-            Get.snackbar("Error", "Could not open Stripe checkout page.", snackPosition: SnackPosition.BOTTOM);
+            showAppSnackbar("Error", "Could not open Stripe checkout page.", snackPosition: SnackPosition.BOTTOM);
           }
         } else {
-          Get.snackbar("Error", resBody['message'] ?? "Failed to initiate payment session", snackPosition: SnackPosition.BOTTOM);
+          showAppSnackbar("Error", resBody['message'] ?? "Failed to initiate payment session", snackPosition: SnackPosition.BOTTOM);
         }
       } else {
-        Get.snackbar("Error", "Failed to initiate payment. Status: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", "Failed to initiate payment. Status: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
-      Get.snackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
     } finally {
       isProcessing.value = false;
     }
@@ -277,7 +278,7 @@ class OrderCheckoutController extends GetxController {
       await Stripe.instance.presentPaymentSheet();
       await _createOrderRecordAndNotifySeller();
 
-      Get.snackbar(
+      showAppSnackbar(
         "Payment Successful! 🎉",
         "Your order has been placed and sent to the seller! Redirecting to Purchases...",
         backgroundColor: const Color(0xFF22C55E),
@@ -291,11 +292,11 @@ class OrderCheckoutController extends GetxController {
       return true;
     } on StripeException catch (e) {
       Get.log("⚠️ Stripe Exception: ${e.error.localizedMessage}");
-      Get.snackbar("Stripe Error", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Stripe Error", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
       return false;
     } catch (e) {
       Get.log("❌ Stripe Error: $e");
-      Get.snackbar("Error", "$e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "$e", snackPosition: SnackPosition.BOTTOM);
       return false;
     }
   }

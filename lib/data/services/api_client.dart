@@ -11,6 +11,7 @@ import '../../core/app_route.dart';
 
 import '../helpers/shared_prefe.dart';
 import '../../global/controllers/safety_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class ApiClient {
   final String baseUrl = ApiUrl.baseUrl;
@@ -475,7 +476,7 @@ class ApiClient {
     } catch (_) {}
     await SharePrefsHelper.clear();
     Get.offAllNamed(AppRoute.login);
-    Get.snackbar(
+    showAppSnackbar(
       "Session Expired",
       message ?? "Your session has expired. Please log in again.",
       snackPosition: SnackPosition.BOTTOM,

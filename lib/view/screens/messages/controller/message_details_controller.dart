@@ -11,6 +11,8 @@ import '../../../../data/helpers/user_cache.dart';
 import '../../../../data/services/socket_service.dart';
 import '../../main/controller/main_controller.dart';
 import 'messages_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/data/helpers/api_list.dart';
 
 class MessageDetailsController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -313,7 +315,7 @@ class MessageDetailsController extends GetxController {
       final response = await _apiClient.getData('${ApiUrl.message}/${chatId.value}');
       if (response.statusCode != 200) return;
 
-      final List data = jsonDecode(response.body)['data'] ?? [];
+      final List data = extractApiList(jsonDecode(response.body));
       if (data.isEmpty) return;
 
       // Sort data oldest first (ascending chronological order)
@@ -395,7 +397,7 @@ class MessageDetailsController extends GetxController {
 
       final response = await _apiClient.getData('${ApiUrl.message}/${chatId.value}');
       if (response.statusCode == 200) {
-        final List data = jsonDecode(response.body)['data'] ?? [];
+        final List data = extractApiList(jsonDecode(response.body));
         final List<Map<String, dynamic>> parsedList = [];
         _knownMessageIds.clear();
 
@@ -569,10 +571,10 @@ class MessageDetailsController extends GetxController {
       List sentData = [];
 
       if (receivedResponse.statusCode == 200) {
-        receivedData = jsonDecode(receivedResponse.body)['data'] ?? [];
+        receivedData = extractApiList(jsonDecode(receivedResponse.body));
       }
       if (sentResponse.statusCode == 200) {
-        sentData = jsonDecode(sentResponse.body)['data'] ?? [];
+        sentData = extractApiList(jsonDecode(sentResponse.body));
       }
 
       associatedTrades.assignAll([...receivedData, ...sentData]);
@@ -586,14 +588,14 @@ class MessageDetailsController extends GetxController {
     try {
       final response = await _apiClient.postData("${ApiUrl.acceptTrade}/$tradeId", {});
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Get.snackbar("Success", "Trade offer accepted successfully!", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Success", "Trade offer accepted successfully!", snackPosition: SnackPosition.BOTTOM);
         await fetchAssociatedTrades();
         await fetchMessages();
       } else {
-        Get.snackbar("Error", "Failed to accept trade offer", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", "Failed to accept trade offer", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
-      Get.snackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -604,14 +606,14 @@ class MessageDetailsController extends GetxController {
     try {
       final response = await _apiClient.postData("${ApiUrl.declineTrade}/$tradeId", {});
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Get.snackbar("Success", "Trade offer declined.", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Success", "Trade offer declined.", snackPosition: SnackPosition.BOTTOM);
         await fetchAssociatedTrades();
         await fetchMessages();
       } else {
-        Get.snackbar("Error", "Failed to decline trade offer", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", "Failed to decline trade offer", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
-      Get.snackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -664,17 +666,17 @@ class MessageDetailsController extends GetxController {
                 );
 
                 await Stripe.instance.presentPaymentSheet();
-                Get.snackbar("Success", "Payment completed & trade finalized! ✅", snackPosition: SnackPosition.BOTTOM);
+                showAppSnackbar("Success", "Payment completed & trade finalized! ✅", snackPosition: SnackPosition.BOTTOM);
                 await fetchAssociatedTrades();
                 await fetchMessages();
                 return;
               } on StripeException catch (e) {
                 Get.log("⚠️ Stripe Exception: ${e.error.localizedMessage}");
-                Get.snackbar("Stripe Payment", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
+                showAppSnackbar("Stripe Payment", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
                 return;
               } catch (e) {
                 Get.log("❌ Stripe Error: $e");
-                Get.snackbar("Stripe Error", "$e", snackPosition: SnackPosition.BOTTOM);
+                showAppSnackbar("Stripe Error", "$e", snackPosition: SnackPosition.BOTTOM);
                 return;
               }
             }
@@ -708,25 +710,25 @@ class MessageDetailsController extends GetxController {
             }
 
             if (launched) {
-              Get.snackbar("Success", "Redirecting to Stripe checkout...", snackPosition: SnackPosition.BOTTOM);
+              showAppSnackbar("Success", "Redirecting to Stripe checkout...", snackPosition: SnackPosition.BOTTOM);
             } else {
-              Get.snackbar("Error", "Could not open Stripe checkout page.", snackPosition: SnackPosition.BOTTOM);
+              showAppSnackbar("Error", "Could not open Stripe checkout page.", snackPosition: SnackPosition.BOTTOM);
             }
           } else {
-            Get.snackbar("Success", "Trade completed successfully!", snackPosition: SnackPosition.BOTTOM);
+            showAppSnackbar("Success", "Trade completed successfully!", snackPosition: SnackPosition.BOTTOM);
           }
           await fetchAssociatedTrades();
           await fetchMessages();
           await fetchAssociatedTrades();
           await fetchMessages();
         } else {
-          Get.snackbar("Error", body['message'] ?? "Failed to complete trade", snackPosition: SnackPosition.BOTTOM);
+          showAppSnackbar("Error", body['message'] ?? "Failed to complete trade", snackPosition: SnackPosition.BOTTOM);
         }
       } else {
-        Get.snackbar("Error", "Failed to complete trade offer. Status: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", "Failed to complete trade offer. Status: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
-      Get.snackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }

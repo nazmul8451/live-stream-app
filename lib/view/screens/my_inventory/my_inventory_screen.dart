@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import '../../../data/helpers/api_list.dart';
 import '../../../data/services/api_client.dart';
 import '../../../data/services/api_url.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 /// Seller's personal inventory (client spec: build inventory before live shows).
 class MyInventoryController extends GetxController {
@@ -110,7 +111,7 @@ class MyInventoryController extends GetxController {
 
   void _toast(String title, String msg, {bool error = false}) {
     if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-    Get.snackbar(
+    showAppSnackbar(
       title,
       msg,
       snackPosition: SnackPosition.TOP,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import 'agora_live_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class LiveStreamModel {
   final String videoUrl;
@@ -159,7 +160,7 @@ class LiveStreamController extends GetxController {
       double newBid = customAmount ?? double.tryParse(currentCustomBid.value) ?? 0;
 
       if (newBid <= currentPrice && customAmount == null) {
-        Get.snackbar(
+        showAppSnackbar(
           "Invalid Bid", 
           "Your bid must be higher than the current highest price (\$${currentPrice.toStringAsFixed(0)})", 
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -183,7 +184,7 @@ class LiveStreamController extends GetxController {
       }
 
       if (Get.isBottomSheetOpen == true) Get.back();
-      Get.snackbar("Bid Placed!", "Your bid of \$${newBid.toStringAsFixed(0)} is live!", 
+      showAppSnackbar("Bid Placed!", "Your bid of \$${newBid.toStringAsFixed(0)} is live!", 
         backgroundColor: Colors.green.withOpacity(0.8),
         colorText: Colors.white,
         snackPosition: SnackPosition.TOP);
@@ -201,7 +202,7 @@ class LiveStreamController extends GetxController {
       }
     }
     if (Get.isBottomSheetOpen == true) Get.back();
-    Get.snackbar(
+    showAppSnackbar(
       "Custom Offer Sent! 🤝",
       "Your offer of \$${offerPrice.toStringAsFixed(0)} has been sent to the host!",
       snackPosition: SnackPosition.TOP,
@@ -217,7 +218,7 @@ class LiveStreamController extends GetxController {
 
   void toggleBookmark(LiveStreamModel stream) {
     stream.isBookmarked.value = !stream.isBookmarked.value;
-    Get.snackbar(
+    showAppSnackbar(
       stream.isBookmarked.value ? '🔖 Saved' : 'Removed',
       stream.isBookmarked.value ? 'Stream bookmarked!' : 'Bookmark removed.',
       backgroundColor: const Color(0xFF1E1E2C),

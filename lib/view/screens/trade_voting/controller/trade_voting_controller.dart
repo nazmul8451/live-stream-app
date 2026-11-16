@@ -7,6 +7,7 @@ import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../global/helper/auth_guard.dart';
 import '../model/trade_vote_model.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class TradeVotingController extends GetxController {
   final ApiClient _apiClient = ApiClient();
@@ -239,7 +240,7 @@ class TradeVotingController extends GetxController {
   }
 
   void _showToast(String message, {bool isError = true}) {
-    Get.snackbar(
+    showAppSnackbar(
       isError ? "Notice" : "Success",
       message,
       snackPosition: SnackPosition.BOTTOM,

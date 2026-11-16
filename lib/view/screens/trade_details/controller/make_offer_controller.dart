@@ -12,6 +12,7 @@ import '../../../../data/services/socket_service.dart';
 import '../../../../core/app_route.dart';
 import '../../../../data/helpers/api_list.dart';
 import '../../messages/controller/messages_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class MakeOfferController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -182,7 +183,7 @@ class MakeOfferController extends GetxController {
         customImageFile.value = fixed;
       }
     } catch (e) {
-      Get.snackbar("Error", "Failed to pick image");
+      showAppSnackbar("Error", "Failed to pick image");
     }
   }
 
@@ -200,7 +201,7 @@ class MakeOfferController extends GetxController {
     final receiverProductId = sellerProduct['_id'] ?? sellerProduct['id'] ?? "";
 
     if (senderId.isEmpty || receiverId.isEmpty || receiverProductId.isEmpty) {
-      Get.snackbar("Error", "Missing sender, receiver, or product information.", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "Missing sender, receiver, or product information.", snackPosition: SnackPosition.BOTTOM);
       return;
     }
 
@@ -212,13 +213,13 @@ class MakeOfferController extends GetxController {
         // Direct Cash Price Offer
         if (!isCashOfferValid) {
           if (minOfferAmount > 0 && cashOfferAmount.value < minOfferAmount) {
-            Get.snackbar(
+            showAppSnackbar(
               "Offer Too Low",
               "Seller accepts offers of at least \$${minOfferAmount.toStringAsFixed(0)}.",
               snackPosition: SnackPosition.BOTTOM,
             );
           } else {
-            Get.snackbar("Invalid Offer", "Please enter a valid offer amount.", snackPosition: SnackPosition.BOTTOM);
+            showAppSnackbar("Invalid Offer", "Please enter a valid offer amount.", snackPosition: SnackPosition.BOTTOM);
           }
           isSubmitting.value = false;
           return;
@@ -243,7 +244,7 @@ class MakeOfferController extends GetxController {
           final estVal = double.tryParse(valueStr) ?? 0.0;
 
           if (title.isEmpty) {
-            Get.snackbar("Error", "Please enter a title for your custom offer item.", snackPosition: SnackPosition.BOTTOM);
+            showAppSnackbar("Error", "Please enter a title for your custom offer item.", snackPosition: SnackPosition.BOTTOM);
             isSubmitting.value = false;
             return;
           }
@@ -281,13 +282,13 @@ class MakeOfferController extends GetxController {
             final newProd = prodBody['data'] ?? prodBody;
             senderProductId = (newProd['_id'] ?? newProd['id'] ?? "").toString();
           } else {
-            Get.snackbar("Error", "Failed to create custom item for offer.", snackPosition: SnackPosition.BOTTOM);
+            showAppSnackbar("Error", "Failed to create custom item for offer.", snackPosition: SnackPosition.BOTTOM);
             isSubmitting.value = false;
             return;
           }
         } else {
           if (selectedUserProduct.value == null) {
-            Get.snackbar("Error", "Please select an item from your collection to swap.", snackPosition: SnackPosition.BOTTOM);
+            showAppSnackbar("Error", "Please select an item from your collection to swap.", snackPosition: SnackPosition.BOTTOM);
             isSubmitting.value = false;
             return;
           }
@@ -341,10 +342,10 @@ class MakeOfferController extends GetxController {
           final body = jsonDecode(response.body);
           errMsg = body['message'] ?? errMsg;
         } catch (_) {}
-        Get.snackbar("Offer Failed", errMsg, snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Offer Failed", errMsg, snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
-      Get.snackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
     } finally {
       isSubmitting.value = false;
     }

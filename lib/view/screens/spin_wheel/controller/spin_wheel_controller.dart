@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class SpinReward {
   final String title;
@@ -200,7 +201,7 @@ class SpinWheelController extends GetxController with GetSingleTickerProviderSta
 
   void claimReward() {
     showRewardDialog.value = false;
-    Get.snackbar(
+    showAppSnackbar(
       "Reward Claimed! 🎉",
       "${wonReward.value?.title ?? 'Reward'} has been added to your account.",
       snackPosition: SnackPosition.BOTTOM,

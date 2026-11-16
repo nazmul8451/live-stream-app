@@ -13,6 +13,8 @@ import 'view/screens/live_stream/controller/agora_live_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Phone app is portrait-only (no rotation)
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
   // Catch framework errors gracefully
   FlutterError.onError = (FlutterErrorDetails details) {

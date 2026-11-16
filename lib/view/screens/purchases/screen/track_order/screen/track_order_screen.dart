@@ -7,6 +7,7 @@ import '../../../../../../global/widgets/custom_bottom_navbar.dart';
 import '../../../../../../data/services/api_url.dart';
 import '../../../../../../core/app_route.dart';
 import '../controller/track_order_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class TrackOrderScreen extends StatelessWidget {
   const TrackOrderScreen({super.key});
@@ -116,7 +117,7 @@ class TrackOrderScreen extends StatelessWidget {
                                   "View Receipt",
                                   const Color(0xFF8B9BFF),
                                   Colors.black,
-                                  onTap: () => Get.snackbar("Receipt", "Order Receipt generated for ${controller.displayOrderId}", snackPosition: SnackPosition.BOTTOM),
+                                  onTap: () => showAppSnackbar("Receipt", "Order Receipt generated for ${controller.displayOrderId}", snackPosition: SnackPosition.BOTTOM),
                                 ),
                               ),
                             ],

@@ -19,6 +19,7 @@ import '../../profile/controller/profile_controller.dart';
 import '../../home/controller/home_controller.dart';
 import '../../spin_wheel/controller/spin_wheel_controller.dart';
 import '../screen/post_show_summary_screen.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class FloatingHeart {
   final double id;
@@ -615,7 +616,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   void _handleBidErrorEvent(dynamic data) {
     if (data is Map) {
       final msg = data['message']?.toString() ?? 'Bid operation failed.';
-      Get.snackbar("Bid Error", msg, snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.redAccent, colorText: Colors.white);
+      showAppSnackbar("Bid Error", msg, snackPosition: SnackPosition.BOTTOM, backgroundColor: Colors.redAccent, colorText: Colors.white);
     }
   }
 
@@ -637,7 +638,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       totalSalesRevenue.value += currentBidPrice.value;
       totalItemsSold.value++;
       fetchStreamSales();
-      Get.snackbar(
+      showAppSnackbar(
         "Payment Confirmed! 💰",
         "$msg\nPlease check orders to ship the item.",
         backgroundColor: const Color(0xFF22C55E),
@@ -701,7 +702,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         }
       } else {
         final err = jsonDecode(res.body)['message'] ?? 'Failed to spin wheel';
-        Get.snackbar("Spin Wheel Error", err.toString(), backgroundColor: Colors.redAccent, colorText: Colors.white);
+        showAppSnackbar("Spin Wheel Error", err.toString(), backgroundColor: Colors.redAccent, colorText: Colors.white);
       }
     } catch (e) {
       debugPrint("⚠️ [spinWheelOnServer] error: $e");
@@ -721,7 +722,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       final currentUid = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
       if (prize.isNotEmpty) {
         final isMe = winnerId.isNotEmpty && winnerId == currentUid;
-        Get.snackbar(
+        showAppSnackbar(
           isMe ? "🎉 YOU WON A PRIZE!" : "🎁 Spin Wheel Winner!",
           isMe ? "You won $prize on the spin wheel!" : "Prize awarded: $prize",
           backgroundColor: const Color(0xFFA855F7),
@@ -796,7 +797,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           ? Map<String, dynamic>.from(jsonDecode(data))
           : Map<String, dynamic>.from(data as Map);
       final itemName = resMap['itemName']?.toString() ?? 'Prize';
-      Get.snackbar(
+      showAppSnackbar(
         "Wheel Prize Awarded! 🎁",
         "$itemName was awarded and attached to winner's order!",
         backgroundColor: const Color(0xFF10B981),
@@ -961,7 +962,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
 
   void _handleStreamEndedEvent(dynamic data) {
     debugPrint("🚨 [AgoraLiveController] Stream ended event received: $data");
-    Get.snackbar(
+    showAppSnackbar(
       "Stream Ended",
       "The host has ended this live stream.",
       snackPosition: SnackPosition.BOTTOM,
@@ -1302,7 +1303,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         debugPrint("❌ [AgoraLiveController] startStream error (${streamRes.statusCode}): ${streamRes.body}");
 
         if (streamRes.statusCode == 403 || errMsg.toLowerCase().contains("permission") || errMsg.toLowerCase().contains("seller")) {
-          Get.snackbar(
+          showAppSnackbar(
             "Seller Activation Required 🔒",
             "Please tap 'SWITCH TO SELLER' in Profile to refresh your active seller session.",
             backgroundColor: const Color(0xFF2A0A10),
@@ -1319,7 +1320,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
             ),
           );
         } else {
-          Get.snackbar("Error", errMsg,
+          showAppSnackbar("Error", errMsg,
               backgroundColor: Colors.red.withValues(alpha: 0.85),
               colorText: Colors.white,
               snackPosition: SnackPosition.BOTTOM);
@@ -1387,7 +1388,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       isLive.value = true;
       return true;
     } catch (e) {
-      Get.snackbar("Error", "Stream error: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "Stream error: $e", snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isLoading.value = false;
@@ -1494,7 +1495,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       isLive.value = true;
       broadcastJoin();
     } catch (e) {
-      Get.snackbar("Error", "Failed to join stream: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "Failed to join stream: $e", snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }
@@ -1692,7 +1693,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       }
 
       if (auctionItemId.value.isEmpty) {
-        Get.snackbar(
+        showAppSnackbar(
           "Bid Failed",
           "No active auction item. Please wait for the host to start the auction.",
           snackPosition: SnackPosition.BOTTOM,
@@ -1708,7 +1709,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       }
 
       if (amount <= currentBidPrice.value) {
-        Get.snackbar(
+        showAppSnackbar(
           "Invalid Bid",
           "Bid must be strictly greater than current bid (\$${currentBidPrice.value.toStringAsFixed(0)})",
           snackPosition: SnackPosition.BOTTOM,
@@ -1744,7 +1745,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         }
 
         if (Get.isBottomSheetOpen == true) Get.back();
-        Get.snackbar("Bid Placed!", "Your bid of \$${amount.toStringAsFixed(0)} is live!", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Bid Placed!", "Your bid of \$${amount.toStringAsFixed(0)} is live!", snackPosition: SnackPosition.BOTTOM);
         
         bool extended = false;
         if (isSuddenDeath.value && bidTimer.value <= 5) {
@@ -1764,7 +1765,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           final errBody = jsonDecode(res.body);
           errMsg = errBody['message'] ?? errBody['errorMessages']?[0]?['message'] ?? errMsg;
         } catch (_) {}
-        Get.snackbar(
+        showAppSnackbar(
           "Bid Failed",
           errMsg,
           snackPosition: SnackPosition.BOTTOM,
@@ -1774,7 +1775,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       }
     } catch (e) {
       debugPrint("Bid error: $e");
-      Get.snackbar("Error", "Could not place bid: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "Could not place bid: $e", snackPosition: SnackPosition.BOTTOM);
     } finally {
       isPlacingBid.value = false;
     }
@@ -1783,7 +1784,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   // SEND CUSTOM OFFER
   Future<void> sendCustomOffer({required double offerPrice, String message = ""}) async {
     if (currentProductId.value.isEmpty && sellerId.value.isEmpty) {
-      Get.snackbar("Offer Failed", "No active item or seller info for offer.", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Offer Failed", "No active item or seller info for offer.", snackPosition: SnackPosition.BOTTOM);
       return;
     }
     
@@ -1855,7 +1856,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     }
 
     if (Get.isBottomSheetOpen == true) Get.back();
-    Get.snackbar(
+    showAppSnackbar(
       "Custom Offer Sent! 🤝",
       "Your offer of \$${offerPrice.toStringAsFixed(0)} has been sent to the host!",
       snackPosition: SnackPosition.BOTTOM,
@@ -1891,7 +1892,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       });
     } catch (_) {}
 
-    Get.snackbar(
+    showAppSnackbar(
       "Offer Accepted! 🎉",
       "You accepted the offer of \$${offerAmt.toStringAsFixed(0)} from $buyerName",
       backgroundColor: const Color(0xFF22C55E),
@@ -1923,7 +1924,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       });
     } catch (_) {}
 
-    Get.snackbar(
+    showAppSnackbar(
       "Offer Declined",
       "You declined the offer from $buyerName",
       backgroundColor: Colors.redAccent,
@@ -2179,7 +2180,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         onError: (err, msg) {
           debugPrint("❌ Agora Error: $err - $msg");
           if (err.toString().contains("InvalidToken") || err.toString().contains("110")) {
-            Get.snackbar(
+            showAppSnackbar(
               "Agora Token Required",
               "Dynamic token authorization failed. Please contact support or check backend config.",
               backgroundColor: const Color(0xFFFF6B35),
@@ -2286,7 +2287,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       // Show user-friendly error
       if (e.toString().contains('MissingPluginException') ||
           e.toString().contains('No implementation found')) {
-        Get.snackbar(
+        showAppSnackbar(
           "Agora Setup Required",
           "Camera plugin not ready. Please do a full app reinstall (flutter clean → flutter run).",
           backgroundColor: const Color(0xFFFF6B35),
@@ -2295,7 +2296,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           duration: const Duration(seconds: 5),
         );
       } else {
-        Get.snackbar(
+        showAppSnackbar(
           "Stream Error",
           "Could not start camera: ${e.toString().substring(0, e.toString().length.clamp(0, 100))}",
           backgroundColor: Colors.red.withValues(alpha: 0.85),
@@ -2453,7 +2454,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           });
         } catch (_) {}
 
-        Get.snackbar(
+        showAppSnackbar(
           "Auction Started! 🚀",
           "1-Click Auction live for $productTitle",
           backgroundColor: const Color(0xFF22C55E),
@@ -2462,7 +2463,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         );
         return true;
       } else {
-        Get.snackbar("Error", "Could not start 1-click auction (${res.statusCode})", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", "Could not start 1-click auction (${res.statusCode})", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       debugPrint("❌ [AgoraLiveController] quickStartAuctionItem error: $e");
@@ -2500,7 +2501,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       });
       if (res.statusCode == 200) {
         fetchStreamInventory();
-        Get.snackbar("Inventory Updated", "Stream inventory synced successfully.", backgroundColor: const Color(0xFF161622), colorText: Colors.white);
+        showAppSnackbar("Inventory Updated", "Stream inventory synced successfully.", backgroundColor: const Color(0xFF161622), colorText: Colors.white);
         return true;
       }
     } catch (e) {
@@ -2630,7 +2631,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   /// Consistent, short in-stream toast (doesn't cover the host's controls).
   void _showLiveToast(String title, String message, {bool isError = false}) {
     if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
-    Get.snackbar(
+    showAppSnackbar(
       title,
       message,
       snackPosition: SnackPosition.TOP,
@@ -2710,7 +2711,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         "auctionItemId": targetAuctionItemId,
       });
 
-      Get.snackbar(
+      showAppSnackbar(
         "Prize Attached! 🎁",
         "'$itemName' attached to buyer's order!",
         backgroundColor: const Color(0xFF10B981),
@@ -2734,7 +2735,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         final body = jsonDecode(res.body);
         final bookmarked = body['data']?['isBookmarked'] ?? !isBookmarked.value;
         isBookmarked.value = bookmarked == true;
-        Get.snackbar(
+        showAppSnackbar(
           isBookmarked.value ? "Show Bookmarked! 🔔" : "Bookmark Removed",
           isBookmarked.value ? "We'll remind you 15 minutes before showtime!" : "Reminder cancelled.",
           snackPosition: SnackPosition.BOTTOM,
@@ -2764,11 +2765,11 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         isLive.value = true;
         _setupSocket();
 
-        Get.snackbar("Show Started! 🚀", "Your scheduled stream is now live!", backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
+        showAppSnackbar("Show Started! 🚀", "Your scheduled stream is now live!", backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
         Get.toNamed(AppRoute.hostLive);
         return true;
       } else {
-        Get.snackbar("Error", "Could not start show (${res.statusCode})", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", "Could not start show (${res.statusCode})", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       debugPrint("❌ [AgoraLiveController] startScheduledStream error: $e");
@@ -3124,7 +3125,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
 
       if (!paymentSuccess) {
         debugPrint("⛔ Payment not completed. Aborting order creation.");
-        Get.snackbar(
+        showAppSnackbar(
           "Payment Required",
           "Payment was not completed. Order cannot be placed without a valid payment.",
           backgroundColor: Colors.redAccent,

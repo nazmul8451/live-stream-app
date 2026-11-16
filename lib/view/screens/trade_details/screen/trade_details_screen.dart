@@ -12,6 +12,7 @@ import '../../../../global/helper/auth_guard.dart';
 import '../../../../global/helper/share_helper.dart';
 import '../../../../data/services/api_client.dart';
 import '../../profile/controller/profile_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class TradeDetailsScreen extends GetView<TradeDetailsController> {
   const TradeDetailsScreen({super.key});
@@ -1806,7 +1807,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                     );
                   }
                   Get.back(); // pop trade details
-                  Get.snackbar(
+                  showAppSnackbar(
                     "Deleted",
                     "Listing deleted successfully",
                     backgroundColor: const Color(0xFF22C55E),
@@ -1814,10 +1815,10 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                     snackPosition: SnackPosition.BOTTOM,
                   );
                 } else {
-                  Get.snackbar("Error", "Failed to delete listing (${res.statusCode})");
+                  showAppSnackbar("Error", "Failed to delete listing (${res.statusCode})");
                 }
               } catch (e) {
-                Get.snackbar("Error", "Error deleting listing: $e");
+                showAppSnackbar("Error", "Error deleting listing: $e");
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1903,7 +1904,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                 child: Obx(() => ElevatedButton(
                   onPressed: isSaving.value ? null : () async {
                     if (titleCtrl.text.trim().isEmpty) {
-                      Get.snackbar("Error", "Title cannot be empty");
+                      showAppSnackbar("Error", "Title cannot be empty");
                       return;
                     }
                     isSaving.value = true;
@@ -1934,12 +1935,12 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                           }
                         }
                         Get.back(); // close sheet
-                        Get.snackbar("Success", "Listing updated successfully!", backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
+                        showAppSnackbar("Success", "Listing updated successfully!", backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
                       } else {
-                        Get.snackbar("Error", "Failed to update listing (${res.statusCode})");
+                        showAppSnackbar("Error", "Failed to update listing (${res.statusCode})");
                       }
                     } catch (e) {
-                      Get.snackbar("Error", "Failed to update listing: $e");
+                      showAppSnackbar("Error", "Failed to update listing: $e");
                     } finally {
                       isSaving.value = false;
                     }

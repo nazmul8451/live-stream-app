@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../core/app_route.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class CategoryController extends GetxController {
   var selectedCategories = <int>{}.obs;
@@ -32,7 +33,7 @@ class CategoryController extends GetxController {
 
   Future<void> onContinue() async {
     if (selectedCategories.isEmpty) {
-      Get.snackbar(
+      showAppSnackbar(
         "Required",
         "Please select at least one interest",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -57,7 +58,7 @@ class CategoryController extends GetxController {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Get.snackbar(
+        showAppSnackbar(
           "Success",
           "Interests updated successfully!",
           backgroundColor: Colors.green.withOpacity(0.8),
@@ -73,7 +74,7 @@ class CategoryController extends GetxController {
           }
         } catch (_) {}
 
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           errorMessage,
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -81,7 +82,7 @@ class CategoryController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "An unexpected error occurred. Please check your connection.",
         backgroundColor: Colors.red.withOpacity(0.8),

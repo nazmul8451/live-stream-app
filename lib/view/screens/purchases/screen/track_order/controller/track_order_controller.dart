@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../../../data/services/api_client.dart';
 import '../../../../../../data/helpers/shared_prefe.dart';
 import '../../../model/purchase_model.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class TrackOrderController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -338,7 +339,7 @@ class TrackOrderController extends GetxController {
         : (orderData['_id'] ?? orderData['id'] ?? orderId).toString();
 
     if (rawId.isEmpty || rawId.startsWith('#ORD-')) {
-      Get.snackbar("Error", "Invalid Order ID for tracking update", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "Invalid Order ID for tracking update", snackPosition: SnackPosition.BOTTOM);
       return false;
     }
 
@@ -356,7 +357,7 @@ class TrackOrderController extends GetxController {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         await fetchOrderDetails();
-        Get.snackbar(
+        showAppSnackbar(
           "Journey Updated 🎉",
           "Tracking status updated to '$status'. Push notification sent to buyer!",
           snackPosition: SnackPosition.BOTTOM,
@@ -366,12 +367,12 @@ class TrackOrderController extends GetxController {
         return true;
       } else {
         final body = jsonDecode(response.body);
-        Get.snackbar("Error", body['message'] ?? "Failed to update tracking status", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", body['message'] ?? "Failed to update tracking status", snackPosition: SnackPosition.BOTTOM);
         return false;
       }
     } catch (e) {
       Get.log("Error updating journey: $e");
-      Get.snackbar("Error", "$e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "$e", snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isUpdatingStatus.value = false;
@@ -384,7 +385,7 @@ class TrackOrderController extends GetxController {
         : (orderData['_id'] ?? orderData['id'] ?? orderId).toString();
 
     if (rawId.isEmpty || rawId.startsWith('#ORD-')) {
-      Get.snackbar("Error", "Invalid Order ID", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "Invalid Order ID", snackPosition: SnackPosition.BOTTOM);
       return false;
     }
 
@@ -402,7 +403,7 @@ class TrackOrderController extends GetxController {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         await fetchOrderDetails();
-        Get.snackbar(
+        showAppSnackbar(
           "Delivery Confirmed 🎉",
           "You've confirmed receipt of your order. Thank you!",
           snackPosition: SnackPosition.BOTTOM,

@@ -6,6 +6,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/push_notification_service.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class OtpController extends GetxController {
   TextEditingController pinController = TextEditingController();
@@ -96,7 +97,7 @@ class OtpController extends GetxController {
   Future<void> onVerify() async {
     final String otp = pinController.text.trim();
     if (otp.length != 6) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "Please enter 6-digit OTP",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -107,7 +108,7 @@ class OtpController extends GetxController {
 
     final targetEmail = email.value.trim().toLowerCase();
     if (targetEmail.isEmpty) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "Email address is missing. Please return and try again.",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -162,7 +163,7 @@ class OtpController extends GetxController {
         await SharePrefsHelper.remove('pending_otp_from_forgot_password');
         await SharePrefsHelper.remove('pending_otp_from_login');
 
-        Get.snackbar(
+        showAppSnackbar(
           "Success",
           "Verification Successful!",
           backgroundColor: Colors.green.withOpacity(0.8),
@@ -177,7 +178,7 @@ class OtpController extends GetxController {
         } else if (fromLogin.value) {
           // If came from unverified login attempt, take user straight to login screen
           Get.offAllNamed(AppRoute.login);
-          Get.snackbar(
+          showAppSnackbar(
             "Account Verified 🎉",
             "Your account has been verified! Please login with your password.",
             backgroundColor: Colors.green.withOpacity(0.8),
@@ -190,7 +191,7 @@ class OtpController extends GetxController {
           } else {
             // If backend does not issue an access token upon verification, redirect to login
             Get.offAllNamed(AppRoute.login);
-            Get.snackbar(
+            showAppSnackbar(
               "Account Verified 🎉",
               "Your account has been verified. Please log in with your password.",
               backgroundColor: Colors.green.withOpacity(0.8),
@@ -217,7 +218,7 @@ class OtpController extends GetxController {
           }
         } catch (_) {}
 
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           errorMessage,
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -226,7 +227,7 @@ class OtpController extends GetxController {
       }
     } catch (e) {
       Get.log("🔐 [OTP] Verification exception: $e");
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "An unexpected error occurred. Please check your connection.",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -241,7 +242,7 @@ class OtpController extends GetxController {
     if (timerSeconds.value == 0) {
       final targetEmail = email.value.trim().toLowerCase();
       if (targetEmail.isEmpty) {
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           "Email address is missing. Please go back and try again.",
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -261,7 +262,7 @@ class OtpController extends GetxController {
         });
 
         if (response.statusCode == 200 || response.statusCode == 201) {
-          Get.snackbar(
+          showAppSnackbar(
             "Success",
             "OTP Resent Successfully!",
             backgroundColor: Colors.green.withOpacity(0.8),
@@ -278,7 +279,7 @@ class OtpController extends GetxController {
               errorMessage = data['error'].toString();
             }
           } catch (_) {}
-          Get.snackbar(
+          showAppSnackbar(
             "Error",
             errorMessage,
             backgroundColor: Colors.red.withOpacity(0.8),
@@ -286,7 +287,7 @@ class OtpController extends GetxController {
           );
         }
       } catch (e) {
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           "An unexpected error occurred.",
           backgroundColor: Colors.red.withOpacity(0.8),

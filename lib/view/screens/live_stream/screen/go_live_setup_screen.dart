@@ -13,6 +13,7 @@ import '../../profile/controller/profile_controller.dart';
 import '../controller/agora_live_controller.dart';
 import 'host_live_screen.dart';
 import 'dart:convert';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class GoLiveSetupScreen extends StatefulWidget {
   const GoLiveSetupScreen({super.key});
@@ -112,7 +113,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
         });
       }
     } catch (e) {
-      Get.snackbar("Image Error", "Could not pick image: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Image Error", "Could not pick image: $e", snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -331,11 +332,11 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
   Future<void> _handleSubmit() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) {
-      Get.snackbar("Required", "Please enter a stream title", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Required", "Please enter a stream title", snackPosition: SnackPosition.BOTTOM);
       return;
     }
     if (title.length < 3) {
-      Get.snackbar("Too Short", "Title must be at least 3 characters long", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Too Short", "Title must be at least 3 characters long", snackPosition: SnackPosition.BOTTOM);
       return;
     }
 
@@ -384,7 +385,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
       // ─── SCHEDULE SHOW FOR FUTURE ───
       if (_scheduledDateTime == null) {
         setState(() => _isStarting = false);
-        Get.snackbar(
+        showAppSnackbar(
           "Schedule Time Required",
           "Please choose a scheduled start date & time for your show",
           snackPosition: SnackPosition.BOTTOM,
@@ -419,7 +420,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
 
         if (res.statusCode == 200 || res.statusCode == 201) {
           Get.back();
-          Get.snackbar(
+          showAppSnackbar(
             "Show Scheduled! 📅",
             "Your show is scheduled with custom thumbnail. Followers will receive notifications 15m before showtime!",
             snackPosition: SnackPosition.BOTTOM,
@@ -433,11 +434,11 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
             final b = jsonDecode(res.body);
             errMsg = b['message'] ?? errMsg;
           } catch (_) {}
-          Get.snackbar("Error", errMsg, snackPosition: SnackPosition.BOTTOM);
+          showAppSnackbar("Error", errMsg, snackPosition: SnackPosition.BOTTOM);
         }
       } catch (e) {
         debugPrint("Schedule stream error: $e");
-        Get.snackbar("Error", "Could not schedule stream: $e", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", "Could not schedule stream: $e", snackPosition: SnackPosition.BOTTOM);
       } finally {
         if (mounted) setState(() => _isStarting = false);
       }

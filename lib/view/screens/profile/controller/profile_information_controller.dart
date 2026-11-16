@@ -7,6 +7,7 @@ import '../../../../data/helpers/image_helper.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import 'profile_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class ProfileInformationController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -54,7 +55,7 @@ class ProfileInformationController extends GetxController {
           }
         }
       } else {
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           "Failed to fetch profile data",
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -62,7 +63,7 @@ class ProfileInformationController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "An unexpected error occurred",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -87,7 +88,7 @@ class ProfileInformationController extends GetxController {
         selectedImage.value = fixed;
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "Failed to pick image",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -108,7 +109,7 @@ class ProfileInformationController extends GetxController {
       final cleanUsername = usernameController.text.replaceAll('@', '').replaceAll(' ', '').trim();
       if (cleanUsername.isNotEmpty) {
         if (cleanUsername.length < 3 || cleanUsername.length > 20) {
-          Get.snackbar(
+          showAppSnackbar(
             "Invalid Username",
             "Username must be between 3 and 20 characters.",
             backgroundColor: Colors.red.withOpacity(0.8),
@@ -129,7 +130,7 @@ class ProfileInformationController extends GetxController {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Get.snackbar(
+        showAppSnackbar(
           "Success",
           "Profile updated successfully!",
           backgroundColor: const Color(0xFF22C55E),
@@ -148,7 +149,7 @@ class ProfileInformationController extends GetxController {
           final errorData = jsonDecode(response.body);
           errorMessage = errorData['message'] ?? errorMessage;
         } catch (_) {}
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           errorMessage,
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -156,7 +157,7 @@ class ProfileInformationController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "An unexpected error occurred",
         backgroundColor: Colors.red.withOpacity(0.8),

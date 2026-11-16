@@ -9,6 +9,7 @@ import '../../../../data/services/api_url.dart';
 import '../../../../data/services/socket_service.dart';
 import '../../../../global/helper/auth_guard.dart';
 import '../../trade_voting/model/trade_vote_model.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class HomeController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -354,7 +355,7 @@ class HomeController extends GetxController {
   }
 
   void _showToast(String message, {bool isError = true}) {
-    Get.snackbar(
+    showAppSnackbar(
       isError ? "Notice" : "Success",
       message,
       snackPosition: SnackPosition.BOTTOM,
@@ -477,7 +478,7 @@ class HomeController extends GetxController {
     if (isEnteringGiveaway.value) return;
 
     if (isGiveawayEntered.value) {
-      Get.snackbar(
+      showAppSnackbar(
         "Already Entered! 🎉",
         "You're already in the draw! Winner will be announced on $giveawayDrawDateFormatted.",
         backgroundColor: const Color(0xFF10B981),
@@ -502,7 +503,7 @@ class HomeController extends GetxController {
             isGiveawayEntered.value = true;
             giveawayEnteredAt.value = DateTime.now().toIso8601String();
             final msg = body['message']?.toString() ?? "Successfully entered the $giveawayTitle!";
-            Get.snackbar(
+            showAppSnackbar(
               "You're Entered! 🎉",
               "$msg Winner will be drawn on $giveawayDrawDateFormatted.",
               backgroundColor: const Color(0xFF10B981),
@@ -517,7 +518,7 @@ class HomeController extends GetxController {
             // Backend returned 409 Conflict: Already entered
             isGiveawayEntered.value = true;
             final msg = body['message']?.toString() ?? "You're already entered in this giveaway!";
-            Get.snackbar(
+            showAppSnackbar(
               "You're Entered! 🎉",
               "$msg Winner will be drawn on $giveawayDrawDateFormatted.",
               backgroundColor: const Color(0xFF10B981),
@@ -528,7 +529,7 @@ class HomeController extends GetxController {
             );
           } else if (res.statusCode == 400) {
             final msg = body['message']?.toString() ?? "Could not enter giveaway.";
-            Get.snackbar(
+            showAppSnackbar(
               "Giveaway Notice",
               msg,
               backgroundColor: const Color(0xFFF59E0B),
@@ -543,7 +544,7 @@ class HomeController extends GetxController {
             );
           } else {
             final msg = body['message']?.toString() ?? "Failed to enter giveaway. Please try again.";
-            Get.snackbar(
+            showAppSnackbar(
               "Error",
               msg,
               backgroundColor: const Color(0xFFEF4444),
@@ -554,7 +555,7 @@ class HomeController extends GetxController {
           }
         } catch (e) {
           Get.log("❌ [Giveaway] Error entering giveaway: $e");
-          Get.snackbar(
+          showAppSnackbar(
             "Connection Error",
             "Could not connect to the server. Please check your internet connection.",
             backgroundColor: const Color(0xFFEF4444),
@@ -1039,7 +1040,7 @@ class HomeController extends GetxController {
         final body = jsonDecode(res.body);
         final isBookmarked = body['data']?['isBookmarked'] ?? true;
         fetchSavedShows();
-        Get.snackbar(
+        showAppSnackbar(
           isBookmarked ? "Show Saved! 🔔" : "Show Removed",
           isBookmarked ? "You will receive a notification 15 mins before showtime." : "Bookmark removed.",
           snackPosition: SnackPosition.BOTTOM,

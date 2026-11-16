@@ -16,6 +16,7 @@ import '../../../../data/services/api_client.dart';
 import '../../profile/controller/profile_controller.dart';
 import '../../home/controller/home_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class HostLiveScreen extends StatefulWidget {
   const HostLiveScreen({super.key});
@@ -1419,7 +1420,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   SizedBox(width: 4.w),
                                   GestureDetector(
                                     onTap: () {
-                                      Get.snackbar(
+                                      showAppSnackbar(
                                         "Sudden Death",
                                         "Ends immediately when someone bids in the last 5 seconds.",
                                         snackPosition: SnackPosition.BOTTOM,
@@ -1478,7 +1479,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   SizedBox(width: 4.w),
                                   GestureDetector(
                                     onTap: () {
-                                      Get.snackbar(
+                                      showAppSnackbar(
                                         "Auto Extend",
                                         "Adds 10 seconds if a bid is placed in the last 10 seconds.",
                                         snackPosition: SnackPosition.BOTTOM,
@@ -1517,7 +1518,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
               GestureDetector(
                 onTap: () async {
                   if (selectedProduct.value == null) {
-                    Get.snackbar(
+                    showAppSnackbar(
                       "Select Product",
                       "Please select a product to auction first.",
                       snackPosition: SnackPosition.BOTTOM,
@@ -1546,7 +1547,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     autoExtend: autoExtend.value,
                   );
                   if (ok) {
-                    Get.snackbar(
+                    showAppSnackbar(
                       "Auction Started!",
                       "New auction for $title is now live!",
                       snackPosition: SnackPosition.BOTTOM,
@@ -1554,7 +1555,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       colorText: Colors.white,
                     );
                   } else {
-                    Get.snackbar(
+                    showAppSnackbar(
                       "Error",
                       "Failed to start new auction.",
                       snackPosition: SnackPosition.BOTTOM,
@@ -2845,7 +2846,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                 : () async {
                                     final title = titleController.text.trim();
                                     if (title.isEmpty) {
-                                      Get.snackbar("Missing Title", "Please enter an item title", backgroundColor: Colors.redAccent, colorText: Colors.white);
+                                      showAppSnackbar("Missing Title", "Please enter an item title", backgroundColor: Colors.redAccent, colorText: Colors.white);
                                       return;
                                     }
                                     final price = double.tryParse(priceController.text.trim()) ?? 0.0;
@@ -3483,7 +3484,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
     final text = _itemInputController.text.trim();
     if (text.isEmpty) return;
     if (_wheelItems.length >= 4) {
-      Get.snackbar(
+      showAppSnackbar(
         "Limit Reached",
         "A maximum of 4 entries are allowed on the spin wheel.",
         backgroundColor: Colors.amber.shade900,
@@ -3500,7 +3501,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
   Future<void> _spinWheel({bool isShuffle = false}) async {
     if (_isSpinning) return;
     if (_wheelItems.length < 2) {
-      Get.snackbar(
+      showAppSnackbar(
         "Need More Items",
         "Please enter at least 2 items to spin or randomize.",
         backgroundColor: Colors.amber.shade900,
@@ -3509,7 +3510,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
       return;
     }
     if (_wheelItems.length > 4) {
-      Get.snackbar(
+      showAppSnackbar(
         "Too Many Items",
         "Please keep a maximum of 4 items on the wheel.",
         backgroundColor: Colors.amber.shade900,
@@ -3535,7 +3536,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
     );
     if (res == null || res['winningIndex'] == null) {
       if (mounted) setState(() => _isSpinning = false);
-      Get.snackbar(
+      showAppSnackbar(
         "Spin failed",
         "Couldn't reach the server. Nothing was awarded — please try again.",
         backgroundColor: const Color(0xFFE11D48),
@@ -3642,7 +3643,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                         setState(() {
                           _wheelItems.removeAt(selectedIndex);
                         });
-                        Get.snackbar(
+                        showAppSnackbar(
                           "Item Removed",
                           "'$selectedItem' removed from wheel.",
                           backgroundColor: const Color(0xFF222845),
@@ -3669,7 +3670,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                         setState(() {
                           _wheelItems.shuffle();
                         });
-                        Get.snackbar(
+                        showAppSnackbar(
                           "Entries Reshuffled",
                           "Wheel entries have been shuffled for the next round.",
                           backgroundColor: const Color(0xFF222845),

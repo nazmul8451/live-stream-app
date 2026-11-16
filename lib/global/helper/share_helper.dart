@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class ShareHelper {
   /// Opens a modern, dark-themed bottom sheet modal for sharing a Trade / Product.
@@ -163,7 +164,7 @@ class ShareHelper {
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: shareUrl));
                     Navigator.of(ctx).pop();
-                    Get.snackbar(
+                    showAppSnackbar(
                       "Link Copied! 📋",
                       "Trade link copied to clipboard.",
                       backgroundColor: const Color(0xFF8B9BFF).withOpacity(0.9),

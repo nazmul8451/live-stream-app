@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class PaymentMethodsController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -57,14 +58,14 @@ class PaymentMethodsController extends GetxController {
           final errBody = jsonDecode(response.body);
           errMsg = errBody['message'] ?? errMsg;
         } catch (_) {}
-        Get.snackbar("Error", errMsg, backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", errMsg, backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
         return false;
       }
 
       final body = jsonDecode(response.body);
       final clientSecret = body['data']?['clientSecret'] ?? body['clientSecret'] ?? '';
       if (clientSecret.isEmpty) {
-        Get.snackbar("Error", "Invalid client secret received", backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", "Invalid client secret received", backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
         return false;
       }
 
@@ -93,7 +94,7 @@ class PaymentMethodsController extends GetxController {
       // 4. On success, refresh cards list
       await fetchPaymentMethods();
 
-      Get.snackbar(
+      showAppSnackbar(
         "Card Saved! 💳",
         "Your payment card was added securely for 1-tap checkout.",
         backgroundColor: const Color(0xFF22C55E),
@@ -106,12 +107,12 @@ class PaymentMethodsController extends GetxController {
       if (e.error.code == FailureCode.Canceled) {
         debugPrint("💳 [PaymentMethodsController] User cancelled card entry.");
       } else {
-        Get.snackbar("Stripe Error", e.error.localizedMessage ?? "Could not save card", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Stripe Error", e.error.localizedMessage ?? "Could not save card", snackPosition: SnackPosition.BOTTOM);
       }
       return false;
     } catch (e) {
       debugPrint("⚠️ [PaymentMethodsController] Unexpected error in addNewCard: $e");
-      Get.snackbar("Error", "Could not complete card setup: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "Could not complete card setup: $e", snackPosition: SnackPosition.BOTTOM);
       return false;
     } finally {
       isAddingCard.value = false;
@@ -127,7 +128,7 @@ class PaymentMethodsController extends GetxController {
           card['isDefault'] = (card['id'] == paymentMethodId);
         }
         savedCards.refresh();
-        Get.snackbar("Default Card", "Your default payment card has been updated.", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Default Card", "Your default payment card has been updated.", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       debugPrint("Error setting default card: $e");
@@ -140,7 +141,7 @@ class PaymentMethodsController extends GetxController {
       final res = await _apiClient.deleteData(ApiUrl.deletePaymentMethod(paymentMethodId));
       if (res.statusCode == 200 || res.statusCode == 204) {
         savedCards.removeWhere((c) => c['id'] == paymentMethodId);
-        Get.snackbar("Card Removed", "Payment method has been deleted.", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Card Removed", "Payment method has been deleted.", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       debugPrint("Error deleting card: $e");
@@ -171,11 +172,11 @@ class PaymentMethodsController extends GetxController {
           final body = jsonDecode(response.body);
           errMsg = body['message'] ?? errMsg;
         } catch (_) {}
-        Get.snackbar("Payment Failed", errMsg, backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Payment Failed", errMsg, backgroundColor: Colors.redAccent, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       debugPrint("Error in payWithSavedCard: $e");
-      Get.snackbar("Payment Error", "Could not complete transaction: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Payment Error", "Could not complete transaction: $e", snackPosition: SnackPosition.BOTTOM);
     }
     return null;
   }

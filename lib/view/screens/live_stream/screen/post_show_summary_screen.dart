@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../data/services/api_url.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class PostShowSummaryScreen extends StatelessWidget {
   final Map<String, dynamic> summaryData;
@@ -415,7 +416,7 @@ class PostShowSummaryScreen extends StatelessWidget {
                       if (firstLabel.isNotEmpty) {
                         _openShippingLabel(firstLabel);
                       }
-                      Get.snackbar(
+                      showAppSnackbar(
                         "Shipping Labels Ready 📦",
                         "Printing ${labels.length} shipping label(s) for this show.",
                         backgroundColor: const Color(0xFF22C55E),
@@ -533,7 +534,7 @@ class PostShowSummaryScreen extends StatelessWidget {
         await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
       }
     } catch (e) {
-      Get.snackbar("Error", "Could not open label URL: $fullUrl", backgroundColor: Colors.redAccent, colorText: Colors.white);
+      showAppSnackbar("Error", "Could not open label URL: $fullUrl", backgroundColor: Colors.redAccent, colorText: Colors.white);
     }
   }
 }

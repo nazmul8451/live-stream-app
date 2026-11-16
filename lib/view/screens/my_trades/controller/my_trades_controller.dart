@@ -11,6 +11,7 @@ import '../model/my_trade_model.dart';
 import '../../../../data/services/socket_service.dart';
 import '../../purchases/controller/purchases_controller.dart';
 import '../../purchases/model/purchase_model.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class MyTradesController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -267,7 +268,7 @@ class MyTradesController extends GetxController {
       final body = jsonDecode(response.body);
       
       if (response.statusCode == 200 || response.statusCode == 201 || body['success'] == true) {
-        Get.snackbar(
+        showAppSnackbar(
           "Trade Accepted 🎉",
           "You accepted this trade offer! Real-time notification sent to trader.",
           snackPosition: SnackPosition.BOTTOM,
@@ -288,7 +289,7 @@ class MyTradesController extends GetxController {
         } catch (_) {}
       } else {
         final String msg = body['message'] ?? "This trade offer status has been updated.";
-        Get.snackbar("Notice", msg, snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Notice", msg, snackPosition: SnackPosition.BOTTOM);
       }
 
       await fetchTrades();
@@ -327,7 +328,7 @@ class MyTradesController extends GetxController {
     try {
       await _apiClient.postData("${ApiUrl.declineTrade}/$rawId", {});
       
-      Get.snackbar(
+      showAppSnackbar(
         "Trade Declined",
         "Trade offer declined.",
         snackPosition: SnackPosition.BOTTOM,
@@ -428,17 +429,17 @@ class MyTradesController extends GetxController {
                 );
 
                 await Stripe.instance.presentPaymentSheet();
-                Get.snackbar("Payment Successful! 🎉", "Trade completed & order placed! Redirecting to Purchases & Order Tracking...", snackPosition: SnackPosition.BOTTOM, backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
+                showAppSnackbar("Payment Successful! 🎉", "Trade completed & order placed! Redirecting to Purchases & Order Tracking...", snackPosition: SnackPosition.BOTTOM, backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
                 await fetchTrades();
                 Get.toNamed(AppRoute.purchases);
                 return;
               } on StripeException catch (e) {
                 Get.log("⚠️ Stripe Exception: ${e.error.localizedMessage}");
-                Get.snackbar("Stripe Payment", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
+                showAppSnackbar("Stripe Payment", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
                 return;
               } catch (e) {
                 Get.log("❌ Stripe Error: $e");
-                Get.snackbar("Stripe Error", "$e", snackPosition: SnackPosition.BOTTOM);
+                showAppSnackbar("Stripe Error", "$e", snackPosition: SnackPosition.BOTTOM);
                 return;
               }
             }
@@ -472,22 +473,22 @@ class MyTradesController extends GetxController {
             }
 
             if (launched) {
-              Get.snackbar("Success", "Redirecting to Stripe checkout...", snackPosition: SnackPosition.BOTTOM);
+              showAppSnackbar("Success", "Redirecting to Stripe checkout...", snackPosition: SnackPosition.BOTTOM);
             } else {
-              Get.snackbar("Error", "Could not open Stripe checkout page.", snackPosition: SnackPosition.BOTTOM);
+              showAppSnackbar("Error", "Could not open Stripe checkout page.", snackPosition: SnackPosition.BOTTOM);
             }
           } else {
-            Get.snackbar("Success", "Trade completed successfully!", snackPosition: SnackPosition.BOTTOM);
+            showAppSnackbar("Success", "Trade completed successfully!", snackPosition: SnackPosition.BOTTOM);
           }
           await fetchTrades();
         } else {
-          Get.snackbar("Error", body['message'] ?? "Failed to complete trade", snackPosition: SnackPosition.BOTTOM);
+          showAppSnackbar("Error", body['message'] ?? "Failed to complete trade", snackPosition: SnackPosition.BOTTOM);
         }
       } else {
-        Get.snackbar("Error", "Failed to complete trade offer. Status: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Error", "Failed to complete trade offer. Status: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
-      Get.snackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
     }

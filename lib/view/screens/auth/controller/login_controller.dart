@@ -9,6 +9,7 @@ import '../../../../data/services/api_url.dart';
 
 import '../../../../data/services/push_notification_service.dart';
 import 'otp_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class LoginController extends GetxController {
   TextEditingController emailController = TextEditingController();
@@ -61,7 +62,7 @@ class LoginController extends GetxController {
     final password = passwordController.text.trim();
 
     if (email.isEmpty) {
-      Get.snackbar(
+      showAppSnackbar(
         "Required",
         "Email or username cannot be empty",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -71,7 +72,7 @@ class LoginController extends GetxController {
     }
 
     if (password.isEmpty) {
-      Get.snackbar(
+      showAppSnackbar(
         "Required",
         "Password cannot be empty",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -129,7 +130,7 @@ class LoginController extends GetxController {
           PushNotificationService.instance.syncDeviceToken();
         }
 
-        Get.snackbar(
+        showAppSnackbar(
           "Success",
           "Login Successful!",
           backgroundColor: Colors.green.withOpacity(0.8),
@@ -185,7 +186,7 @@ class LoginController extends GetxController {
             Get.find<OtpController>().fromLogin.value = true;
           }
 
-          Get.snackbar(
+          showAppSnackbar(
             "Account Verification Required",
             errorMessage,
             backgroundColor: const Color(0xFF8B9BFF),
@@ -201,7 +202,7 @@ class LoginController extends GetxController {
           return;
         }
 
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           errorMessage,
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -209,7 +210,7 @@ class LoginController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Try again","Please check your connection.",
         backgroundColor: Colors.red.withOpacity(0.8),
         colorText: Colors.white,

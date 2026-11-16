@@ -13,6 +13,7 @@ import '../../../../global/widgets/custom_background.dart';
 import '../controller/profile_controller.dart';
 import '../controller/profile_information_controller.dart';
 import '../../../../global/controllers/safety_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -703,7 +704,7 @@ class AccountSettingsScreen extends StatelessWidget {
                       onPressed: () {
                         final code = pCtrl.promoCode.value;
                         Clipboard.setData(ClipboardData(text: "https://areisco.com/signup?promo=$code"));
-                        Get.snackbar(
+                        showAppSnackbar(
                           "Link Copied",
                           "Referral link copied to clipboard!",
                           backgroundColor: const Color(0xFF1E1E2C),
@@ -960,7 +961,7 @@ class AccountSettingsScreen extends StatelessWidget {
                       : () async {
                           final code = codeCtrl.text.trim();
                           if (code.isEmpty) {
-                            Get.snackbar("Required", "Please enter a promo code", snackPosition: SnackPosition.BOTTOM);
+                            showAppSnackbar("Required", "Please enter a promo code", snackPosition: SnackPosition.BOTTOM);
                             return;
                           }
                           final ok = await pCtrl.applyPromoCode(code);

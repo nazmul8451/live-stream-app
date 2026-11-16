@@ -8,6 +8,7 @@ import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/deep_link_service.dart';
 import 'otp_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class SignUpController extends GetxController {
   
@@ -164,32 +165,32 @@ class SignUpController extends GetxController {
     final confirmPassword = confirmPasswordController.text.trim();
 
     if (firstName.isEmpty) {
-      Get.snackbar("Required", "First name is required", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
+      showAppSnackbar("Required", "First name is required", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
       return;
     }
 
     if (lastName.isEmpty) {
-      Get.snackbar("Required", "Last name is required", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
+      showAppSnackbar("Required", "Last name is required", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
       return;
     }
 
     if (email.isEmpty) {
-      Get.snackbar("Required", "Email is required", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
+      showAppSnackbar("Required", "Email is required", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
       return;
     }
 
     if (password.isEmpty) {
-      Get.snackbar("Required", "Password is required", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
+      showAppSnackbar("Required", "Password is required", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
       return;
     }
 
     if (password != confirmPassword) {
-      Get.snackbar("Error", "Passwords do not match", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
+      showAppSnackbar("Error", "Passwords do not match", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
       return;
     }
 
     if (!agreeToTerms.value) {
-      Get.snackbar("Error", "Please agree to the Terms of Service and Privacy Policy", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
+      showAppSnackbar("Error", "Please agree to the Terms of Service and Privacy Policy", backgroundColor: Colors.red.withOpacity(0.8), colorText: Colors.white);
       return;
     }
 
@@ -229,7 +230,7 @@ class SignUpController extends GetxController {
           Get.find<OtpController>().fromForgotPassword.value = false;
           Get.find<OtpController>().fromLogin.value = false;
         }
-        Get.snackbar(
+        showAppSnackbar(
           "Success",
           "Registration successful! OTP sent to your email.",
           backgroundColor: Colors.green.withOpacity(0.8),
@@ -251,7 +252,7 @@ class SignUpController extends GetxController {
           }
         } catch (_) {}
 
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           errorMessage,
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -259,7 +260,7 @@ class SignUpController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "An unexpected error occurred. Please check your connection.",
         backgroundColor: Colors.red.withOpacity(0.8),

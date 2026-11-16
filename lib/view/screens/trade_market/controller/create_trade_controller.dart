@@ -9,6 +9,7 @@ import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/s3_upload_service.dart';
 import '../../profile/controller/profile_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class CreateTradeController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -124,7 +125,7 @@ class CreateTradeController extends GetxController {
         selectedImageIndex.value = selectedImages.length - 1; // set preview to last selected
       }
     } catch (e) {
-      Get.snackbar("Error", "Failed to pick images");
+      showAppSnackbar("Error", "Failed to pick images");
     }
   }
 
@@ -247,7 +248,7 @@ class CreateTradeController extends GetxController {
     final estValue = estValueController.text.trim();
 
     if (title.isEmpty || description.isEmpty || estValue.isEmpty) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "Please fill all required fields",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -257,7 +258,7 @@ class CreateTradeController extends GetxController {
     }
 
     if (selectedImages.isEmpty) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "Please select at least one image",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -338,7 +339,7 @@ class CreateTradeController extends GetxController {
         } catch (_) {}
 
         Get.back();
-        Get.snackbar(
+        showAppSnackbar(
           isTradeMarket ? "Trade Posted! 🚀" : "Saved to Inventory! 📦",
           isTradeMarket
               ? "Your item is now live on the Trade Market."
@@ -354,7 +355,7 @@ class CreateTradeController extends GetxController {
           final data = jsonDecode(response.body);
           errorMessage = data['message'] ?? errorMessage;
         } catch (_) {}
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           errorMessage,
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -362,7 +363,7 @@ class CreateTradeController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "An unexpected error occurred: $e",
         backgroundColor: Colors.red.withOpacity(0.8),

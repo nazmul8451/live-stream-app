@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:video_player/video_player.dart';
 import '../../../../core/app_route.dart';
 import '../controller/live_stream_controller.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class LiveStreamScreen extends StatelessWidget {
   const LiveStreamScreen({super.key});
@@ -623,12 +624,12 @@ class LiveStreamScreen extends StatelessWidget {
                 onPressed: () {
                   final text = offerCtrl.text.trim();
                   if (text.isEmpty) {
-                    Get.snackbar("Error", "Please enter an offer amount.", snackPosition: SnackPosition.BOTTOM);
+                    showAppSnackbar("Error", "Please enter an offer amount.", snackPosition: SnackPosition.BOTTOM);
                     return;
                   }
                   final amount = double.tryParse(text.replaceAll('\$', '').replaceAll(',', ''));
                   if (amount == null || amount <= 0) {
-                    Get.snackbar("Error", "Invalid offer amount.", snackPosition: SnackPosition.BOTTOM);
+                    showAppSnackbar("Error", "Invalid offer amount.", snackPosition: SnackPosition.BOTTOM);
                     return;
                   }
                   controller.sendCustomOffer(offerPrice: amount, message: noteCtrl.text.trim());

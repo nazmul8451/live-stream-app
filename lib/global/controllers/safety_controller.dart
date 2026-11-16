@@ -8,6 +8,7 @@ import '../../data/services/api_client.dart';
 import '../../data/services/api_url.dart';
 import '../../data/services/push_notification_service.dart';
 import '../../data/services/socket_service.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class SafetyController extends GetxController {
   static SafetyController get instance {
@@ -60,7 +61,7 @@ class SafetyController extends GetxController {
       final response = await _apiClient.postData(ApiUrl.blockUser(userId), {});
       if (response.statusCode == 200 || response.statusCode == 201) {
         final String name = userName ?? "User";
-        Get.snackbar(
+        showAppSnackbar(
           "User Blocked",
           "$name has been blocked. They can no longer interact with you.",
           backgroundColor: const Color(0xFF161622),
@@ -77,12 +78,12 @@ class SafetyController extends GetxController {
           final body = jsonDecode(response.body);
           msg = body['message'] ?? msg;
         } catch (_) {}
-        Get.snackbar("Block Failed", msg,
+        showAppSnackbar("Block Failed", msg,
             backgroundColor: const Color(0xFF2A0A10), colorText: Colors.white);
         return false;
       }
     } catch (e) {
-      Get.snackbar("Error", "Could not block user: $e",
+      showAppSnackbar("Error", "Could not block user: $e",
           backgroundColor: const Color(0xFF2A0A10), colorText: Colors.white);
       return false;
     } finally {
@@ -99,7 +100,7 @@ class SafetyController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         blockedUsers.removeWhere((u) => (u['_id'] ?? u['id']) == userId);
         final String name = userName ?? "User";
-        Get.snackbar(
+        showAppSnackbar(
           "User Unblocked",
           "$name has been unblocked.",
           backgroundColor: const Color(0xFF161622),
@@ -115,12 +116,12 @@ class SafetyController extends GetxController {
           final body = jsonDecode(response.body);
           msg = body['message'] ?? msg;
         } catch (_) {}
-        Get.snackbar("Unblock Failed", msg,
+        showAppSnackbar("Unblock Failed", msg,
             backgroundColor: const Color(0xFF2A0A10), colorText: Colors.white);
         return false;
       }
     } catch (e) {
-      Get.snackbar("Error", "Could not unblock user: $e",
+      showAppSnackbar("Error", "Could not unblock user: $e",
           backgroundColor: const Color(0xFF2A0A10), colorText: Colors.white);
       return false;
     } finally {
@@ -143,7 +144,7 @@ class SafetyController extends GetxController {
     List<String>? attachments,
   }) async {
     if (message.trim().isEmpty) {
-      Get.snackbar("Required", "Please enter a message explaining your report.",
+      showAppSnackbar("Required", "Please enter a message explaining your report.",
           backgroundColor: const Color(0xFF2A0A10), colorText: Colors.white);
       return false;
     }
@@ -170,7 +171,7 @@ class SafetyController extends GetxController {
 
       final response = await _apiClient.postData(ApiUrl.support, payload);
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Get.snackbar(
+        showAppSnackbar(
           "Report Submitted",
           "Thank you for keeping our community safe. Our team will review this report shortly.",
           backgroundColor: const Color(0xFF161622),
@@ -186,12 +187,12 @@ class SafetyController extends GetxController {
           final body = jsonDecode(response.body);
           msg = body['message'] ?? msg;
         } catch (_) {}
-        Get.snackbar("Submission Failed", msg,
+        showAppSnackbar("Submission Failed", msg,
             backgroundColor: const Color(0xFF2A0A10), colorText: Colors.white);
         return false;
       }
     } catch (e) {
-      Get.snackbar("Error", "Report failed: $e",
+      showAppSnackbar("Error", "Report failed: $e",
           backgroundColor: const Color(0xFF2A0A10), colorText: Colors.white);
       return false;
     } finally {
@@ -206,7 +207,7 @@ class SafetyController extends GetxController {
   /// Delete account permanently
   Future<bool> deleteAccount(String password) async {
     if (password.isEmpty) {
-      Get.snackbar("Password Required", "Please enter your current password to confirm deletion.",
+      showAppSnackbar("Password Required", "Please enter your current password to confirm deletion.",
           backgroundColor: const Color(0xFF2A0A10), colorText: Colors.white);
       return false;
     }
@@ -231,7 +232,7 @@ class SafetyController extends GetxController {
         await SharePrefsHelper.clear();
 
         Get.offAllNamed(AppRoute.login);
-        Get.snackbar(
+        showAppSnackbar(
           "Account Deleted",
           "Your account and associated data have been permanently removed.",
           backgroundColor: const Color(0xFF161622),
@@ -246,12 +247,12 @@ class SafetyController extends GetxController {
           final body = jsonDecode(response.body);
           msg = body['message'] ?? msg;
         } catch (_) {}
-        Get.snackbar("Deletion Failed", msg,
+        showAppSnackbar("Deletion Failed", msg,
             backgroundColor: const Color(0xFF2A0A10), colorText: Colors.white);
         return false;
       }
     } catch (e) {
-      Get.snackbar("Error", "Could not delete account: $e",
+      showAppSnackbar("Error", "Could not delete account: $e",
           backgroundColor: const Color(0xFF2A0A10), colorText: Colors.white);
       return false;
     } finally {

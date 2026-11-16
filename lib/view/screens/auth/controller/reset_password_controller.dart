@@ -5,6 +5,7 @@ import '../../../../core/app_route.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class ResetPasswordController extends GetxController {
   TextEditingController passwordController = TextEditingController();
@@ -48,7 +49,7 @@ class ResetPasswordController extends GetxController {
     final confirmPassword = confirmPasswordController.text.trim();
 
     if (password.isEmpty) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "Password is required",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -58,7 +59,7 @@ class ResetPasswordController extends GetxController {
     }
 
     if (password != confirmPassword) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "Passwords do not match",
         backgroundColor: Colors.red.withOpacity(0.8),
@@ -97,7 +98,7 @@ class ResetPasswordController extends GetxController {
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        Get.snackbar(
+        showAppSnackbar(
           "Success",
           "Password reset successful! Please login with your new password.",
           backgroundColor: Colors.green.withOpacity(0.8),
@@ -116,7 +117,7 @@ class ResetPasswordController extends GetxController {
           }
         } catch (_) {}
 
-        Get.snackbar(
+        showAppSnackbar(
           "Error",
           errorMessage,
           backgroundColor: Colors.red.withOpacity(0.8),
@@ -125,7 +126,7 @@ class ResetPasswordController extends GetxController {
         );
       }
     } catch (e) {
-      Get.snackbar(
+      showAppSnackbar(
         "Error",
         "An unexpected error occurred.",
         backgroundColor: Colors.red.withOpacity(0.8),
