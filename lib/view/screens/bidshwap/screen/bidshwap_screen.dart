@@ -6,7 +6,6 @@ import 'dart:convert';
 import '../../../../core/app_route.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../../../../global/widgets/custom_shimmer.dart';
-import '../../profile/controller/profile_controller.dart';
 import '../controller/bidshwap_controller.dart';
 import '../model/trade_model.dart';
 import '../../../../data/services/api_url.dart';
@@ -41,15 +40,41 @@ class BidShwapScreen extends GetView<BidShwapController> {
                   ),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: () {
-                        AuthGuard.check(
-                          title: "Sign in to view Notifications",
-                          message: "Guest mode is browse-only. Sign in to view your activity and notifications.",
-                          onAuthorized: () => Get.toNamed(AppRoute.notifications),
-                        );
-                      },
-                      child: Icon(Icons.notifications_none_rounded, color: Colors.white, size: 26.sp),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Obx(() => GestureDetector(
+                          onTap: controller.isLoading.value ? null : () => controller.fetchTrades(),
+                          child: Container(
+                            padding: EdgeInsets.all(6.r),
+                            decoration: const BoxDecoration(
+                              color: Colors.white10,
+                              shape: BoxShape.circle,
+                            ),
+                            child: controller.isLoading.value
+                                ? SizedBox(
+                                    width: 16.sp,
+                                    height: 16.sp,
+                                    child: const CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFF8B9BFF),
+                                    ),
+                                  )
+                                : Icon(Icons.refresh_rounded, color: Colors.white, size: 20.sp),
+                          ),
+                        )),
+                        SizedBox(width: 8.w),
+                        GestureDetector(
+                          onTap: () {
+                            AuthGuard.check(
+                              title: "Sign in to view Notifications",
+                              message: "Guest mode is browse-only. Sign in to view your activity and notifications.",
+                              onAuthorized: () => Get.toNamed(AppRoute.notifications),
+                            );
+                          },
+                          child: Icon(Icons.notifications_none_rounded, color: Colors.white, size: 26.sp),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -59,10 +84,16 @@ class BidShwapScreen extends GetView<BidShwapController> {
             const Divider(color: Colors.white10, thickness: 1),
             
             Expanded(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                physics: const BouncingScrollPhysics(),
-                child: Column(
+              child: RefreshIndicator(
+                color: const Color(0xFF8B9BFF),
+                backgroundColor: const Color(0xFF1E1B2E),
+                onRefresh: () async {
+                  await controller.fetchTrades();
+                },
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: 16.w),
+                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                  child: Column(
                   children: [
                     SizedBox(height: 24.h),
                     
@@ -108,6 +139,21 @@ class BidShwapScreen extends GetView<BidShwapController> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
+                                SizedBox(height: 16.h),
+                                ElevatedButton.icon(
+                                  onPressed: () => controller.fetchTrades(),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF8B9BFF),
+                                    foregroundColor: const Color(0xFF0F0B1E),
+                                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                                  ),
+                                  icon: Icon(Icons.refresh_rounded, size: 18.sp),
+                                  label: Text(
+                                    "Reload Marketplace",
+                                    style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -124,6 +170,7 @@ class BidShwapScreen extends GetView<BidShwapController> {
                 ),
               ),
             ),
+          ),
           ],
         ),
       ),
