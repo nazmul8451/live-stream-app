@@ -24,49 +24,16 @@ class BidShwapScreen extends GetView<BidShwapController> {
             // Header
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 15.h),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Center(
-                    child: Text(
-                      "MARKETPLACE",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18.sp,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
+              child: Center(
+                child: Text(
+                  "MARKETPLACE",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
                   ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Obx(() => GestureDetector(
-                      onTap: controller.isLoading.value
-                          ? null
-                          : () {
-                              controller.fetchTrades();
-                              controller.fetchCategories();
-                            },
-                      child: Container(
-                        padding: EdgeInsets.all(6.r),
-                        decoration: const BoxDecoration(
-                          color: Colors.white10,
-                          shape: BoxShape.circle,
-                        ),
-                        child: controller.isLoading.value
-                            ? SizedBox(
-                                width: 16.sp,
-                                height: 16.sp,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Color(0xFF8B9BFF),
-                                ),
-                              )
-                            : Icon(Icons.refresh_rounded, color: Colors.white, size: 20.sp),
-                      ),
-                    )),
-                  ),
-                ],
+                ),
               ),
             ),
             
