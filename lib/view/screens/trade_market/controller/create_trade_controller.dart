@@ -14,6 +14,10 @@ class CreateTradeController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
   final ImagePicker _picker = ImagePicker();
 
+  // Mode Selection: 0 = Trade Listing, 1 = Direct Sale / Inventory
+  final RxInt listingMode = 0.obs;
+  bool get isTradeMode => listingMode.value == 0;
+
   // Your Item Fields
   final itemNameController = TextEditingController();
   final descriptionController = TextEditingController();

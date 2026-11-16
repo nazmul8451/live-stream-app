@@ -31,450 +31,189 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
           centerTitle: true,
         ),
         body: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          padding: EdgeInsets.symmetric(horizontal: 20.w),
           physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              SizedBox(height: 14.h),
+
+              // ── 1. CLEAR MODE SELECTOR ──
+              _buildModeSwitcher(),
+
               SizedBox(height: 20.h),
-              Text(
-                "List Item / Create Trade",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28.sp,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              SizedBox(height: 8.h),
-              Text(
-                "List an item to your inventory or create a trade offer.",
-                style: TextStyle(
-                  color: Colors.white60,
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w600,
-                  height: 1.4,
-                ),
-              ),
 
-              SizedBox(height: 32.h),
-              _buildSectionTitle("Your Item"),
-              SizedBox(height: 16.h),
-              _buildUploadBox(),
-
-              SizedBox(height: 32.h),
-              _buildInputContainer([
-                _buildLabel("Item name"),
-                _buildTextField(
-                  "e.g. Vintage 1964 Chronograph",
-                  controller.itemNameController,
-                  prefixIcon: Icon(Icons.bookmark_border_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
-                ),
-                SizedBox(height: 24.h),
-                _buildLabel("Description"),
-                _buildTextField(
-                  "Detail the narrative and specifications of your item...",
-                  controller.descriptionController,
-                  maxLines: 3,
-                  prefixIcon: Icon(Icons.notes_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
-                ),
-                SizedBox(height: 24.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Obx(
-                        () => _buildSelectable(
-                          "Category",
-                          controller.selectedCategory.value,
-                          () => _showPicker(
-                            "Select Category",
-                            controller.categories,
-                            (val) => controller.setCategory(val),
-                          ),
-                          leadingIcon: Icons.category_outlined,
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 14.w),
-                    Expanded(
-                      child: Obx(
-                        () => _buildSelectable(
-                          "Condition",
-                          controller.selectedCondition.value,
-                          () => _showConditionPicker(context),
-                          leadingIcon: _getConditionIcon(controller.selectedCondition.value),
-                          iconColor: _getConditionColor(controller.selectedCondition.value),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 24.h),
-                _buildLabel("Estimated value"),
-                _buildTextField(
-                  "5000",
-                  controller.estValueController,
-                  keyboardType: TextInputType.number,
-                  prefixText: "\$",
-                ),
-                SizedBox(height: 24.h),
-
-                // ── Shipping Weight (Feature 1) ─────────────────────────────
-                _buildLabel("Shipping weight"),
-                Container(
-                  height: 54.h,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161622),
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.08),
-                      width: 1.2,
-                    ),
+              // ── 2. ITEM DETAILS CARD ──
+              _buildSectionCard(
+                title: "Item Details",
+                icon: Icons.inventory_2_outlined,
+                children: [
+                  _buildUploadBox(),
+                  SizedBox(height: 20.h),
+                  _buildLabel("Item Name"),
+                  _buildTextField(
+                    "e.g. 1986 Fleer Michael Jordan #57",
+                    controller.itemNameController,
+                    prefixIcon: Icon(Icons.bookmark_border_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  child: Row(
+                  SizedBox(height: 18.h),
+                  _buildLabel("Description"),
+                  _buildTextField(
+                    "Describe condition, authenticity, year, or included accessories...",
+                    controller.descriptionController,
+                    maxLines: 3,
+                    prefixIcon: Icon(Icons.notes_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
+                  ),
+                  SizedBox(height: 18.h),
+                  Row(
                     children: [
-                      Icon(Icons.scale_outlined, color: const Color(0xFF8B9BFF), size: 18.sp),
-                      SizedBox(width: 10.w),
                       Expanded(
-                        child: TextField(
-                          controller: controller.shippingWeightController,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: "e.g. 1.5",
-                            hintStyle: TextStyle(
-                              color: Colors.white.withOpacity(0.28),
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
+                        child: Obx(
+                          () => _buildSelectable(
+                            "Category",
+                            controller.selectedCategory.value,
+                            () => _showPicker(
+                              "Select Category",
+                              controller.categories,
+                              (val) => controller.setCategory(val),
                             ),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
+                            leadingIcon: Icons.category_rounded,
                           ),
                         ),
                       ),
-                      Container(
-                        height: 22.h,
-                        width: 1.w,
-                        color: Colors.white.withOpacity(0.1),
-                        margin: EdgeInsets.symmetric(horizontal: 12.w),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Obx(
+                          () => _buildSelectable(
+                            "Condition",
+                            controller.selectedCondition.value,
+                            () => _showConditionPicker(context),
+                            leadingIcon: _getConditionIcon(controller.selectedCondition.value),
+                            iconColor: _getConditionColor(controller.selectedCondition.value),
+                          ),
+                        ),
                       ),
-                      Obx(() => GestureDetector(
-                        onTap: () => _showPicker(
-                          "Select Weight Unit",
-                          controller.weightUnits,
-                          (val) => controller.shippingWeightUnit.value = val,
-                        ),
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF8B9BFF).withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(10.r),
-                            border: Border.all(
-                              color: const Color(0xFF8B9BFF).withOpacity(0.25),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                controller.shippingWeightUnit.value.toUpperCase(),
-                                style: TextStyle(
-                                  color: const Color(0xFF8B9BFF),
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              SizedBox(width: 4.w),
-                              Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                color: const Color(0xFF8B9BFF),
-                                size: 16.sp,
-                              ),
-                            ],
-                          ),
-                        ),
-                      )),
                     ],
                   ),
-                ),
-                SizedBox(height: 6.h),
-                Text(
-                  "Required for automated shipping label & postage calculation.",
-                  style: TextStyle(
-                    color: Colors.white38,
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                SizedBox(height: 28.h),
-
-                // ── Buy Now Price ──────────────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Buy now price",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(height: 3.h),
-                          Text(
-                            "Allow instant purchase at a fixed price",
-                            style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Obx(() => GestureDetector(
-                      onTap: () => controller.enableBuyNow.toggle(),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 48.w,
-                        height: 26.h,
-                        decoration: BoxDecoration(
-                          color: controller.enableBuyNow.value
-                              ? const Color(0xFF8B9BFF)
-                              : Colors.white12,
-                          borderRadius: BorderRadius.circular(13.r),
-                        ),
-                        child: AnimatedAlign(
-                          duration: const Duration(milliseconds: 200),
-                          alignment: controller.enableBuyNow.value
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: Container(
-                            margin: EdgeInsets.all(3.r),
-                            width: 20.r,
-                            height: 20.r,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )),
-                  ],
-                ),
-                Obx(() => controller.enableBuyNow.value
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 16.h),
-                          _buildTextField(
-                            "e.g. 4500",
-                            controller.buyNowPriceController,
-                            keyboardType: TextInputType.number,
-                            prefixText: "\$",
-                          ),
-                          SizedBox(height: 12.h),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF8B9BFF).withOpacity(0.06),
-                              borderRadius: BorderRadius.circular(14.r),
-                              border: Border.all(
-                                color: const Color(0xFF8B9BFF).withOpacity(0.15),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.bolt_rounded, color: const Color(0xFF8B9BFF), size: 16.sp),
-                                SizedBox(width: 8.w),
-                                Expanded(
-                                  child: Text(
-                                    "Buyers can instantly purchase your item at this price without trade negotiation.",
-                                    style: TextStyle(
-                                      color: const Color(0xFF8B9BFF).withOpacity(0.9),
-                                      fontSize: 11.sp,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      )
-                    : const SizedBox.shrink()),
-
-                SizedBox(height: 28.h),
-
-                // ── Allow Custom Offers (Feature 2) ─────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Allow custom offers",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(height: 3.h),
-                          Text(
-                            "Let buyers submit custom price offers for this item",
-                            style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Obx(() => GestureDetector(
-                      onTap: () => controller.allowOffers.toggle(),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 48.w,
-                        height: 26.h,
-                        decoration: BoxDecoration(
-                          color: controller.allowOffers.value
-                              ? const Color(0xFF8B9BFF)
-                              : Colors.white12,
-                          borderRadius: BorderRadius.circular(13.r),
-                        ),
-                        child: AnimatedAlign(
-                          duration: const Duration(milliseconds: 200),
-                          alignment: controller.allowOffers.value
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                          child: Container(
-                            margin: EdgeInsets.all(3.r),
-                            width: 20.r,
-                            height: 20.r,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )),
-                  ],
-                ),
-                Obx(() => controller.allowOffers.value
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(height: 16.h),
-                          _buildLabel("Minimum acceptable offer (\$)"),
-                          _buildTextField(
-                            "Accept offers over e.g. 3500",
-                            controller.minOfferAmountController,
-                            keyboardType: TextInputType.number,
-                            prefixText: "\$",
-                          ),
-                          SizedBox(height: 6.h),
-                          Text(
-                            "Offers below this minimum price will be automatically rejected.",
-                            style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      )
-                    : const SizedBox.shrink()),
-
-              ]),
-
-              SizedBox(height: 40.h),
-              _buildSectionTitle("What You Want"),
-              SizedBox(height: 8.h),
-              Text(
-                "Define your desire. Whether it's a specific rarity or a broad category, be clear on what completes the swap.",
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w500,
-                  height: 1.4,
-                ),
+                ],
               ),
 
-              SizedBox(height: 24.h),
-              _buildInputContainer([
-                _buildLabel("What you're looking for"),
-                _buildTextField(
-                  "Seeking modern horology or rare photography...",
-                  controller.desiredItemController,
-                  maxLines: 2,
-                  prefixIcon: Icon(Icons.search_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
-                ),
-                SizedBox(height: 24.h),
-                Obx(
-                  () => _buildSelectable(
-                    "Target category",
-                    controller.targetCategory.value,
-                    () => _showPicker(
-                      "Select Target Category",
-                      controller.targetCategories,
-                      (val) => controller.setTargetCategory(val),
-                    ),
-                    leadingIcon: Icons.filter_list_rounded,
+              SizedBox(height: 20.h),
+
+              // ── 3. PRICING & SHIPPING CARD ──
+              _buildSectionCard(
+                title: "Pricing & Shipping",
+                icon: Icons.payments_outlined,
+                children: [
+                  _buildLabel("Estimated Value"),
+                  _buildTextField(
+                    "500",
+                    controller.estValueController,
+                    keyboardType: TextInputType.number,
+                    prefixText: "\$",
                   ),
-                ),
-                SizedBox(height: 24.h),
-                _buildLabel("Target value range"),
-                Row(
+                  SizedBox(height: 4.h),
+                  Text(
+                    "Estimated market value for trades & reference.",
+                    style: TextStyle(color: Colors.white38, fontSize: 11.5.sp),
+                  ),
+                  SizedBox(height: 20.h),
+
+                  // Shipping Weight
+                  _buildLabel("Shipping Weight"),
+                  _buildShippingWeightInput(),
+                  SizedBox(height: 4.h),
+                  Text(
+                    "Required for automated shipping label calculation.",
+                    style: TextStyle(color: Colors.white38, fontSize: 11.5.sp),
+                  ),
+                  SizedBox(height: 22.h),
+
+                  // Buy Now Section
+                  _buildBuyNowSection(),
+                  SizedBox(height: 22.h),
+
+                  // Custom Offers Section
+                  _buildCustomOffersSection(),
+                ],
+              ),
+
+              // ── 4. TRADE PREFERENCES (Only in Trade Mode) ──
+              Obx(() {
+                if (!controller.isTradeMode) return const SizedBox.shrink();
+                return Column(
                   children: [
-                    Expanded(
-                      child: _buildTextField(
-                        "Min",
-                        controller.minValueController,
-                        keyboardType: TextInputType.number,
-                        prefixText: "\$",
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 14.w),
-                      child: Text(
-                        "—",
-                        style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.bold,
+                    SizedBox(height: 20.h),
+                    _buildSectionCard(
+                      title: "Trade Preferences",
+                      icon: Icons.swap_horiz_rounded,
+                      subtitle: "Specify what items or value range you are seeking in exchange.",
+                      children: [
+                        _buildLabel("What You're Looking For"),
+                        _buildTextField(
+                          "e.g. Jordan 1 Retro High, Rolex, or PSA 10 Pokémon cards...",
+                          controller.desiredItemController,
+                          maxLines: 2,
+                          prefixIcon: Icon(Icons.search_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
                         ),
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildTextField(
-                        "Max",
-                        controller.maxValueController,
-                        keyboardType: TextInputType.number,
-                        prefixText: "\$",
-                      ),
+                        SizedBox(height: 18.h),
+                        Obx(
+                          () => _buildSelectable(
+                            "Target Category",
+                            controller.targetCategory.value,
+                            () => _showPicker(
+                              "Select Target Category",
+                              controller.targetCategories,
+                              (val) => controller.setTargetCategory(val),
+                            ),
+                            leadingIcon: Icons.filter_list_rounded,
+                          ),
+                        ),
+                        SizedBox(height: 18.h),
+                        _buildLabel("Target Value Range"),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextField(
+                                "Min",
+                                controller.minValueController,
+                                keyboardType: TextInputType.number,
+                                prefixText: "\$",
+                              ),
+                            ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 14.w),
+                              child: Text(
+                                "to",
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildTextField(
+                                "Max",
+                                controller.maxValueController,
+                                keyboardType: TextInputType.number,
+                                prefixText: "\$",
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
-                ),
-              ]),
+                );
+              }),
+
+              SizedBox(height: 32.h),
+
+              // ── 5. ACTION BUTTON ──
+              _buildPostButton(),
 
               SizedBox(height: 48.h),
-              _buildPostButton(),
-              SizedBox(height: 60.h),
             ],
           ),
         ),
@@ -482,13 +221,163 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        color: const Color(0xFF8B9BFF),
-        fontSize: 22.sp,
-        fontWeight: FontWeight.w900,
+  Widget _buildModeSwitcher() {
+    return Obx(() {
+      final isTrade = controller.listingMode.value == 0;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(4.r),
+            decoration: BoxDecoration(
+              color: const Color(0xFF161622),
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(color: const Color(0xFF2E1E5D), width: 1.2),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => controller.listingMode.value = 0,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      decoration: BoxDecoration(
+                        color: isTrade ? const Color(0xFF8B9BFF) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.swap_horiz_rounded,
+                            color: isTrade ? Colors.black : Colors.white60,
+                            size: 18.sp,
+                          ),
+                          SizedBox(width: 6.w),
+                          Text(
+                            "Trade Listing",
+                            style: TextStyle(
+                              color: isTrade ? Colors.black : Colors.white70,
+                              fontSize: 13.5.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => controller.listingMode.value = 1,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      decoration: BoxDecoration(
+                        color: !isTrade ? const Color(0xFF8B9BFF) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_rounded,
+                            color: !isTrade ? Colors.black : Colors.white60,
+                            size: 17.sp,
+                          ),
+                          SizedBox(width: 6.w),
+                          Text(
+                            "Sale / Inventory",
+                            style: TextStyle(
+                              color: !isTrade ? Colors.black : Colors.white70,
+                              fontSize: 13.5.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4.w),
+            child: Text(
+              isTrade
+                  ? "List this item on the marketplace to exchange or receive offers."
+                  : "Save this item to your private inventory for selling or live shows.",
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12.sp,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    String? subtitle,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(18.r),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161622),
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(
+          color: const Color(0xFF2E1E5D),
+          width: 1.2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(7.r),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8B9BFF).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Icon(icon, color: const Color(0xFF8B9BFF), size: 16.sp),
+              ),
+              SizedBox(width: 10.w),
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          if (subtitle != null) ...[
+            SizedBox(height: 6.h),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 12.sp,
+                height: 1.3,
+              ),
+            ),
+          ],
+          SizedBox(height: 16.h),
+          ...children,
+        ],
       ),
     );
   }
@@ -502,28 +391,46 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
         return GestureDetector(
           onTap: () => controller.pickImages(),
           child: Container(
-            height: 200.h,
+            height: 140.h,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFF161622),
-              borderRadius: BorderRadius.circular(24.r),
-              border: Border.all(color: Colors.white.withOpacity(0.05), width: 1.5),
+              color: const Color(0xFF101019),
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(
+                color: const Color(0xFF8B9BFF).withOpacity(0.25),
+                width: 1.5,
+              ),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.camera_alt_outlined,
-                  color: const Color(0xFF8B9BFF),
-                  size: 32.sp,
+                Container(
+                  padding: EdgeInsets.all(12.r),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF8B9BFF).withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.add_a_photo_rounded,
+                    color: const Color(0xFF8B9BFF),
+                    size: 24.sp,
+                  ),
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 10.h),
                 Text(
-                  "Upload prime visuals",
+                  "Add Item Photos",
                   style: TextStyle(
-                    color: Colors.white60,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  "Upload clear photos of front, back & details",
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 11.5.sp,
                   ),
                 ),
               ],
@@ -699,21 +606,283 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
     });
   }
 
-  Widget _buildInputContainer(List<Widget> children) {
+  Widget _buildShippingWeightInput() {
     return Container(
-      padding: EdgeInsets.all(22.r),
+      height: 52.h,
       decoration: BoxDecoration(
-        color: const Color(0xFF11111A),
-        borderRadius: BorderRadius.circular(28.r),
+        color: const Color(0xFF101019),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(
-          color: Colors.white.withOpacity(0.05),
-          width: 1,
+          color: Colors.white.withOpacity(0.08),
+          width: 1.2,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
+      padding: EdgeInsets.symmetric(horizontal: 14.w),
+      child: Row(
+        children: [
+          Icon(Icons.scale_outlined, color: const Color(0xFF8B9BFF), size: 18.sp),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: TextField(
+              controller: controller.shippingWeightController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w600,
+              ),
+              decoration: InputDecoration(
+                hintText: "e.g. 1.5",
+                hintStyle: TextStyle(
+                  color: Colors.white.withOpacity(0.28),
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ),
+          Container(
+            height: 20.h,
+            width: 1.w,
+            color: Colors.white.withOpacity(0.1),
+            margin: EdgeInsets.symmetric(horizontal: 10.w),
+          ),
+          Obx(() => GestureDetector(
+            onTap: () => _showPicker(
+              "Select Weight Unit",
+              controller.weightUnits,
+              (val) => controller.shippingWeightUnit.value = val,
+            ),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B9BFF).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(
+                  color: const Color(0xFF8B9BFF).withOpacity(0.25),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    controller.shippingWeightUnit.value.toUpperCase(),
+                    style: TextStyle(
+                      color: const Color(0xFF8B9BFF),
+                      fontSize: 11.5.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: const Color(0xFF8B9BFF),
+                    size: 15.sp,
+                  ),
+                ],
+              ),
+            ),
+          )),
+        ],
       ),
+    );
+  }
+
+  Widget _buildBuyNowSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Buy Now Price (Optional)",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    "Allow instant direct purchase with cash",
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Obx(() => GestureDetector(
+              onTap: () => controller.enableBuyNow.toggle(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 46.w,
+                height: 26.h,
+                decoration: BoxDecoration(
+                  color: controller.enableBuyNow.value
+                      ? const Color(0xFF8B9BFF)
+                      : Colors.white12,
+                  borderRadius: BorderRadius.circular(13.r),
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 200),
+                  alignment: controller.enableBuyNow.value
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    margin: EdgeInsets.all(3.r),
+                    width: 20.r,
+                    height: 20.r,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+            )),
+          ],
+        ),
+        Obx(() => controller.enableBuyNow.value
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 14.h),
+                  _buildTextField(
+                    "e.g. 450",
+                    controller.buyNowPriceController,
+                    keyboardType: TextInputType.number,
+                    prefixText: "\$",
+                  ),
+                  SizedBox(height: 8.h),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B9BFF).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: const Color(0xFF8B9BFF).withOpacity(0.18),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.bolt_rounded, color: const Color(0xFF8B9BFF), size: 16.sp),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            "Buyers can purchase immediately at this price without waiting for a trade offer.",
+                            style: TextStyle(
+                              color: const Color(0xFF8B9BFF),
+                              fontSize: 11.5.sp,
+                              fontWeight: FontWeight.w500,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            : const SizedBox.shrink()),
+      ],
+    );
+  }
+
+  Widget _buildCustomOffersSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Allow Custom Offers",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    "Let buyers submit price or item offers",
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Obx(() => GestureDetector(
+              onTap: () => controller.allowOffers.toggle(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 46.w,
+                height: 26.h,
+                decoration: BoxDecoration(
+                  color: controller.allowOffers.value
+                      ? const Color(0xFF8B9BFF)
+                      : Colors.white12,
+                  borderRadius: BorderRadius.circular(13.r),
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 200),
+                  alignment: controller.allowOffers.value
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    margin: EdgeInsets.all(3.r),
+                    width: 20.r,
+                    height: 20.r,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
+            )),
+          ],
+        ),
+        Obx(() => controller.allowOffers.value
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 14.h),
+                  _buildLabel("Minimum Acceptable Offer"),
+                  _buildTextField(
+                    "e.g. 350",
+                    controller.minOfferAmountController,
+                    keyboardType: TextInputType.number,
+                    prefixText: "\$",
+                  ),
+                  SizedBox(height: 6.h),
+                  Text(
+                    "Offers below this amount are automatically declined.",
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 11.sp,
+                    ),
+                  ),
+                ],
+              )
+            : const SizedBox.shrink()),
+      ],
     );
   }
 
@@ -852,9 +1021,9 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
           onTap: onTap,
           child: Container(
             height: 52.h,
-            padding: EdgeInsets.symmetric(horizontal: 14.w),
+            padding: EdgeInsets.symmetric(horizontal: 10.w),
             decoration: BoxDecoration(
-              color: const Color(0xFF161622),
+              color: const Color(0xFF101019),
               borderRadius: BorderRadius.circular(16.r),
               border: Border.all(
                 color: Colors.white.withOpacity(0.08),
@@ -864,32 +1033,25 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
             child: Row(
               children: [
                 if (leadingIcon != null) ...[
-                  Icon(leadingIcon, color: iconColor ?? const Color(0xFF8B9BFF), size: 18.sp),
-                  SizedBox(width: 10.w),
+                  Icon(leadingIcon, color: iconColor ?? const Color(0xFF8B9BFF), size: 16.sp),
+                  SizedBox(width: 6.w),
                 ],
                 Expanded(
                   child: Text(
                     value,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14.sp,
+                      fontSize: 12.5.sp,
                       fontWeight: FontWeight.w700,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Container(
-                  padding: EdgeInsets.all(4.r),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: const Color(0xFF8B9BFF),
-                    size: 18.sp,
-                  ),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: const Color(0xFF8B9BFF),
+                  size: 18.sp,
                 ),
               ],
             ),
@@ -1282,91 +1444,100 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
   }
 
   Widget _buildPostButton() {
-    return Column(
-      children: [
-        // ── 1. ADD TO INVENTORY BUTTON (Above Post Trade) ──
-        SizedBox(
-          width: double.infinity,
-          height: 60.h,
-          child: Obx(
-            () => ElevatedButton.icon(
-              onPressed: controller.isLoading.value
-                  ? null
-                  : () => controller.addToInventory(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E1E5D),
-                disabledBackgroundColor: const Color(0xFF2E1E5D).withOpacity(0.5),
-                foregroundColor: const Color(0xFF8B9BFF),
-                side: const BorderSide(color: Color(0xFF8B9BFF), width: 1.5),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.r),
+    return Obx(() {
+      final isTrade = controller.isTradeMode;
+      final isLoading = controller.isLoading.value;
+
+      return Column(
+        children: [
+          // Primary Action Button
+          Container(
+            width: double.infinity,
+            height: 56.h,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28.r),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF8B9BFF).withOpacity(0.35),
+                  blurRadius: 18.r,
+                  offset: const Offset(0, 8),
                 ),
-                elevation: 0,
-              ),
-              icon: const Icon(Icons.inventory_2_outlined, color: Color(0xFF8B9BFF)),
-              label: Text(
-                "ADD TO INVENTORY",
-                style: TextStyle(
-                  color: const Color(0xFF8B9BFF),
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
-                ),
-              ),
+              ],
             ),
-          ),
-        ),
-
-        SizedBox(height: 16.h),
-
-        // ── 2. POST TRADE BUTTON ──
-        Container(
-          width: double.infinity,
-          height: 64.h,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(32.r),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF8B9BFF).withOpacity(0.3),
-                blurRadius: 20.r,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Obx(
-            () => ElevatedButton(
-              onPressed: controller.isLoading.value
+            child: ElevatedButton.icon(
+              onPressed: isLoading
                   ? null
-                  : () => controller.postTrade(),
+                  : () {
+                      if (isTrade) {
+                        controller.postTrade();
+                      } else {
+                        controller.addToInventory();
+                      }
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF8B9BFF),
-                disabledBackgroundColor: const Color(0xFF8B9BFF).withOpacity(0.7),
+                disabledBackgroundColor: const Color(0xFF8B9BFF).withOpacity(0.6),
+                foregroundColor: Colors.black,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(32.r),
+                  borderRadius: BorderRadius.circular(28.r),
                 ),
                 elevation: 0,
               ),
-              child: controller.isLoading.value
+              icon: isLoading
+                  ? const SizedBox.shrink()
+                  : Icon(
+                      isTrade ? Icons.swap_horiz_rounded : Icons.inventory_2_rounded,
+                      color: Colors.black,
+                      size: 20.sp,
+                    ),
+              label: isLoading
                   ? SizedBox(
-                      width: 24.w,
-                      height: 24.h,
+                      width: 22.w,
+                      height: 22.h,
                       child: const CircularProgressIndicator(
-                        color: Colors.white,
+                        color: Colors.black,
                         strokeWidth: 2.5,
                       ),
                     )
                   : Text(
-                      "Post Trade",
+                      isTrade ? "Publish to Trade Market" : "Save to Inventory",
                       style: TextStyle(
                         color: Colors.black,
-                        fontSize: 18.sp,
+                        fontSize: 16.sp,
                         fontWeight: FontWeight.w900,
+                        letterSpacing: 0.3,
                       ),
                     ),
             ),
           ),
-        ),
-      ],
-    );
+
+          SizedBox(height: 12.h),
+
+          // Secondary subtle text action
+          TextButton(
+            onPressed: isLoading
+                ? null
+                : () {
+                    if (isTrade) {
+                      controller.addToInventory();
+                    } else {
+                      controller.postTrade();
+                    }
+                  },
+            child: Text(
+              isTrade
+                  ? "Or save to inventory only (without trade listing)"
+                  : "Or publish directly to trade marketplace",
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12.sp,
+                decoration: TextDecoration.underline,
+                decorationColor: Colors.white24,
+              ),
+            ),
+          ),
+        ],
+      );
+    });
   }
 }
