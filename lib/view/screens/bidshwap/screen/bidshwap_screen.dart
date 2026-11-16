@@ -26,12 +26,11 @@ class BidShwapScreen extends GetView<BidShwapController> {
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 15.h),
               child: Center(
                 child: Text(
-                  "MARKETPLACE",
+                  "Marketplace",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18.sp,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
