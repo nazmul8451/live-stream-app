@@ -357,7 +357,14 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   }
 
   // ─── SOCKET LISTENERS ─────────────────────────
+  String _joinedSocketStreamId = '';
+
   void _setupSocket() {
+    // Called from several code paths; join each stream room only once,
+    // otherwise listeners stack up and the viewer count is inflated.
+    if (streamId.value.isEmpty || _joinedSocketStreamId == streamId.value) return;
+    if (_joinedSocketStreamId.isNotEmpty) _cleanupSocket();
+    _joinedSocketStreamId = streamId.value;
     try {
       final socketService = Get.find<SocketService>();
       socketService.initSocket();
@@ -851,14 +858,21 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   }
 
   void _cleanupSocket() {
+    final leavingId = _joinedSocketStreamId.isNotEmpty ? _joinedSocketStreamId : streamId.value;
+    _joinedSocketStreamId = '';
     try {
       final socketService = Get.find<SocketService>();
       final currentUserId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
-      socketService.emitEvent('leave-stream', {
-        "streamId": streamId.value,
-        "userId": currentUserId,
-      });
-      socketService.leaveChat(streamId.value);
+      if (leavingId.isNotEmpty) {
+        socketService.emitEvent('leave-stream', {
+          "streamId": leavingId,
+          "userId": currentUserId,
+        });
+        socketService.leaveChat(leavingId);
+      }
+      for (final e in const ['new_bid', 'place-bid', 'place_bid', 'bid-updated', 'bid_updated']) {
+        socketService.off(e, _handleNewBidEvent);
+      }
       socketService.off('viewer-count-update', _handleViewerCountUpdate);
       socketService.off('new-auction-item', _handleAuctionItemStartedEvent);
       socketService.off('new_auction_item', _handleAuctionItemStartedEvent);
@@ -2579,6 +2593,30 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     return false;
   }
 
+  /// Adds an item from the seller's inventory to the running show
+  /// (no new listing needed — client spec).
+  Future<bool> addExistingItemToStream(Map<String, dynamic> item) async {
+    final pid = (item['_id'] ?? item['id'] ?? '').toString();
+    if (streamId.value.isEmpty || pid.isEmpty) return false;
+    try {
+      final res = await _apiClient.postData(
+        ApiUrl.addStreamInventory(streamId.value),
+        {"productId": pid},
+      );
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        if (!streamInventoryItems.any((e) => (e['_id'] ?? e['id']).toString() == pid)) {
+          streamInventoryItems.add(Map<String, dynamic>.from(item));
+        }
+        _showLiveToast("Added to show 📦", "'${item['title'] ?? 'Item'}' is now visible to viewers.");
+        return true;
+      }
+      _showLiveToast("Couldn't add item", _serverMessage(res.body, "Please try again."), isError: true);
+    } catch (_) {
+      _showLiveToast("Couldn't add item", "Network problem — please try again.", isError: true);
+    }
+    return false;
+  }
+
   /// Extracts a human-readable message from an API error body.
   String _serverMessage(String body, String fallback) {
     try {
@@ -2615,22 +2653,12 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     try {
       giveawayPrizeName.value = itemTitle.trim();
 
-      // 1. Socket emit for real-time room update
-      try {
-        final s = Get.find<SocketService>();
-        s.emitEvent('run-giveaway-item', {
-          "streamId": streamId.value,
-          "itemTitle": itemTitle.trim(),
-          "productId": productId,
-          "itemImage": itemImage,
-        });
-      } catch (_) {}
-
-      // 2. Call backend endpoint
+      // Server draws the winner from viewers watching this show and
+      // broadcasts 'giveaway-winner' to the room (single source of truth).
       final res = await _apiClient.postData(ApiUrl.runStreamGiveawayItem(streamId.value), {
         "itemTitle": itemTitle.trim(),
-        "productId": productId,
-        "itemImage": itemImage,
+        if (productId != null && productId.isNotEmpty) "productId": productId,
+        if (itemImage != null && itemImage.isNotEmpty) "itemImage": itemImage,
       });
 
       if (res.statusCode == 200 || res.statusCode == 201) {
@@ -2643,12 +2671,11 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         giveawayWinnerName.value = name.toString();
         showGiveawayWinnerOverlay.value = true;
       } else {
-        // Fallback to standard draw
-        drawGiveawayWinner(prizeName: itemTitle.trim());
+        _showLiveToast("Giveaway not run", _serverMessage(res.body, "Please try again."), isError: true);
       }
     } catch (e) {
       debugPrint("❌ [AgoraLiveController] runItemGiveaway error: $e");
-      drawGiveawayWinner(prizeName: itemTitle.trim());
+      _showLiveToast("Giveaway not run", "Network problem — please try again.", isError: true);
     }
   }
 
@@ -2887,8 +2914,6 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
             futures.add(_apiClient.postData("/auctions/item/$activeAuctionItemId/complete", {}));
           }
           futures.add(_apiClient.patchData("${ApiUrl.startStream}/$activeStreamId/status", {'status': 'ended'}));
-          futures.add(_apiClient.patchData("${ApiUrl.liveStreams}/$activeStreamId/status", {'status': 'ended'}));
-          futures.add(_apiClient.postData("${ApiUrl.startStream}/$activeStreamId/end", {}));
           await Future.wait(futures);
           debugPrint("✅ Stream status updated to ended on backend DB for $activeStreamId");
         } catch (e) {

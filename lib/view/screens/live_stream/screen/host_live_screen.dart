@@ -1,6 +1,7 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show listEquals;
+import '../../../../data/helpers/api_list.dart';
 import 'package:flutter/cupertino.dart' show CupertinoSwitch;
 import 'dart:math' as math;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -262,7 +263,15 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
             ),
                      // ── Auction Card (bottom)
             Obx(() {
-              if (!ctrl.auctionActive.value) return const SizedBox.shrink();
+              if (!ctrl.auctionActive.value) {
+                // No auction running: host still sees viewer chat
+                return Positioned(
+                  bottom: 24.h,
+                  left: 16.w,
+                  right: 90.w,
+                  child: _buildChat(ctrl),
+                );
+              }
               return Positioned(
                 bottom: 0,
                 left: 0,
@@ -426,7 +435,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   }),
                   SizedBox(height: 10.h),
                   _sideButton(Icons.stars_rounded, const Color(0xFFFFB800), onTap: () {
-                    _confirmGiveawayDraw(ctrl);
+                    _showLiveItemManagerSheet(); // pick the prize item first
                   }),
                   SizedBox(height: 10.h),
                   _sideButton(Icons.receipt_long_rounded, const Color(0xFF00D2FF), onTap: () {
@@ -869,10 +878,11 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
     );
   }
 
-  void _showStartNewAuctionSheet() {
+  void _showStartNewAuctionSheet({Map<String, dynamic>? preselect}) {
     final productsList = <Map<String, dynamic>>[].obs;
     final loadingProducts = true.obs;
-    final selectedProduct = Rxn<Map<String, dynamic>>();
+    // Opened from an inventory row: that item is pre-selected
+    final selectedProduct = Rxn<Map<String, dynamic>>(preselect);
 
     final startingBid = 100.0.obs;
     final bidIncrement = 5.0.obs;
@@ -892,7 +902,10 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
     if (Get.isRegistered<ProfileController>()) {
       final profileCtrl = Get.find<ProfileController>();
       if (profileCtrl.userListings.isNotEmpty) {
-        productsList.assignAll(profileCtrl.userListings.map((e) => Map<String, dynamic>.from(e)).toList());
+        productsList.assignAll(profileCtrl.userListings
+            .map((e) => Map<String, dynamic>.from(e))
+            .where(isProductAvailable)
+            .toList());
         loadingProducts.value = false;
         updateSelectedIfNull();
       }
@@ -2528,6 +2541,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
         final pCtrl = Get.find<ProfileController>();
         if (pCtrl.userListings.isNotEmpty) {
           for (final item in pCtrl.userListings) {
+            if (!isProductAvailable(Map<String, dynamic>.from(item))) continue;
             final pid = (item['_id'] ?? item['id'] ?? '').toString();
             if (!inventoryList.any((e) => (e['_id'] ?? e['id']).toString() == pid)) {
               inventoryList.add(Map<String, dynamic>.from(item));
@@ -2949,11 +2963,32 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                               ),
                             ),
                             SizedBox(width: 8.w),
+                            // Add to Show (visible to viewers without auctioning yet)
+                            Obx(() {
+                              final inShow = ctrl.streamInventoryItems
+                                  .any((e) => (e['_id'] ?? e['id']).toString() == pid);
+                              return GestureDetector(
+                                onTap: inShow ? null : () => ctrl.addExistingItemToStream(item),
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                                  decoration: BoxDecoration(
+                                    color: inShow ? const Color(0xFF10B981).withValues(alpha: 0.15) : const Color(0xFF10B981),
+                                    borderRadius: BorderRadius.circular(8.r),
+                                  ),
+                                  child: Icon(
+                                    inShow ? Icons.check_rounded : Icons.add_rounded,
+                                    color: inShow ? const Color(0xFF10B981) : Colors.white,
+                                    size: 14.sp,
+                                  ),
+                                ),
+                              );
+                            }),
+                            SizedBox(width: 6.w),
                             // Auction Button
                             GestureDetector(
                               onTap: () {
                                 Get.back();
-                                _showStartNewAuctionSheet();
+                                _showStartNewAuctionSheet(preselect: Map<String, dynamic>.from(item));
                               },
                               child: Container(
                                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
