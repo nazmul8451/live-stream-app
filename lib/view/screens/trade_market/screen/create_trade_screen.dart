@@ -101,12 +101,9 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
                         () => _buildSelectable(
                           "Condition",
                           controller.selectedCondition.value,
-                          () => _showPicker(
-                            "Select Condition",
-                            controller.conditions,
-                            (val) => controller.setCondition(val),
-                          ),
-                          leadingIcon: Icons.stars_outlined,
+                          () => _showConditionPicker(context),
+                          leadingIcon: _getConditionIcon(controller.selectedCondition.value),
+                          iconColor: _getConditionColor(controller.selectedCondition.value),
                         ),
                       ),
                     ),
@@ -845,6 +842,7 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
     String value,
     VoidCallback onTap, {
     IconData? leadingIcon,
+    Color? iconColor,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -866,7 +864,7 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
             child: Row(
               children: [
                 if (leadingIcon != null) ...[
-                  Icon(leadingIcon, color: const Color(0xFF8B9BFF), size: 18.sp),
+                  Icon(leadingIcon, color: iconColor ?? const Color(0xFF8B9BFF), size: 18.sp),
                   SizedBox(width: 10.w),
                 ],
                 Expanded(
@@ -898,6 +896,239 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
           ),
         ),
       ],
+    );
+  }
+
+  static final List<Map<String, dynamic>> _conditionOptions = [
+    {
+      "name": "Mint",
+      "subtitle": "Flawless / Like New. No scratches, wear, or defects.",
+      "icon": Icons.diamond_rounded,
+      "color": const Color(0xFF00E676),
+      "bgColor": const Color(0x1F00E676),
+    },
+    {
+      "name": "Near Mint",
+      "subtitle": "Almost perfect. May have microscopic handling marks.",
+      "icon": Icons.workspace_premium_rounded,
+      "color": const Color(0xFF8B9BFF),
+      "bgColor": const Color(0x228B9BFF),
+    },
+    {
+      "name": "Excellent",
+      "subtitle": "Light signs of use. Fully intact with no major flaws.",
+      "icon": Icons.verified_rounded,
+      "color": const Color(0xFF29B6F6),
+      "bgColor": const Color(0x2229B6F6),
+    },
+    {
+      "name": "Good",
+      "subtitle": "Noticeable wear or surface marks, completely functional.",
+      "icon": Icons.thumb_up_alt_rounded,
+      "color": const Color(0xFFFFB300),
+      "bgColor": const Color(0x22FFB300),
+    },
+    {
+      "name": "Fair",
+      "subtitle": "Heavy wear, cosmetic defects or aging clearly noted.",
+      "icon": Icons.info_outline_rounded,
+      "color": const Color(0xFFFF7043),
+      "bgColor": const Color(0x22FF7043),
+    },
+  ];
+
+  IconData _getConditionIcon(String cond) {
+    switch (cond) {
+      case "Mint":
+        return Icons.diamond_rounded;
+      case "Near Mint":
+        return Icons.workspace_premium_rounded;
+      case "Excellent":
+        return Icons.verified_rounded;
+      case "Good":
+        return Icons.thumb_up_alt_rounded;
+      case "Fair":
+        return Icons.info_outline_rounded;
+      default:
+        return Icons.stars_outlined;
+    }
+  }
+
+  Color _getConditionColor(String cond) {
+    switch (cond) {
+      case "Mint":
+        return const Color(0xFF00E676);
+      case "Near Mint":
+        return const Color(0xFF8B9BFF);
+      case "Excellent":
+        return const Color(0xFF29B6F6);
+      case "Good":
+        return const Color(0xFFFFB300);
+      case "Fair":
+        return const Color(0xFFFF7043);
+      default:
+        return const Color(0xFF8B9BFF);
+    }
+  }
+
+  void _showConditionPicker(BuildContext context) {
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 24.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161622),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+          border: Border.all(color: const Color(0xFF2E1E5D), width: 1.5),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(8.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B9BFF).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Icon(Icons.stars_rounded, color: const Color(0xFF8B9BFF), size: 20.sp),
+                    ),
+                    SizedBox(width: 10.w),
+                    Text(
+                      "Select Condition",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white54),
+                  onPressed: () => Get.back(),
+                ),
+              ],
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              "Choose the standard condition that best matches your item.",
+              style: TextStyle(color: Colors.white38, fontSize: 12.sp),
+            ),
+            SizedBox(height: 18.h),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _conditionOptions.length,
+              separatorBuilder: (context, index) => SizedBox(height: 10.h),
+              itemBuilder: (context, index) {
+                final item = _conditionOptions[index];
+                final String name = item['name'];
+                final String subtitle = item['subtitle'];
+                final IconData icon = item['icon'];
+                final Color color = item['color'];
+                final Color bgColor = item['bgColor'];
+
+                return Obx(() {
+                  final isSelected = controller.selectedCondition.value == name;
+                  return InkWell(
+                    onTap: () {
+                      controller.setCondition(name);
+                      Get.back();
+                    },
+                    borderRadius: BorderRadius.circular(16.r),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+                      decoration: BoxDecoration(
+                        color: isSelected ? color.withOpacity(0.12) : const Color(0xFF1E1E2C),
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(
+                          color: isSelected ? color : Colors.white.withOpacity(0.06),
+                          width: isSelected ? 1.5 : 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 42.w,
+                            height: 42.h,
+                            decoration: BoxDecoration(
+                              color: bgColor,
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(color: color.withOpacity(0.3)),
+                            ),
+                            child: Icon(icon, color: color, size: 22.sp),
+                          ),
+                          SizedBox(width: 14.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      name,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 15.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    if (name == "Mint") ...[
+                                      SizedBox(width: 6.w),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                                        decoration: BoxDecoration(
+                                          color: color.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(6.r),
+                                        ),
+                                        child: Text(
+                                          "TOP GRADE",
+                                          style: TextStyle(
+                                            color: color,
+                                            fontSize: 9.sp,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                SizedBox(height: 3.h),
+                                Text(
+                                  subtitle,
+                                  style: TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 11.5.sp,
+                                    height: 1.25,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
+                          Icon(
+                            isSelected ? Icons.check_circle_rounded : Icons.radio_button_off_rounded,
+                            color: isSelected ? color : Colors.white24,
+                            size: 22.sp,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
     );
   }
 
