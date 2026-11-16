@@ -3085,27 +3085,14 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
               }
             }
           } else {
-            // Fallback: If create-checkout-session is not supported for this user, allow completing order with pending payment
-            debugPrint("⚠️ [StripeCheckout] Create checkout session returned ${sessionRes.statusCode}. Proceeding with order creation.");
-            paymentSuccess = true;
+            // Never treat a failed checkout-session request as a successful payment.
+            debugPrint("⚠️ [StripeCheckout] Create checkout session returned ${sessionRes.statusCode}.");
+            paymentSuccess = false;
           }
         }
       } catch (e) {
         debugPrint("⚠️ [StripeCheckout] Session launch exception: $e");
-        paymentSuccess = true;
-      }
-
-      if (!paymentSuccess) {
-        // UPDATE 5: Sandbox Test Mode Bypass for client end-to-end testing
-        debugPrint("🧪 [checkoutAuctionOrder] Sandbox mode: auto-approving order for test verification.");
-        paymentSuccess = true;
-        Get.snackbar(
-          "Test Order Placed! 🧪",
-          "Sandbox test mode: Order placed successfully with test approval.",
-          backgroundColor: const Color(0xFF10B981),
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
-        );
+        paymentSuccess = false;
       }
 
       if (!paymentSuccess) {

@@ -185,6 +185,9 @@ class SocketService extends GetxService {
       socket?.onConnect((_) {
         isConnected.value = true;
         Get.log('✅ [SocketService] Connected: ${socket?.id}');
+        // Backend authenticates via the JWT in the handshake query; this joins
+        // the personal notification room (id must match the token's user).
+        socket?.emit('join-notification', userId);
         socket?.emit('setup', userId);
         socket?.emit('join', userId);
         socket?.emit('join-user', userId);
