@@ -40,42 +40,31 @@ class BidShwapScreen extends GetView<BidShwapController> {
                   ),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Obx(() => GestureDetector(
-                          onTap: controller.isLoading.value ? null : () => controller.fetchTrades(),
-                          child: Container(
-                            padding: EdgeInsets.all(6.r),
-                            decoration: const BoxDecoration(
-                              color: Colors.white10,
-                              shape: BoxShape.circle,
-                            ),
-                            child: controller.isLoading.value
-                                ? SizedBox(
-                                    width: 16.sp,
-                                    height: 16.sp,
-                                    child: const CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Color(0xFF8B9BFF),
-                                    ),
-                                  )
-                                : Icon(Icons.refresh_rounded, color: Colors.white, size: 20.sp),
-                          ),
-                        )),
-                        SizedBox(width: 8.w),
-                        GestureDetector(
-                          onTap: () {
-                            AuthGuard.check(
-                              title: "Sign in to view Notifications",
-                              message: "Guest mode is browse-only. Sign in to view your activity and notifications.",
-                              onAuthorized: () => Get.toNamed(AppRoute.notifications),
-                            );
-                          },
-                          child: Icon(Icons.notifications_none_rounded, color: Colors.white, size: 26.sp),
+                    child: Obx(() => GestureDetector(
+                      onTap: controller.isLoading.value
+                          ? null
+                          : () {
+                              controller.fetchTrades();
+                              controller.fetchCategories();
+                            },
+                      child: Container(
+                        padding: EdgeInsets.all(6.r),
+                        decoration: const BoxDecoration(
+                          color: Colors.white10,
+                          shape: BoxShape.circle,
                         ),
-                      ],
-                    ),
+                        child: controller.isLoading.value
+                            ? SizedBox(
+                                width: 16.sp,
+                                height: 16.sp,
+                                child: const CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFF8B9BFF),
+                                ),
+                              )
+                            : Icon(Icons.refresh_rounded, color: Colors.white, size: 20.sp),
+                      ),
+                    )),
                   ),
                 ],
               ),
@@ -88,7 +77,10 @@ class BidShwapScreen extends GetView<BidShwapController> {
                 color: const Color(0xFF8B9BFF),
                 backgroundColor: const Color(0xFF1E1B2E),
                 onRefresh: () async {
-                  await controller.fetchTrades();
+                  await Future.wait([
+                    controller.fetchTrades(),
+                    controller.fetchCategories(),
+                  ]);
                 },
                 child: SingleChildScrollView(
                   padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -251,34 +243,36 @@ class BidShwapScreen extends GetView<BidShwapController> {
   Widget _buildFilters() {
     return SizedBox(
       height: 44.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: controller.filters.length,
-        itemBuilder: (context, index) {
-          return Obx(() {
-            final isSelected = controller.selectedFilter.value == index;
-            return GestureDetector(
-              onTap: () => controller.changeFilter(index),
-              child: Container(
-                margin: EdgeInsets.only(right: 12.w),
-                padding: EdgeInsets.symmetric(horizontal: 24.w),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF8B9BFF) : const Color(0xFF1E1E2C),
-                  borderRadius: BorderRadius.circular(22.r),
-                ),
-                child: Text(
-                  controller.filters[index],
-                  style: TextStyle(
-                    color: isSelected ? Colors.black : Colors.white38,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w900,
+      child: Obx(
+        () => ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: controller.filters.length,
+          itemBuilder: (context, index) {
+            return Obx(() {
+              final isSelected = controller.selectedFilter.value == index;
+              return GestureDetector(
+                onTap: () => controller.changeFilter(index),
+                child: Container(
+                  margin: EdgeInsets.only(right: 12.w),
+                  padding: EdgeInsets.symmetric(horizontal: 24.w),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isSelected ? const Color(0xFF8B9BFF) : const Color(0xFF1E1E2C),
+                    borderRadius: BorderRadius.circular(22.r),
+                  ),
+                  child: Text(
+                    controller.filters[index],
+                    style: TextStyle(
+                      color: isSelected ? Colors.black : Colors.white38,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-              ),
-            );
-          });
-        },
+              );
+            });
+          },
+        ),
       ),
     );
   }

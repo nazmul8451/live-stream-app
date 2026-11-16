@@ -10,25 +10,9 @@ class BidShwapController extends GetxController {
   final RxBool isLoading = false.obs;
 
   var selectedFilter = 0.obs;
-  final filters = [
-    "ALL TRADES",
-    "Trading Cards & TCG",
-    "Sports Memorabilia",
-    "Toys & Collectibles",
-    "Sneakers & Streetwear",
-    "Fashion & Apparel",
-    "Watches & Luxury",
-    "Jewelry & Accessories",
-    "Electronics & Tech",
-    "Coins & Currency",
-    "Comics, Anime & Manga",
-    "Video Games",
-    "Vintage & Antiques",
-    "Home & Lifestyle",
-    "Beauty & Personal Care",
-    "Books, Music & Media",
-    "Other / Not Listed",
-  ];
+  final RxList<String> filters = <String>["ALL TRADES"].obs;
+  final Map<String, String> categoryNameToId = {};
+  final Map<String, String> categoryIdToName = {};
 
   // Search parameters
   final searchQuery = "".obs;
@@ -81,11 +65,70 @@ class BidShwapController extends GetxController {
     super.onInit();
     ever(selectedFilter, (_) => applyFilterAndSearch());
     ever(searchQuery, (_) => applyFilterAndSearch());
+    fetchCategories();
     fetchTrades();
+  }
+
+  Future<void> fetchCategories() async {
+    try {
+      var response = await _apiClient.getData(ApiUrl.category);
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        response = await _apiClient.getData("/categories");
+      }
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        response = await _apiClient.getData(ApiUrl.popularCategories);
+      }
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final decoded = jsonDecode(response.body);
+        List<dynamic> dataList = [];
+        if (decoded is List) {
+          dataList = decoded;
+        } else if (decoded is Map) {
+          if (decoded['data'] is List) {
+            dataList = decoded['data'];
+          } else if (decoded['categories'] is List) {
+            dataList = decoded['categories'];
+          } else if (decoded['data'] is Map && decoded['data']['data'] is List) {
+            dataList = decoded['data']['data'];
+          }
+        }
+
+        final List<String> parsed = [];
+        categoryNameToId.clear();
+        categoryIdToName.clear();
+
+        for (var item in dataList) {
+          if (item is Map) {
+            final String name = (item['name'] ?? item['title'] ?? '').toString().trim();
+            final String id = (item['_id'] ?? item['id'] ?? '').toString().trim();
+            if (name.isNotEmpty && !parsed.contains(name)) {
+              parsed.add(name);
+              if (id.isNotEmpty) {
+                categoryNameToId[name] = id;
+                categoryIdToName[id] = name;
+              }
+            }
+          }
+        }
+
+        if (parsed.isNotEmpty) {
+          filters.assignAll(["ALL TRADES", ...parsed]);
+          if (selectedFilter.value >= filters.length) {
+            selectedFilter.value = 0;
+          }
+          Get.log("✅ [BidShwapController] Loaded ${parsed.length} dynamic categories: $parsed");
+        }
+      }
+    } catch (e) {
+      Get.log("❌ [BidShwapController] fetchCategories error: $e");
+    }
   }
 
   Future<void> fetchTrades() async {
     isLoading.value = true;
+    if (filters.length <= 1) {
+      fetchCategories();
+    }
     try {
       final response = await _apiClient.getData("${ApiUrl.products}?allowTrade=true");
       if (response.statusCode == 200) {
@@ -228,55 +271,54 @@ class BidShwapController extends GetxController {
 
     List<TradeModel> results = List<TradeModel>.from(allTrades);
 
-    // 1. Filter by Category
-    if (filterIndex > 0) {
-      final selectedCategory = filters[filterIndex].toLowerCase();
-      results = results.where((trade) {
-        final rawCat = (trade.rawProduct?['category'] ?? "").toString().toLowerCase();
-        final rawTitle = (trade.offeredItemName).toLowerCase();
+    // 1. Filter by Category (Dynamic from API)
+    if (filterIndex > 0 && filterIndex < filters.length) {
+      final selectedCatName = filters[filterIndex];
+      final selectedCategory = selectedCatName.toLowerCase().trim();
+      final selectedCatId = categoryNameToId[selectedCatName] ?? "";
 
-        // Direct matching
-        if (rawCat.contains(selectedCategory) || selectedCategory.contains(rawCat)) {
+      results = results.where((trade) {
+        final raw = trade.rawProduct;
+        final rawCat = raw?['category'];
+
+        String itemCatId = "";
+        String itemCatName = "";
+
+        if (rawCat is Map) {
+          itemCatId = (rawCat['_id'] ?? rawCat['id'] ?? "").toString().trim();
+          itemCatName = (rawCat['name'] ?? rawCat['title'] ?? "").toString().toLowerCase().trim();
+        } else if (rawCat is String) {
+          final trimmed = rawCat.trim();
+          if (trimmed.length == 24 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(trimmed)) {
+            itemCatId = trimmed;
+            itemCatName = (categoryIdToName[trimmed] ?? "").toLowerCase().trim();
+          } else {
+            itemCatName = trimmed.toLowerCase();
+          }
+        }
+
+        // 1. Direct ID match
+        if (selectedCatId.isNotEmpty && itemCatId.isNotEmpty && selectedCatId == itemCatId) {
           return true;
         }
 
-        // Semantic keyword matching for the 16 categories
-        switch (filterIndex) {
-          case 1: // Trading Cards & TCG
-            return rawCat.contains("card") || rawCat.contains("tcg") || rawCat.contains("pokemon") || rawCat.contains("mtg") || rawTitle.contains("card") || rawTitle.contains("pokemon");
-          case 2: // Sports Memorabilia
-            return rawCat.contains("memorabilia") || rawCat.contains("jersey") || rawCat.contains("autograph") || rawTitle.contains("jersey") || rawTitle.contains("autograph");
-          case 3: // Toys & Collectibles
-            return rawCat.contains("toy") || rawCat.contains("collectible") || rawCat.contains("lego") || rawCat.contains("figure") || rawCat.contains("plush");
-          case 4: // Sneakers & Streetwear
-            return rawCat.contains("sneaker") || rawCat.contains("streetwear") || rawCat.contains("kicks") || rawTitle.contains("jordan") || rawTitle.contains("dunk") || rawTitle.contains("yeezy");
-          case 5: // Fashion & Apparel
-            return rawCat.contains("fashion") || rawCat.contains("apparel") || rawCat.contains("clothing") || rawCat.contains("bag") || rawCat.contains("designer");
-          case 6: // Watches & Luxury
-            return rawCat.contains("watch") || rawCat.contains("luxury") || rawCat.contains("rolex");
-          case 7: // Jewelry & Accessories
-            return rawCat.contains("jewel") || rawCat.contains("accessory") || rawCat.contains("ring") || rawCat.contains("chain");
-          case 8: // Electronics & Tech
-            return rawCat.contains("electronic") || rawCat.contains("tech") || rawCat.contains("phone") || rawCat.contains("tablet");
-          case 9: // Coins & Currency
-            return rawCat.contains("coin") || rawCat.contains("currency") || rawCat.contains("bullion");
-          case 10: // Comics, Anime & Manga
-            return rawCat.contains("comic") || rawCat.contains("anime") || rawCat.contains("manga");
-          case 11: // Video Games
-            return rawCat.contains("game") || rawCat.contains("gaming") || rawCat.contains("nintendo") || rawCat.contains("playstation") || rawCat.contains("xbox");
-          case 12: // Vintage & Antiques
-            return rawCat.contains("vintage") || rawCat.contains("antique");
-          case 13: // Home & Lifestyle
-            return rawCat.contains("home") || rawCat.contains("lifestyle");
-          case 14: // Beauty & Personal Care
-            return rawCat.contains("beauty") || rawCat.contains("cosmetic") || rawCat.contains("care");
-          case 15: // Books, Music & Media
-            return rawCat.contains("book") || rawCat.contains("music") || rawCat.contains("media") || rawCat.contains("vinyl");
-          case 16: // Other / Not Listed
-            return rawCat.contains("other") || rawCat.isEmpty;
-          default:
+        // 2. Direct Name match / Substring match
+        if (itemCatName.isNotEmpty) {
+          if (itemCatName == selectedCategory ||
+              itemCatName.contains(selectedCategory) ||
+              selectedCategory.contains(itemCatName)) {
             return true;
+          }
         }
+
+        // 3. Match in offered product title or description
+        final rawTitle = (trade.offeredItemName).toLowerCase();
+        final rawDesc = (raw?['description'] ?? "").toString().toLowerCase();
+        if (rawTitle.contains(selectedCategory) || rawDesc.contains(selectedCategory)) {
+          return true;
+        }
+
+        return false;
       }).toList();
     }
 
