@@ -9,6 +9,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/push_notification_service.dart';
+import '../../../../data/helpers/api_list.dart';
 import '../../../../data/services/socket_service.dart';
 
 class ProfileController extends GetxController {
@@ -215,9 +216,12 @@ class ProfileController extends GetxController {
 
   Future<void> fetchUserListings(String userId) async {
     try {
-      final response = await _apiClient.getData("${ApiUrl.products}?sellerId=$userId");
+      // Own profile shows everything incl. private inventory
+      final isMe = userId == SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+      final response = await _apiClient.getData(
+          isMe ? ApiUrl.myProducts : "${ApiUrl.products}?sellerId=$userId&limit=100");
       if (response.statusCode == 200) {
-        final list = jsonDecode(response.body)['data'] as List;
+        final list = extractApiList(jsonDecode(response.body));
         userListings.assignAll(list);
 
         // Update active and sold counts based on listings

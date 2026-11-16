@@ -593,7 +593,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _sectionLabel(isScheduleMode ? "Linked Show Inventory (Optional)" : "Select Product to Auction (Optional)"),
+                  _sectionLabel(isScheduleMode ? "Linked Show Inventory (Optional)" : "Show Inventory (Optional)"),
                   if (!isScheduleMode && _selectedProduct != null)
                     GestureDetector(
                       onTap: () => setState(() => _selectedProduct = null),
@@ -635,9 +635,9 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                             itemBuilder: (context, i) {
                               final p = _myProducts[i];
                               final pId = p['_id']?.toString() ?? "";
-                              final isSelected = isScheduleMode
-                                  ? _selectedInventoryIds.contains(pId)
-                                  : _selectedProduct?['_id'] == p['_id'];
+                              // Both modes: pick several items for the show.
+                              // In Go Live Now the last picked one is auctioned first.
+                              final isSelected = _selectedInventoryIds.contains(pId);
 
                               final rawImgs = p['images'] ?? p['image'] ?? p['coverImage'];
                               String imgUrl = "";
@@ -650,18 +650,16 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                               return GestureDetector(
                                 onTap: () {
                                   setState(() {
-                                    if (isScheduleMode) {
-                                      if (_selectedInventoryIds.contains(pId)) {
-                                        _selectedInventoryIds.remove(pId);
-                                      } else {
-                                        _selectedInventoryIds.add(pId);
+                                    if (_selectedInventoryIds.contains(pId)) {
+                                      _selectedInventoryIds.remove(pId);
+                                      if (_selectedProduct?['_id'] == p['_id']) {
+                                        final remaining = _myProducts.where(
+                                            (e) => _selectedInventoryIds.contains(e['_id']?.toString()));
+                                        _selectedProduct = remaining.isNotEmpty ? remaining.last : null;
                                       }
                                     } else {
-                                      if (_selectedProduct?['_id'] == p['_id']) {
-                                        _selectedProduct = null;
-                                      } else {
-                                        _selectedProduct = p;
-                                      }
+                                      _selectedInventoryIds.add(pId);
+                                      if (!isScheduleMode) _selectedProduct = p;
                                     }
                                   });
                                 },

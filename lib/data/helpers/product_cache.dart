@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../services/api_client.dart';
+import 'api_list.dart';
 import '../services/api_url.dart';
 
 class ProductCache {
@@ -20,15 +21,12 @@ class ProductCache {
     if (sellerId.isEmpty) return [];
 
     try {
-      final res = await client.getData("${ApiUrl.products}?sellerId=$sellerId");
+      final res = await client.getData(ApiUrl.myProducts);
       if (res.statusCode == 200) {
-        final body = jsonDecode(res.body);
-        final data = body['data'] ?? body['products'] ?? body['result'] ?? [];
-        if (data is List) {
-          final list = data.map((e) => Map<String, dynamic>.from(e)).toList();
-          setMyProducts(sellerId, list);
-          return list;
-        }
+        // Only items that can still be sold/auctioned/given away
+        final list = extractApiList(jsonDecode(res.body)).where(isProductAvailable).toList();
+        setMyProducts(sellerId, list);
+        return list;
       }
     } catch (e) {
       debugPrint("ProductCache error: $e");

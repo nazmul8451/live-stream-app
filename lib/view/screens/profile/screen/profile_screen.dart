@@ -981,6 +981,12 @@ class ProfileScreen extends GetView<ProfileController> {
           ),
           _buildSettingsTile(
             svgPath: "assets/icons/My Trades.svg",
+            title: "My Inventory",
+            showArrow: true,
+            onTap: () => Get.toNamed(AppRoute.myInventory),
+          ),
+          _buildSettingsTile(
+            svgPath: "assets/icons/My Trades.svg",
             title: "My Trades",
             showArrow: true,
             onTap: () => Get.toNamed('/my_trades'),

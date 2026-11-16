@@ -63,6 +63,8 @@ class ApiUrl {
   // Category
   static const String category = "/category";
   // All top-level categories (API default page size is 10)
+  // Logged-in seller's own products incl. private inventory
+  static const String myProducts = "/products/my";
   static const String categoryList = "/category?limit=100&type=category";
   static const String popularCategories = "/category/popular-categories";
 

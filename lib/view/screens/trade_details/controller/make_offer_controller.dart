@@ -10,6 +10,7 @@ import '../../../../data/services/api_url.dart';
 import '../../../../data/services/s3_upload_service.dart';
 import '../../../../data/services/socket_service.dart';
 import '../../../../core/app_route.dart';
+import '../../../../data/helpers/api_list.dart';
 import '../../messages/controller/messages_controller.dart';
 
 class MakeOfferController extends GetxController {
@@ -150,11 +151,10 @@ class MakeOfferController extends GetxController {
 
     isLoading.value = true;
     try {
-      final response = await _apiClient.getData("${ApiUrl.products}?sellerId=$userId");
+      final response = await _apiClient.getData(ApiUrl.myProducts);
       if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        final list = body['data'] ?? body['products'] ?? body['result'] ?? [];
-        if (list is List) {
+        final list = extractApiList(jsonDecode(response.body)).where(isProductAvailable).toList();
+        {
           userProducts.assignAll(list);
           if (list.isNotEmpty) {
             selectedUserProduct.value = Map<String, dynamic>.from(list[0]);
