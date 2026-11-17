@@ -50,6 +50,16 @@ class LiveStreamServiceBridge {
     }
   }
 
+  /// Enable/disable automatic PiP when the user leaves the app (Android only).
+  static Future<void> setAutoPiP(bool enabled) async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      await _channel.invokeMethod('setAutoPiP', {'enabled': enabled});
+    } on PlatformException catch (e) {
+      debugPrint('Error setting auto PiP: $e');
+    }
+  }
+
   /// Request to enter PiP mode (Android only)
   static Future<bool> enterPiP() async {
     if (defaultTargetPlatform != TargetPlatform.android) return false;

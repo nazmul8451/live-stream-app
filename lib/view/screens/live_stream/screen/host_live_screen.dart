@@ -103,6 +103,12 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
               );
             }),
 
+            // In Android PiP only the video stays visible.
+            Positioned.fill(
+              child: Obx(() => Offstage(
+                offstage: ctrl.isInPiP.value,
+                child: Stack(
+                  children: [
             // ── Top Bar (Spacious 2-tier layout)
             Positioned(
               top: 0,
@@ -487,6 +493,10 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
               }
               return const SizedBox.shrink();
             }),
+                  ],
+                ),
+              )),
+            ),
           ],
         ),
       ),

@@ -8,7 +8,7 @@ class DependencyInjection {
   static void init() {
     Get.lazyPut(() => ApiClient(), fenix: true);
     Get.lazyPut(() => SocketService(), fenix: true);
-    Get.lazyPut(() => AgoraLiveController(), fenix: true);
+    Get.put(AgoraLiveController(), permanent: true); // one live session app-wide
     Get.put(DeepLinkService(), permanent: true);
   }
 }

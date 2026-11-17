@@ -13,6 +13,8 @@ class MainActivity : FlutterFragmentActivity() {
 
     private val CHANNEL = "com.culturecards.app/live_service"
     private var isStreaming = false
+    // True while a live session (host or viewer) is active; Home -> PiP.
+    private var autoPiP = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -28,6 +30,11 @@ class MainActivity : FlutterFragmentActivity() {
                     "stopLiveService" -> {
                         isStreaming = false
                         stopLiveStreamService()
+                        result.success(true)
+                    }
+                    "setAutoPiP" -> {
+                        autoPiP = call.argument<Boolean>("enabled") == true
+                        applyPiPParams()
                         result.success(true)
                     }
                     "enterPiP" -> {
@@ -62,14 +69,28 @@ class MainActivity : FlutterFragmentActivity() {
         startService(intent)
     }
 
+    private fun buildPiPParams(): PictureInPictureParams? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return null
+        val b = PictureInPictureParams.Builder().setAspectRatio(Rational(9, 16))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Android 12+: system animates straight into PiP on Home/gesture.
+            b.setAutoEnterEnabled(autoPiP)
+            b.setSeamlessResizeEnabled(false)
+        }
+        return b.build()
+    }
+
+    private fun applyPiPParams() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try { buildPiPParams()?.let { setPictureInPictureParams(it) } } catch (_: Exception) {}
+        }
+    }
+
     private fun enterPiPMode(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
         return try {
-            val params = PictureInPictureParams.Builder()
-                .setAspectRatio(Rational(9, 16))
-                .build()
+            val params = buildPiPParams() ?: return false
             enterPictureInPictureMode(params)
-            true
         } catch (e: Exception) {
             false
         }
@@ -78,7 +99,9 @@ class MainActivity : FlutterFragmentActivity() {
     // Auto-enter PiP when user presses Home during a live stream
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (isStreaming && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        // Android 8-11 fallback (12+ uses setAutoEnterEnabled).
+        if ((autoPiP || isStreaming) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             enterPiPMode()
         }
     }

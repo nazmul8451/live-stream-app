@@ -401,7 +401,13 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     LiveStreamServiceBridge.initialize((pipState) {
       isInPiP.value = pipState;
       debugPrint("📱 [AgoraLiveController] PiP state changed: $pipState");
+      // Back from PiP: make sure the host keeps publishing video.
+      if (!pipState && isHost.value && isCameraOn.value) {
+        engine?.muteLocalVideoStream(false);
+      }
     });
+    // One live session at a time: PiP on Home only while it is active.
+    ever<bool>(isLive, (live) => LiveStreamServiceBridge.setAutoPiP(live));
   }
   // ─────────────────────────────────────────────
   //  FETCH LIVE STREAMS (Discover page)
@@ -3490,10 +3496,13 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused) {
       debugPrint("📱 Host app paused - starting foreground service...");
       LiveStreamServiceBridge.startLiveService();
-      // Mute local video preview during backgrounding if not in PiP
-      if (!isInPiP.value) {
-        engine?.muteLocalVideoStream(true);
-      }
+      // PiP state arrives a moment after `paused`; only stop sending video if
+      // the app really went to the background (not into PiP).
+      Future.delayed(const Duration(milliseconds: 600), () {
+        if (!isInPiP.value && isLive.value && isHost.value) {
+          engine?.muteLocalVideoStream(true);
+        }
+      });
     } else if (state == AppLifecycleState.resumed) {
       debugPrint("📱 Host app resumed - stopping foreground service...");
       LiveStreamServiceBridge.stopLiveService();

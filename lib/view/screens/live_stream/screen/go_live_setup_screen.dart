@@ -361,7 +361,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
       final pStartingBid = double.tryParse(_startingBidController.text) ?? 100;
       final pBidIncrement = double.tryParse(_bidIncrementController.text) ?? 5;
 
-      final ctrl = Get.put(AgoraLiveController(), permanent: true);
+      final ctrl = Get.find<AgoraLiveController>();
       final success = await ctrl.startStream(
         title: title,
         description: _descController.text.trim(),

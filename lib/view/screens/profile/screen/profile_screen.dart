@@ -2523,7 +2523,7 @@ class ProfileScreen extends GetView<ProfileController> {
                         final agoraCtrl = Get.find<AgoraLiveController>();
                         agoraCtrl.startScheduledStream(streamId, showData: show);
                       } else {
-                        final agoraCtrl = Get.put(AgoraLiveController());
+                        final agoraCtrl = Get.find<AgoraLiveController>();
                         agoraCtrl.startScheduledStream(streamId, showData: show);
                       }
                     },

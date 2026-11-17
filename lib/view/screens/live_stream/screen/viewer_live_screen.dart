@@ -41,8 +41,8 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
         setState(() => _isTyping = _chatFocus.hasFocus);
       }
     });
-    ctrl = Get.put(AgoraLiveController(), permanent: true);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    ctrl = Get.find<AgoraLiveController>();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (SharePrefsHelper.isGuest || SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isEmpty) {
         Get.back();
         AuthGuard.showAuthPrompt(
@@ -59,6 +59,16 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
       if (ctrl.isLive.value && ctrl.isHost.value) {
         Get.offNamed(AppRoute.hostLive);
         return;
+      }
+      // Coming back from the mini player / PiP: keep the existing session.
+      final incomingId = (widget.streamData['_id'] ?? widget.streamData['id'] ?? widget.streamData['streamId'] ?? '').toString();
+      if (ctrl.isLive.value && !ctrl.isHost.value && incomingId.isNotEmpty && incomingId == ctrl.streamId.value) {
+        ctrl.isMinimized.value = false;
+        return;
+      }
+      // Switching to a different stream: leave the previous one cleanly first.
+      if (ctrl.isLive.value && !ctrl.isHost.value && ctrl.streamId.value.isNotEmpty && incomingId != ctrl.streamId.value) {
+        await ctrl.leaveStream();
       }
       ctrl.joinAsViewer(widget.streamData);
     });
@@ -132,6 +142,12 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
               }),
             ),
 
+            // In Android PiP only the video stays visible.
+            Positioned.fill(
+              child: Obx(() => Offstage(
+                offstage: ctrl.isInPiP.value,
+                child: Stack(
+                  children: [
             // ── Gradient overlay
             Positioned.fill(
               child: DecoratedBox(
@@ -485,6 +501,10 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
               if (!ctrl.isOutbid.value) return const SizedBox.shrink();
               return _buildOutbidBanner(ctrl);
             }),
+                  ],
+                ),
+              )),
+            ),
           ],
         ),
       ),
