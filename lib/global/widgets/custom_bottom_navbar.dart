@@ -69,12 +69,12 @@ class CustomBottomNavbar extends StatelessWidget {
           // 3. Center Sell Button
           _sellNavItem(context),
 
-          // 4. Messenger (with Badge)
+          // 4. Message (with Badge)
           _navItem(
             controller: controller,
             index: 2,
             iconPath: "assets/icons/Messg-navbar.svg",
-            label: "Messenger",
+            label: "Message",
             isMessagesTab: true,
           ),
 

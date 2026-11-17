@@ -203,6 +203,54 @@ class PurchasesScreen extends GetView<PurchasesController> {
                     Text(order.curator, style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 14.sp, fontWeight: FontWeight.w700)),
                     SizedBox(height: 6.h),
                     Text(order.date, style: TextStyle(color: Colors.white24, fontSize: 13.sp, fontWeight: FontWeight.w500)),
+                    if (order.spinWheelPrize != null && order.spinWheelPrize!.isNotEmpty) ...[
+                      SizedBox(height: 6.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6584).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6.r),
+                          border: Border.all(color: const Color(0xFFFF6584).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.casino_rounded, color: const Color(0xFFFF6584), size: 12.sp),
+                            SizedBox(width: 4.w),
+                            Flexible(
+                              child: Text(
+                                "Spin Prize: ${order.spinWheelPrize}",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: const Color(0xFFFF6584), fontSize: 11.sp, fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (order.isGiveaway) ...[
+                      SizedBox(height: 6.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFB800).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6.r),
+                          border: Border.all(color: const Color(0xFFFFB800).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.card_giftcard_rounded, color: const Color(0xFFFFB800), size: 12.sp),
+                            SizedBox(width: 4.w),
+                            Text(
+                              "Official Giveaway Item 🎁",
+                              style: TextStyle(color: const Color(0xFFFFB800), fontSize: 11.sp, fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

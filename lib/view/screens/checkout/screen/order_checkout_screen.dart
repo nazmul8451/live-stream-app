@@ -95,7 +95,7 @@ class OrderCheckoutScreen extends StatelessWidget {
             ),
           );
         }),
-        bottomNavigationBar: _buildBottomPayBar(controller),
+        bottomNavigationBar: SafeArea(child: _buildBottomPayBar(controller)),
       ),
     );
   }

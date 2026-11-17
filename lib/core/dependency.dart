@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import '../data/services/api_client.dart';
 import '../data/services/deep_link_service.dart';
+import '../data/services/shorebird_service.dart';
 import '../data/services/socket_service.dart';
 import '../view/screens/live_stream/controller/agora_live_controller.dart';
 
@@ -10,6 +11,7 @@ class DependencyInjection {
     Get.lazyPut(() => SocketService(), fenix: true);
     Get.put(AgoraLiveController(), permanent: true); // one live session app-wide
     Get.put(DeepLinkService(), permanent: true);
+    Get.put(ShorebirdService(), permanent: true);
   }
 }
 

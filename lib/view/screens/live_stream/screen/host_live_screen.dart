@@ -1,6 +1,5 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show listEquals;
 import '../../../../data/helpers/api_list.dart';
 import 'package:flutter/cupertino.dart' show CupertinoSwitch;
 import 'dart:math' as math;
@@ -14,10 +13,10 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/helpers/product_cache.dart';
 import '../../../../data/services/api_client.dart';
 import '../../profile/controller/profile_controller.dart';
-import '../../home/controller/home_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 import 'package:live_stream_app/view/screens/live_stream/widgets/live_spin_wheel.dart';
+import 'package:live_stream_app/view/screens/live_stream/widgets/live_tip_banner.dart';
 import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class HostLiveScreen extends StatefulWidget {
@@ -444,7 +443,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   }),
                   SizedBox(height: 10.h),
                   _sideButton(Icons.stars_rounded, const Color(0xFFFFB800), onTap: () {
-                    _showLiveItemManagerSheet(); // pick the prize item first
+                    _showLiveGiveawayManagerSheet();
                   }),
                   SizedBox(height: 10.h),
                   _sideButton(Icons.receipt_long_rounded, const Color(0xFF00D2FF), onTap: () {
@@ -482,6 +481,22 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
             Obx(() {
               if (ctrl.showWinnerOverlay.value) {
                 return _buildWinnerOverlay();
+              }
+              return const SizedBox.shrink();
+            }),
+
+            // ── Tip Celebration Banner Overlay (Feature 5)
+            Obx(() {
+              if (ctrl.showTipBanner.value && ctrl.latestTip.isNotEmpty) {
+                return Positioned(
+                  top: 70.h,
+                  left: 0,
+                  right: 0,
+                  child: LiveTipBanner(
+                    tip: ctrl.latestTip,
+                    onDismiss: () => ctrl.showTipBanner.value = false,
+                  ),
+                );
               }
               return const SizedBox.shrink();
             }),
@@ -715,69 +730,6 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   "Continue Hosting Stream",
                   style: TextStyle(color: Colors.white38, fontSize: 13.sp, fontWeight: FontWeight.w700),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _confirmGiveawayDraw(AgoraLiveController ctrl) {
-    Get.dialog(
-      Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
-        backgroundColor: const Color(0xFF1E1E2C),
-        child: Padding(
-          padding: EdgeInsets.all(24.r),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.all(16.r),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(colors: [Color(0xFFFFB800), Color(0xFFFF8B52)]),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.stars_rounded, color: Colors.white, size: 36.sp),
-              ),
-              SizedBox(height: 16.h),
-              Text(
-                "Draw Giveaway Winner?",
-                style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900),
-              ),
-              SizedBox(height: 10.h),
-              Text(
-                "This will trigger the real-time spin wheel and broadcast a live random winner from the enrolled pool to all viewers in this stream.",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white60, fontSize: 13.sp, height: 1.4),
-              ),
-              SizedBox(height: 24.h),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Get.back(),
-                      child: Text("Cancel", style: TextStyle(color: Colors.white60, fontSize: 14.sp, fontWeight: FontWeight.w700)),
-                    ),
-                  ),
-                  SizedBox(width: 12.w),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Get.back();
-                        ctrl.drawGiveawayWinner();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFB800),
-                        foregroundColor: Colors.black,
-                        padding: EdgeInsets.symmetric(vertical: 14.h),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
-                      ),
-                      child: Text("Spin & Draw 🎲", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -2542,13 +2494,15 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
   }
 
   // ─── LIVE ITEM MANAGER (Task 10) ──────────────────────────
-  void _showLiveItemManagerSheet() {
-    final selectedTabIndex = 0.obs;
+  void _showLiveItemManagerSheet({int initialTabIndex = 0, bool defaultIsGiveaway = false}) {
+    final selectedTabIndex = initialTabIndex.obs;
 
     // New Item Form Controllers
     final titleController = TextEditingController();
     final priceController = TextEditingController();
-    final isGiveaway = false.obs;
+    final isGiveaway = defaultIsGiveaway.obs;
+    final isMultiSelect = false.obs;
+    final selectedItems = <Map<String, dynamic>>[].obs;
     // Client spec: the 16 AREIS marketplace categories (backend resolves by name)
     const categories = [
       "Trading Cards & TCG",
@@ -2959,180 +2913,542 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     );
                   }
 
-                  return ListView.builder(
-                    itemCount: inventoryList.length,
-                    physics: const BouncingScrollPhysics(),
-                    itemBuilder: (context, i) {
-                      final item = inventoryList[i];
-                      final title = item['title'] ?? item['name'] ?? 'Product';
-                      final category = item['category'] ?? 'Item';
-                      final price = item['buyNowPrice'] ?? item['price'] ?? item['startingBid'] ?? 0;
-                      final image = (item['images'] is List && (item['images'] as List).isNotEmpty)
-                          ? item['images'][0].toString()
-                          : (item['image'] ?? '');
-                      final pid = (item['_id'] ?? item['id'] ?? '').toString();
-
-                      return Container(
-                        margin: EdgeInsets.only(bottom: 10.h),
-                        padding: EdgeInsets.all(10.r),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF161B2E),
-                          borderRadius: BorderRadius.circular(14.r),
-                          border: Border.all(color: const Color(0xFF22283F)),
-                        ),
+                  return Column(
+                    children: [
+                      // Multi-Select Header Bar
+                      Obx(() => Container(
+                        padding: EdgeInsets.symmetric(horizontal: 4.w, vertical: 4.h),
+                        margin: EdgeInsets.only(bottom: 8.h),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Container(
-                              width: 50.r,
-                              height: 50.r,
-                              clipBehavior: Clip.antiAlias,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1E2640),
-                                borderRadius: BorderRadius.circular(10.r),
-                              ),
-                              child: image.isNotEmpty
-                                  ? Image.network(
-                                      image.startsWith('http') ? image : "${ApiUrl.imageBaseUrl}${image.startsWith('/') ? image : '/$image'}",
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => Icon(Icons.image, color: Colors.white24, size: 20.sp),
-                                    )
-                                  : Icon(Icons.image, color: Colors.white24, size: 20.sp),
+                            Text(
+                              isMultiSelect.value
+                                  ? "${selectedItems.length} selected"
+                                  : "Tap to manage or select multiple",
+                              style: TextStyle(color: Colors.white60, fontSize: 11.5.sp, fontWeight: FontWeight.w600),
                             ),
-                            SizedBox(width: 10.w),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    title,
-                                    style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w700),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  SizedBox(height: 3.h),
-                                  Text(
-                                    "$category • \$$price",
-                                    style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(width: 8.w),
-                            // Add to Show (visible to viewers without auctioning yet)
-                            Obx(() {
-                              final inShow = ctrl.streamInventoryItems
-                                  .any((e) => (e['_id'] ?? e['id']).toString() == pid);
-                              return GestureDetector(
-                                onTap: inShow ? null : () => ctrl.addExistingItemToStream(item),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                                  decoration: BoxDecoration(
-                                    color: inShow ? const Color(0xFF10B981).withValues(alpha: 0.15) : const Color(0xFF10B981),
-                                    borderRadius: BorderRadius.circular(8.r),
-                                  ),
-                                  child: Icon(
-                                    inShow ? Icons.check_rounded : Icons.add_rounded,
-                                    color: inShow ? const Color(0xFF10B981) : Colors.white,
-                                    size: 14.sp,
-                                  ),
-                                ),
-                              );
-                            }),
-                            SizedBox(width: 6.w),
-                            // Auction Button
-                            GestureDetector(
+                            InkWell(
                               onTap: () {
-                                Get.back();
-                                _showStartNewAuctionSheet(preselect: Map<String, dynamic>.from(item));
+                                isMultiSelect.value = !isMultiSelect.value;
+                                if (!isMultiSelect.value) selectedItems.clear();
                               },
+                              borderRadius: BorderRadius.circular(8.r),
                               child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF222845),
+                                  color: isMultiSelect.value ? const Color(0xFFFFB800).withValues(alpha: 0.2) : const Color(0xFF1E2640),
                                   borderRadius: BorderRadius.circular(8.r),
-                                  border: Border.all(color: const Color(0xFF323D66)),
+                                  border: Border.all(color: isMultiSelect.value ? const Color(0xFFFFB800) : Colors.white12),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.gavel_rounded, color: const Color(0xFF8B9BFF), size: 12.sp),
+                                    Icon(
+                                      isMultiSelect.value ? Icons.check_circle_rounded : Icons.checklist_rounded,
+                                      color: isMultiSelect.value ? const Color(0xFFFFB800) : Colors.white70,
+                                      size: 14.sp,
+                                    ),
                                     SizedBox(width: 4.w),
-                                    Text("Auction", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w800)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 6.w),
-                            // Giveaway Button
-                            GestureDetector(
-                              onTap: () {
-                                Get.back();
-                                Get.dialog(
-                                  Dialog(
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-                                    backgroundColor: const Color(0xFF1E1E2C),
-                                    child: Padding(
-                                      padding: EdgeInsets.all(20.r),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.stars_rounded, color: const Color(0xFFFFB800), size: 40.sp),
-                                          SizedBox(height: 12.h),
-                                          Text("Run as Giveaway Prize? 🎁", style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900)),
-                                          SizedBox(height: 8.h),
-                                          Text("This will broadcast '$title' as the active giveaway prize and draw a lucky winner!", textAlign: TextAlign.center, style: TextStyle(color: Colors.white60, fontSize: 12.sp)),
-                                          SizedBox(height: 20.h),
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: TextButton(onPressed: () => Get.back(), child: const Text("Cancel", style: TextStyle(color: Colors.white60))),
-                                              ),
-                                              Expanded(
-                                                child: ElevatedButton(
-                                                  onPressed: () {
-                                                    Get.back();
-                                                    ctrl.runItemGiveaway(itemTitle: title, productId: pid, itemImage: image);
-                                                  },
-                                                  style: ElevatedButton.styleFrom(
-                                                    backgroundColor: const Color(0xFFFFB800),
-                                                    foregroundColor: Colors.black,
-                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                                                  ),
-                                                  child: const Text("Run Giveaway", style: TextStyle(fontWeight: FontWeight.bold)),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
+                                    Text(
+                                      isMultiSelect.value ? "Done" : "Select Multiple",
+                                      style: TextStyle(
+                                        color: isMultiSelect.value ? const Color(0xFFFFB800) : Colors.white70,
+                                        fontSize: 11.sp,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF332612),
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  border: Border.all(color: const Color(0xFFFFB800).withValues(alpha: 0.5)),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.card_giftcard_rounded, color: const Color(0xFFFFB800), size: 12.sp),
-                                    SizedBox(width: 4.w),
-                                    Text("Giveaway", style: TextStyle(color: const Color(0xFFFFB800), fontSize: 10.5.sp, fontWeight: FontWeight.w800)),
                                   ],
                                 ),
                               ),
                             ),
                           ],
                         ),
-                      );
-                    },
+                      )),
+
+                      // Inventory List
+                      Expanded(
+                        child: Obx(() => ListView.builder(
+                          itemCount: inventoryList.length,
+                          physics: const BouncingScrollPhysics(),
+                          itemBuilder: (context, i) {
+                            final item = inventoryList[i];
+                            final title = item['title'] ?? item['name'] ?? 'Product';
+                            final category = item['category'] ?? 'Item';
+                            final price = item['buyNowPrice'] ?? item['price'] ?? item['startingBid'] ?? 0;
+                            final image = (item['images'] is List && (item['images'] as List).isNotEmpty)
+                                ? item['images'][0].toString()
+                                : (item['image'] ?? '');
+                            final pid = (item['_id'] ?? item['id'] ?? '').toString();
+                            final isSelected = selectedItems.any((e) => (e['_id'] ?? e['id']).toString() == pid);
+
+                            return Obx(() {
+                              final inShow = ctrl.streamInventoryItems.any((e) => (e['_id'] ?? e['id']).toString() == pid);
+                              final isGiveawayItem = ctrl.streamInventoryItems.any((e) => (e['_id'] ?? e['id']).toString() == pid && e['isGiveaway'] == true) || item['isGiveaway'] == true;
+
+                              return GestureDetector(
+                                onTap: isMultiSelect.value
+                                    ? () {
+                                        if (isSelected) {
+                                          selectedItems.removeWhere((e) => (e['_id'] ?? e['id']).toString() == pid);
+                                        } else {
+                                          selectedItems.add(item);
+                                        }
+                                      }
+                                    : null,
+                                child: Container(
+                                  margin: EdgeInsets.only(bottom: 10.h),
+                                  padding: EdgeInsets.all(10.r),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? const Color(0xFF232A45) : const Color(0xFF161B2E),
+                                    borderRadius: BorderRadius.circular(14.r),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xFFFFB800)
+                                          : (isGiveawayItem ? const Color(0xFFFFB800).withValues(alpha: 0.5) : const Color(0xFF22283F)),
+                                      width: isSelected ? 1.5 : 1.0,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      if (isMultiSelect.value) ...[
+                                        Icon(
+                                          isSelected ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                                          color: isSelected ? const Color(0xFFFFB800) : Colors.white38,
+                                          size: 20.sp,
+                                        ),
+                                        SizedBox(width: 8.w),
+                                      ],
+                                      Container(
+                                        width: 50.r,
+                                        height: 50.r,
+                                        clipBehavior: Clip.antiAlias,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1E2640),
+                                          borderRadius: BorderRadius.circular(10.r),
+                                        ),
+                                        child: image.isNotEmpty
+                                            ? Image.network(
+                                                image.startsWith('http') ? image : "${ApiUrl.imageBaseUrl}${image.startsWith('/') ? image : '/$image'}",
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (_, __, ___) => Icon(Icons.image, color: Colors.white24, size: 20.sp),
+                                              )
+                                            : Icon(Icons.image, color: Colors.white24, size: 20.sp),
+                                      ),
+                                      SizedBox(width: 10.w),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              title,
+                                              style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w700),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            SizedBox(height: 3.h),
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  "$category • \$$price",
+                                                  style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w600),
+                                                ),
+                                                if (isGiveawayItem) ...[
+                                                  SizedBox(width: 6.w),
+                                                  Container(
+                                                    padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.5.h),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(0xFFFFB800).withValues(alpha: 0.2),
+                                                      borderRadius: BorderRadius.circular(4.r),
+                                                    ),
+                                                    child: Text(
+                                                      "GIVEAWAY 🎁",
+                                                      style: TextStyle(color: const Color(0xFFFFB800), fontSize: 9.sp, fontWeight: FontWeight.w900),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (!isMultiSelect.value) ...[
+                                        SizedBox(width: 6.w),
+                                        // Add to Show (visible to viewers)
+                                        GestureDetector(
+                                          onTap: inShow ? null : () => ctrl.addExistingItemToStream(item),
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                                            decoration: BoxDecoration(
+                                              color: inShow ? const Color(0xFF10B981).withValues(alpha: 0.15) : const Color(0xFF10B981),
+                                              borderRadius: BorderRadius.circular(8.r),
+                                            ),
+                                            child: Icon(
+                                              inShow ? Icons.check_rounded : Icons.add_rounded,
+                                              color: inShow ? const Color(0xFF10B981) : Colors.white,
+                                              size: 14.sp,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 6.w),
+                                        // Auction Button
+                                        GestureDetector(
+                                          onTap: () {
+                                            Get.back();
+                                            _showStartNewAuctionSheet(preselect: Map<String, dynamic>.from(item));
+                                          },
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF222845),
+                                              borderRadius: BorderRadius.circular(8.r),
+                                              border: Border.all(color: const Color(0xFF323D66)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.gavel_rounded, color: const Color(0xFF8B9BFF), size: 12.sp),
+                                                SizedBox(width: 4.w),
+                                                Text("Auction", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w800)),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 6.w),
+                                        // Giveaway Spot Button
+                                        GestureDetector(
+                                          onTap: () => ctrl.toggleGiveawaySpot(item),
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                                            decoration: BoxDecoration(
+                                              color: isGiveawayItem ? const Color(0xFFFFB800) : const Color(0xFF332612),
+                                              borderRadius: BorderRadius.circular(8.r),
+                                              border: Border.all(color: const Color(0xFFFFB800).withValues(alpha: 0.5)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  isGiveawayItem ? Icons.check_rounded : Icons.card_giftcard_rounded,
+                                                  color: isGiveawayItem ? Colors.black : const Color(0xFFFFB800),
+                                                  size: 12.sp,
+                                                ),
+                                                SizedBox(width: 4.w),
+                                                Text(
+                                                  isGiveawayItem ? "Assigned" : "Giveaway",
+                                                  style: TextStyle(
+                                                    color: isGiveawayItem ? Colors.black : const Color(0xFFFFB800),
+                                                    fontSize: 10.5.sp,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              );
+                            });
+                          },
+                        )),
+                      ),
+
+                      // Multi-select Bottom Action Bar
+                      Obx(() {
+                        if (!isMultiSelect.value || selectedItems.isEmpty) return const SizedBox.shrink();
+                        return Container(
+                          padding: EdgeInsets.only(top: 10.h),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () async {
+                                    await ctrl.designateInventoryItems(selectedItems.toList(), isGiveaway: true);
+                                    selectedItems.clear();
+                                    isMultiSelect.value = false;
+                                  },
+                                  icon: Icon(Icons.card_giftcard_rounded, size: 16.sp),
+                                  label: Text(
+                                    "Set as Giveaways (${selectedItems.length}) 🎁",
+                                    style: TextStyle(fontSize: 11.5.sp, fontWeight: FontWeight.w900),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFFB800),
+                                    foregroundColor: Colors.black,
+                                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: () async {
+                                    await ctrl.designateInventoryItems(selectedItems.toList(), isGiveaway: false);
+                                    selectedItems.clear();
+                                    isMultiSelect.value = false;
+                                  },
+                                  icon: Icon(Icons.inventory_2_rounded, size: 16.sp),
+                                  label: Text(
+                                    "Add to Show (${selectedItems.length}) 📦",
+                                    style: TextStyle(fontSize: 11.5.sp, fontWeight: FontWeight.w900),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF10B981),
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(vertical: 12.h),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
                   );
                 }
               }),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
+    );
+  }
+
+  // ─── DEDICATED LIVE GIVEAWAY MANAGER SHEET (Feature 2) ────────────────
+  void _showLiveGiveawayManagerSheet() {
+    Get.bottomSheet(
+      Container(
+        height: 580.h,
+        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 20.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0F111D),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+          border: Border.all(color: const Color(0xFFFFB800).withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            Center(
+              child: Container(
+                width: 44.w,
+                height: 4.h,
+                margin: EdgeInsets.only(bottom: 14.h),
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8.r),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFB800).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  child: Icon(Icons.stars_rounded, color: const Color(0xFFFFB800), size: 20.sp),
+                ),
+                SizedBox(width: 10.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Live Giveaway Spots 🎁",
+                      style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                    ),
+                    Obx(() {
+                      final giveaways = ctrl.streamInventoryItems.where((e) => e['isGiveaway'] == true).toList();
+                      return Text(
+                        "${giveaways.length} active giveaway spot${giveaways.length == 1 ? '' : 's'}",
+                        style: TextStyle(color: const Color(0xFFFFB800), fontSize: 11.5.sp, fontWeight: FontWeight.w700),
+                      );
+                    }),
+                  ],
+                ),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Get.back(),
+                  icon: Icon(Icons.close_rounded, color: Colors.white60, size: 20.sp),
+                ),
+              ],
+            ),
+            SizedBox(height: 14.h),
+            Expanded(
+              child: Obx(() {
+                final giveaways = ctrl.streamInventoryItems.where((e) => e['isGiveaway'] == true).toList();
+                if (giveaways.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(20.r),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFB800).withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.card_giftcard_rounded, color: const Color(0xFFFFB800), size: 48.sp),
+                        ),
+                        SizedBox(height: 16.h),
+                        Text(
+                          "No Giveaway Spots Assigned Yet",
+                          style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                        ),
+                        SizedBox(height: 6.h),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20.w),
+                          child: Text(
+                            "Select products from your inventory to designate as official live giveaway prizes.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white54, fontSize: 12.sp, height: 1.4),
+                          ),
+                        ),
+                        SizedBox(height: 20.h),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Get.back();
+                            _showLiveItemManagerSheet(initialTabIndex: 1);
+                          },
+                          icon: Icon(Icons.add_circle_outline_rounded, size: 18.sp),
+                          label: Text("+ Assign Products from Inventory", style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFFB800),
+                            foregroundColor: Colors.black,
+                            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: giveaways.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                  itemBuilder: (context, idx) {
+                    final item = giveaways[idx];
+                    final title = item['title'] ?? item['name'] ?? 'Giveaway Item';
+                    final category = item['category'] ?? 'Item';
+                    final condition = item['condition'] ?? 'Near Mint';
+                    final pid = (item['_id'] ?? item['id'] ?? '').toString();
+                    final image = (item['images'] is List && (item['images'] as List).isNotEmpty)
+                        ? item['images'][0].toString()
+                        : (item['image'] ?? '');
+
+                    return Container(
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161B2E),
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(color: const Color(0xFFFFB800).withValues(alpha: 0.35)),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 54.r,
+                                height: 54.r,
+                                clipBehavior: Clip.antiAlias,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1E2640),
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                child: image.isNotEmpty
+                                    ? Image.network(
+                                        image.startsWith('http') ? image : "${ApiUrl.imageBaseUrl}${image.startsWith('/') ? image : '/$image'}",
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Icon(Icons.image, color: Colors.white24, size: 24.sp),
+                                      )
+                                    : Icon(Icons.card_giftcard_rounded, color: const Color(0xFFFFB800), size: 24.sp),
+                              ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFB800).withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(6.r),
+                                      ),
+                                      child: Text(
+                                        "GIVEAWAY SPOT #${idx + 1} 🎁",
+                                        style: TextStyle(color: const Color(0xFFFFB800), fontSize: 9.5.sp, fontWeight: FontWeight.w900),
+                                      ),
+                                    ),
+                                    SizedBox(height: 4.h),
+                                    Text(
+                                      title,
+                                      style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    SizedBox(height: 2.h),
+                                    Text(
+                                      "$category • $condition • FREE",
+                                      style: TextStyle(color: Colors.white54, fontSize: 11.sp),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => ctrl.toggleGiveawaySpot(item),
+                                icon: Icon(Icons.remove_circle_outline_rounded, color: Colors.redAccent.withValues(alpha: 0.8), size: 20.sp),
+                                tooltip: "Remove Spot",
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 10.h),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 38.h,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Get.back();
+                                ctrl.runItemGiveaway(itemTitle: title, productId: pid, itemImage: image);
+                              },
+                              icon: Icon(Icons.stars_rounded, color: Colors.black, size: 16.sp),
+                              label: Text("Run This Giveaway 🎲", style: TextStyle(color: Colors.black, fontSize: 12.5.sp, fontWeight: FontWeight.w900)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFFFB800),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+            SizedBox(height: 10.h),
+            SizedBox(
+              width: double.infinity,
+              height: 46.h,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Get.back();
+                  _showLiveItemManagerSheet(initialTabIndex: 1);
+                },
+                icon: Icon(Icons.add_rounded, color: const Color(0xFFFFB800), size: 18.sp),
+                label: Text("+ Add More Giveaway Spots from Inventory", style: TextStyle(color: const Color(0xFFFFB800), fontSize: 12.5.sp, fontWeight: FontWeight.w800)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: const Color(0xFFFFB800).withValues(alpha: 0.5)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                ),
+              ),
             ),
           ],
         ),
@@ -3236,7 +3552,24 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                             SizedBox(height: 4.h),
                             Text(
                               "$count items ($paidCount paid)",
-                              style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w800),
+                              style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Container(height: 36.h, width: 1, color: const Color(0xFF2E3B66)),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(left: 14.w),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("TIPS EARNED", style: TextStyle(color: const Color(0xFFFFB800), fontSize: 10.sp, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                            SizedBox(height: 4.h),
+                            Text(
+                              "\$${ctrl.totalTipsReceived.value.toStringAsFixed(2)}",
+                              style: TextStyle(color: const Color(0xFFFFD700), fontSize: 15.sp, fontWeight: FontWeight.w900),
                             ),
                           ],
                         ),

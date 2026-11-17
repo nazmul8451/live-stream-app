@@ -124,8 +124,6 @@ class MessageDetailsController extends GetxController {
     // 4. Send API call to backend to mark read in DB
     try {
       _apiClient.patchData('${ApiUrl.chat}/${chatId.value}/read', {});
-      _apiClient.patchData('${ApiUrl.message}/read/${chatId.value}', {});
-      _apiClient.postData('${ApiUrl.chat}/read', {'chatId': chatId.value});
     } catch (_) {}
   }
 

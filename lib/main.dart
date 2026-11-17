@@ -8,6 +8,7 @@ import 'core/app_route.dart';
 import 'core/dependency.dart';
 import 'data/helpers/shared_prefe.dart';
 import 'data/services/push_notification_service.dart';
+import 'data/services/shorebird_service.dart';
 import 'global/widgets/floating_live_stream_overlay.dart';
 import 'view/screens/live_stream/controller/agora_live_controller.dart';
 
@@ -76,6 +77,13 @@ void main() async {
     await PushNotificationService.instance.init();
   } catch (e) {
     debugPrint("⚠️ PushNotificationService init error: $e");
+  }
+
+  // 7. Initialize Shorebird Code Push Service
+  try {
+    await ShorebirdService.instance.init();
+  } catch (e) {
+    debugPrint("⚠️ ShorebirdService init error: $e");
   }
 
   String initialRoute = AppRoute.onboarding;

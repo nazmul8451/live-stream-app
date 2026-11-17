@@ -28,6 +28,8 @@ class PurchaseModel {
   final Map<String, dynamic>? shippingAddress;
   final String? rawOrderId;
   final String? shippingLabelUrl;
+  final String? spinWheelPrize;
+  final bool isGiveaway;
 
   PurchaseModel({
     required this.id,
@@ -54,5 +56,7 @@ class PurchaseModel {
     this.shippingAddress,
     this.rawOrderId,
     this.shippingLabelUrl,
+    this.spinWheelPrize,
+    this.isGiveaway = false,
   });
 }

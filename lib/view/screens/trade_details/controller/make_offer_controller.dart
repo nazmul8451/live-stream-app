@@ -146,7 +146,9 @@ class MakeOfferController extends GetxController {
     try {
       final response = await _apiClient.getData(ApiUrl.myProducts);
       if (response.statusCode == 200) {
-        final list = extractApiList(jsonDecode(response.body)).where(isProductAvailable).toList();
+        final list = extractApiList(jsonDecode(response.body))
+            .where((p) => isProductAvailable(p) && (p['allowTrade'] == true))
+            .toList();
         {
           userProducts.assignAll(list);
           if (list.isNotEmpty) {
@@ -264,6 +266,7 @@ class MakeOfferController extends GetxController {
             "estValue": estVal,
             "buyNowPrice": estVal,
             "allowTrade": true,
+            "isTradeOnly": true,
             "sellerId": senderId,
             "images": imageUrl.isNotEmpty ? [imageUrl] : [],
           };

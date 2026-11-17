@@ -1,0 +1,7 @@
+# Shorebird app shared by the AREIS iOS and Android releases.
+# This public app ID belongs to the existing Culture Cards app.
+app_id: c1a409df-a90e-44eb-a146-6662820a25fd
+
+# Download available patches in the background when the app starts.
+# A downloaded patch takes effect on a subsequent app restart.
+auto_update: true

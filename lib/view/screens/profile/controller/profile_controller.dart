@@ -428,11 +428,30 @@ class ProfileController extends GetxController {
     }
   }
 
+  void resetProfileState() {
+    name.value = "";
+    username.value = "";
+    profileImageUrl.value = "";
+    description.value = "";
+    purchasesList.clear();
+    sellerVerified.value = false;
+    role.value = "user";
+    rating.value = 0.0;
+    activeCount.value = 0;
+    soldCount.value = 0;
+    followersCount.value = 0;
+    followingCount.value = 0;
+    userListings.clear();
+    notificationsList.clear();
+  }
+
   Future<void> logout() async {
     try {
       await PushNotificationService.instance.clearDeviceToken();
     } catch (_) {}
+    resetProfileState();
     await SharePrefsHelper.clear();
+    Get.delete<ProfileController>(force: true);
     Get.offAllNamed(AppRoute.login);
   }
 

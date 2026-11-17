@@ -19,10 +19,10 @@ class OrderCheckoutController extends GetxController {
   // Address Controllers
   final fullNameController = TextEditingController();
   final phoneController = TextEditingController();
-  final streetController = TextEditingController(text: "123 Broadway St");
-  final cityController = TextEditingController(text: "New York");
-  final stateController = TextEditingController(text: "NY");
-  final zipCodeController = TextEditingController(text: "10001");
+  final streetController = TextEditingController();
+  final cityController = TextEditingController();
+  final stateController = TextEditingController();
+  final zipCodeController = TextEditingController();
   final countryController = TextEditingController(text: "USA");
 
   // Pricing
@@ -166,16 +166,27 @@ class OrderCheckoutController extends GetxController {
             final body1Tap = jsonDecode(res1Tap.body);
             final data1Tap = body1Tap['data'] is Map ? body1Tap['data'] : body1Tap;
             if (data1Tap['status'] == 'succeeded') {
-              await _createOrderRecordAndNotifySeller(
+              final orderCreated = await _createOrderRecordAndNotifySeller(
                   paymentIntentId: (data1Tap['paymentIntentId'] ?? data1Tap['id'])?.toString());
-              showAppSnackbar(
-                "Payment Successful! 🎉",
-                "1-Tap checkout completed with saved card! Redirecting to Purchases...",
-                backgroundColor: const Color(0xFF22C55E),
-                colorText: Colors.white,
-                snackPosition: SnackPosition.BOTTOM,
-                duration: const Duration(seconds: 4),
-              );
+              if (orderCreated) {
+                showAppSnackbar(
+                  "Payment Successful! 🎉",
+                  "1-Tap checkout completed with saved card! Redirecting to Purchases...",
+                  backgroundColor: const Color(0xFF22C55E),
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                  duration: const Duration(seconds: 4),
+                );
+              } else {
+                showAppSnackbar(
+                  "Order Pending",
+                  "Payment received with saved card, finalizing order record.",
+                  backgroundColor: Colors.orange,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                  duration: const Duration(seconds: 4),
+                );
+              }
               Get.offAllNamed(AppRoute.main);
               Get.toNamed(AppRoute.purchases);
               return;
@@ -282,16 +293,27 @@ class OrderCheckoutController extends GetxController {
       final intentId = (data['paymentIntentId']?.toString().isNotEmpty ?? false)
           ? data['paymentIntentId'].toString()
           : clientSecret.split('_secret_').first;
-      await _createOrderRecordAndNotifySeller(paymentIntentId: intentId);
+      final orderCreated = await _createOrderRecordAndNotifySeller(paymentIntentId: intentId);
 
-      showAppSnackbar(
-        "Payment Successful! 🎉",
-        "Your order has been placed and sent to the seller! Redirecting to Purchases...",
-        backgroundColor: const Color(0xFF22C55E),
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 4),
-      );
+      if (orderCreated) {
+        showAppSnackbar(
+          "Payment Successful! 🎉",
+          "Your order has been placed and sent to the seller! Redirecting to Purchases...",
+          backgroundColor: const Color(0xFF22C55E),
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 4),
+        );
+      } else {
+        showAppSnackbar(
+          "Order Pending",
+          "Payment was received! Finalizing your order record...",
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 4),
+        );
+      }
 
       Get.offAllNamed(AppRoute.main);
       Get.toNamed(AppRoute.purchases);
@@ -311,7 +333,7 @@ class OrderCheckoutController extends GetxController {
     }
   }
 
-  Future<void> _createOrderRecordAndNotifySeller({String? paymentIntentId}) async {
+  Future<bool> _createOrderRecordAndNotifySeller({String? paymentIntentId}) async {
     try {
       String userId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
       if (userId.isEmpty) {
@@ -337,6 +359,7 @@ class OrderCheckoutController extends GetxController {
         "productId": productId,
         if (sellerId.isNotEmpty) "sellerId": sellerId,
         if (userId.isNotEmpty) "buyerId": userId,
+        "purchaseType": "buy_now",
         "totalPaid": totalAmount.value,
         if (paymentIntentId != null && paymentIntentId.startsWith('pi_')) "paymentIntentId": paymentIntentId,
         "amountDetails": {
@@ -344,7 +367,8 @@ class OrderCheckoutController extends GetxController {
           "shipping": shippingFee.value,
           "taxes": estimatedTax.value,
           "processingFee": 0.0,
-          "authenticationFee": 0.0
+          "authenticationFee": 0.0,
+          "totalPaid": totalAmount.value,
         },
         "shippingAddress": {
           "fullName": fullNameController.text.trim(),
@@ -352,6 +376,7 @@ class OrderCheckoutController extends GetxController {
           "street": streetController.text.trim(),
           "city": cityController.text.trim(),
           "state": stateController.text.trim(),
+          "postalCode": zipCodeController.text.trim(),
           "zipCode": zipCodeController.text.trim(),
           "country": countryController.text.trim().isNotEmpty ? countryController.text.trim() : "USA"
         },
@@ -364,21 +389,25 @@ class OrderCheckoutController extends GetxController {
       final orderRes = await _apiClient.postData(ApiUrl.orders, orderPayload);
       if (orderRes.statusCode == 200 || orderRes.statusCode == 201) {
         Get.log("✅ Order created in database successfully.");
-      }
-
-      // Socket notification to seller
-      if (sellerId.isNotEmpty && Get.isRegistered<SocketService>()) {
-        try {
-          Get.find<SocketService>().socket?.emit('order_created', {
-            'sellerId': sellerId,
-            'productId': productId,
-            'totalPaid': totalAmount.value,
-            'buyerId': userId,
-          });
-        } catch (_) {}
+        // Socket notification to seller
+        if (sellerId.isNotEmpty && Get.isRegistered<SocketService>()) {
+          try {
+            Get.find<SocketService>().socket?.emit('order_created', {
+              'sellerId': sellerId,
+              'productId': productId,
+              'totalPaid': totalAmount.value,
+              'buyerId': userId,
+            });
+          } catch (_) {}
+        }
+        return true;
+      } else {
+        Get.log("❌ Order creation failed (${orderRes.statusCode}): ${orderRes.body}");
+        return false;
       }
     } catch (e) {
       Get.log("⚠️ Failed to create backend order record: $e");
+      return false;
     }
   }
 

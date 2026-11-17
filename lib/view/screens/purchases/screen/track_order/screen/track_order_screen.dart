@@ -542,6 +542,54 @@ class TrackOrderScreen extends StatelessWidget {
                     Text(controller.displayOrderId, style: TextStyle(color: const Color(0xFFAC8AFF), fontSize: 11.sp, fontWeight: FontWeight.w800)),
                     SizedBox(height: 4.h),
                     Text(controller.productTitle, style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900)),
+                    if (controller.spinWheelPrize.isNotEmpty) ...[
+                      SizedBox(height: 6.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6584).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6.r),
+                          border: Border.all(color: const Color(0xFFFF6584).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.casino_rounded, color: const Color(0xFFFF6584), size: 14.sp),
+                            SizedBox(width: 4.w),
+                            Flexible(
+                              child: Text(
+                                "Spin Prize: ${controller.spinWheelPrize} 🎲",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: const Color(0xFFFF6584), fontSize: 11.5.sp, fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (controller.isGiveaway) ...[
+                      SizedBox(height: 6.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFB800).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6.r),
+                          border: Border.all(color: const Color(0xFFFFB800).withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.card_giftcard_rounded, color: const Color(0xFFFFB800), size: 14.sp),
+                            SizedBox(width: 4.w),
+                            Text(
+                              "Official Giveaway Item 🎁",
+                              style: TextStyle(color: const Color(0xFFFFB800), fontSize: 11.5.sp, fontWeight: FontWeight.w800),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

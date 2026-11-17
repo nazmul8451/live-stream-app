@@ -154,16 +154,8 @@ class CreateTradeController extends GetxController {
   
   Future<void> fetchCategories() async {
     try {
-      Get.log("🔄 [fetchCategories] Fetching category from primary: /categories");
-      var response = await _apiClient.getData("/categories");
-      Get.log("🔄 [fetchCategories] /categories status code: ${response.statusCode}");
-
-      // Fallback: try singular /category if /categories fails
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        Get.log("🔄 [fetchCategories] /categories failed, trying fallback: ${ApiUrl.category}");
-        response = await _apiClient.getData(ApiUrl.categoryList);
-        Get.log("🔄 [fetchCategories] /category fallback status code: ${response.statusCode}");
-      }
+      Get.log("🔄 [fetchCategories] Fetching category from: ${ApiUrl.categoryList}");
+      var response = await _apiClient.getData(ApiUrl.categoryList);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         var decoded = jsonDecode(response.body);

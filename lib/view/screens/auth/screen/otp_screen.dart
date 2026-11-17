@@ -53,9 +53,10 @@ class OtpScreen extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 24.w),
-        child: Column(
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24.w),
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 20.h),
@@ -152,6 +153,7 @@ class OtpScreen extends StatelessWidget {
             SizedBox(height: 40.h),
           ],
         ),
+      ),
       ),
     );
   }

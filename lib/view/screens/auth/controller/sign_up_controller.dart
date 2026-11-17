@@ -215,16 +215,6 @@ class SignUpController extends GetxController {
         await SharePrefsHelper.setBool('pending_otp_from_forgot_password', false);
         await SharePrefsHelper.setBool('pending_otp_from_login', false);
 
-        // Immediately dispatch OTP email via resend-otp API
-        try {
-          await _apiClient.postData(ApiUrl.resendOtp, {
-            "email": email,
-            "authType": "createAccount",
-          });
-        } catch (e) {
-          Get.log("⚠️ [SignUp] Auto-resend OTP error: $e");
-        }
-
         if (Get.isRegistered<OtpController>()) {
           Get.find<OtpController>().email.value = email;
           Get.find<OtpController>().fromForgotPassword.value = false;

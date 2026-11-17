@@ -74,6 +74,12 @@ class ApiUrl {
   // Giveaway / Spin Wheel
   static const String drawGiveawayWinner = "/giveaway/draw-winner";
 
+  // Live Stream Tipping
+  static const String createTipIntent = "/tip/create-intent";
+  static const String confirmTip = "/tip/confirm";
+  static String streamTips(String streamId) => "/tip/stream/$streamId";
+  static const String mySellerTips = "/tip/my-tips";
+
   // Auctions / Live Streams
   static const String liveStreams = "/auctions/streams";
   static const String startStream = "/auctions/stream";

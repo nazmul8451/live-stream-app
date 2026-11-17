@@ -464,9 +464,10 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
               style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900)),
           centerTitle: true,
         ),
-        body: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
-          child: Column(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ─── MODE SELECTOR (Go Live vs Schedule Show) ───
@@ -891,6 +892,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
               SizedBox(height: 32.h),
             ],
           ),
+        ),
         ),
       ),
     );

@@ -156,6 +156,14 @@ class TrackOrderController extends GetxController {
   }
 
   // 3. Product info
+  String get spinWheelPrize {
+    final direct = orderData['spinWheelPrize']?.toString();
+    if (direct != null && direct.isNotEmpty) return direct;
+    return fallbackModel?.spinWheelPrize ?? '';
+  }
+
+  bool get isGiveaway => orderData['isGiveaway'] == true || fallbackModel?.isGiveaway == true;
+
   String get productTitle {
     final prod = orderData['productId'] ?? orderData['product'];
     if (prod is Map) return prod['title']?.toString() ?? prod['name']?.toString() ?? 'Product';

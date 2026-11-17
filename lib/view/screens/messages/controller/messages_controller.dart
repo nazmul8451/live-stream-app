@@ -34,6 +34,10 @@ class MessagesController extends GetxController {
       chatRooms.refresh();
     }
 
+    try {
+      _apiClient.patchData("${ApiUrl.chat}/$roomId/read", {});
+    } catch (_) {}
+
     _updateGlobalBadge();
   }
 
@@ -331,6 +335,13 @@ class MessagesController extends GetxController {
             final title = (item['title'] ?? "Notification").toString();
             final String rawType = (item['type'] ?? 'Alert').toString();
             final itemData = item['data'] is Map ? item['data'] : <String, dynamic>{};
+
+            // Exclude social follow alerts from Messages tab (Issue 14)
+            final String rawTypeLower = rawType.toLowerCase();
+            final String titleLower = title.toLowerCase();
+            if (rawTypeLower.contains('follow') || titleLower.contains('follow')) {
+              continue;
+            }
 
             // Extract product title/name if available
             String prodTitle = (item['productTitle'] ??

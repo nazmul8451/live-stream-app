@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'dart:async';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
@@ -298,6 +297,26 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   final RxString giveawayPrizeName = "".obs;
   final RxDouble giveawayDegreeIndex = 0.0.obs;
 
+  // Tipping System (Feature 5)
+  final RxBool showTipBanner = false.obs;
+  final RxMap<String, dynamic> latestTip = <String, dynamic>{}.obs;
+  final RxDouble totalTipsReceived = 0.0.obs;
+  final RxInt tipCountReceived = 0.obs;
+  final RxBool isSendingTip = false.obs;
+  final RxList<Map<String, dynamic>> savedCards = <Map<String, dynamic>>[].obs;
+  final RxString selectedPaymentMethodId = "".obs;
+  final RxBool isLoadingCards = false.obs;
+  Timer? _tipBannerTimer;
+
+  String get hostDisplayName {
+    final seller = activeStreamData['sellerId'] ?? activeStreamData['seller'] ?? activeStreamData['host'];
+    if (seller is Map) {
+      final name = (seller['fullName'] ?? seller['name'] ?? seller['username'] ?? '').toString().trim();
+      if (name.isNotEmpty) return name;
+    }
+    return "the host";
+  }
+
   // Stream Inventory & Bookmarks
   final RxList<Map<String, dynamic>> streamInventoryItems = <Map<String, dynamic>>[].obs;
   final RxBool isInventoryLoading = false.obs;
@@ -472,6 +491,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.on('spin-result', _handleSpinResultEvent);
       socketService.on('spin_result', _handleSpinResultEvent);
       socketService.on('giveaway-winner', _handleSpinResultEvent);
+      socketService.on('stream-tip', _handleStreamTipEvent);
       socketService.on('messageReceived', _handleSocketMessage);
       socketService.on('newMessage', _handleSocketMessage);
       socketService.on('new message', _handleSocketMessage);
@@ -864,6 +884,24 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
             );
           }
         }
+
+        // If no product is currently pinned, auto-switch active live card to newly added item (Issue 12)
+        if (currentProductId.value.isEmpty || resMap['pin'] == true) {
+          currentProductId.value = pid;
+          currentProductTitle.value = (prod['title'] ?? prod['name'] ?? '').toString();
+          final imgs = prod['images'];
+          if (imgs is List && imgs.isNotEmpty) {
+            currentProductImage.value = imgs[0]?.toString() ?? '';
+          } else if (prod['image'] != null) {
+            currentProductImage.value = prod['image'].toString();
+          }
+          final cat = prod['category'];
+          currentProductCategory.value = (cat is Map) ? (cat['name'] ?? cat['title'] ?? '').toString() : (cat?.toString() ?? '');
+          currentProductIsGiveaway.value = prod['isGiveaway'] == true;
+          final sBid = prod['startingBid'] ?? prod['buyNowPrice'] ?? prod['currentBid'] ?? 0;
+          currentBidPrice.value = double.tryParse(sBid.toString()) ?? 0.0;
+          auctionActive.value = true;
+        }
       }
     } catch (e) {
       debugPrint("❌ [AgoraLiveController] _handleStreamInventoryAddedEvent error: $e");
@@ -971,6 +1009,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.off('spin-result', _handleSpinResultEvent);
       socketService.off('spin_result', _handleSpinResultEvent);
       socketService.off('giveaway-winner', _handleSpinResultEvent);
+      socketService.off('stream-tip', _handleStreamTipEvent);
       socketService.off('messageReceived', _handleSocketMessage);
       socketService.off('newMessage', _handleSocketMessage);
       socketService.off('new message', _handleSocketMessage);
@@ -1658,17 +1697,17 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         auctionActive.value = true;
       }
 
-      // Check titles & images directly
+      // Check product titles & images directly (never fall back to stream show title/cover)
       if (currentProductTitle.value.isEmpty) {
-        final titleStr = activeStream['productTitle'] ?? fallbackStreamData['productTitle'] ?? activeStream['title'] ?? fallbackStreamData['title'];
+        final titleStr = activeStream['productTitle'] ?? fallbackStreamData['productTitle'];
         if (titleStr != null && titleStr.toString().isNotEmpty) {
           currentProductTitle.value = titleStr.toString();
           auctionActive.value = true;
         }
       }
 
-      if (currentProductImage.value.isEmpty) {
-        final imgStr = activeStream['productImage'] ?? fallbackStreamData['productImage'] ?? activeStream['image'] ?? fallbackStreamData['image'] ?? activeStream['coverImage'];
+      if (currentProductImage.value.isEmpty && currentProductTitle.value.isNotEmpty) {
+        final imgStr = activeStream['productImage'] ?? fallbackStreamData['productImage'];
         if (imgStr != null && imgStr.toString().isNotEmpty) {
           currentProductImage.value = imgStr.toString();
         }
@@ -2352,6 +2391,25 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       );
       debugPrint("✅ Agora channel joined: $channel");
       return true;
+    } on AgoraRtcException catch (e) {
+      debugPrint("⚠️ AgoraRtcException on joinChannel (${e.code}): ${e.message}");
+      if (e.code == -2) {
+        try {
+          await engine?.joinChannel(
+            token: token,
+            channelId: channel,
+            uid: 0,
+            options: ChannelMediaOptions(
+              clientRoleType: isHost ? ClientRoleType.clientRoleBroadcaster : ClientRoleType.clientRoleAudience,
+              channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+              autoSubscribeAudio: true,
+              autoSubscribeVideo: true,
+            ),
+          );
+          return true;
+        } catch (_) {}
+      }
+      return false;
     } catch (e) {
       debugPrint("❌ Agora init failed: $e");
       if (!isLocalVideoReady.value) {
@@ -2668,20 +2726,27 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   }
 
   /// Adds an item from the seller's inventory to the running show
-  /// (no new listing needed — client spec).
-  Future<bool> addExistingItemToStream(Map<String, dynamic> item) async {
+  /// (no new listing needed — client spec). Can designate as giveaway.
+  Future<bool> addExistingItemToStream(Map<String, dynamic> item, {bool isGiveaway = false}) async {
     final pid = (item['_id'] ?? item['id'] ?? '').toString();
     if (streamId.value.isEmpty || pid.isEmpty) return false;
     try {
       final res = await _apiClient.postData(
         ApiUrl.addStreamInventory(streamId.value),
-        {"productId": pid},
+        {"productId": pid, "isGiveaway": isGiveaway},
       );
       if (res.statusCode == 200 || res.statusCode == 201) {
-        if (!streamInventoryItems.any((e) => (e['_id'] ?? e['id']).toString() == pid)) {
-          streamInventoryItems.add(Map<String, dynamic>.from(item));
+        final existingIndex = streamInventoryItems.indexWhere((e) => (e['_id'] ?? e['id']).toString() == pid);
+        final updatedMap = Map<String, dynamic>.from(item)..['isGiveaway'] = isGiveaway;
+        if (existingIndex >= 0) {
+          streamInventoryItems[existingIndex] = updatedMap;
+        } else {
+          streamInventoryItems.add(updatedMap);
         }
-        _showLiveToast("Added to show 📦", "'${item['title'] ?? 'Item'}' is now visible to viewers.");
+        _showLiveToast(
+          isGiveaway ? "Giveaway Spot Added 🎁" : "Added to show 📦",
+          "'${item['title'] ?? 'Item'}' is now ${isGiveaway ? 'in the Giveaway section' : 'visible to viewers'}.",
+        );
         return true;
       }
       _showLiveToast("Couldn't add item", _serverMessage(res.body, "Please try again."), isError: true);
@@ -2689,6 +2754,27 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       _showLiveToast("Couldn't add item", "Network problem — please try again.", isError: true);
     }
     return false;
+  }
+
+  /// Designates multiple items from inventory as giveaway spots or show items
+  Future<int> designateInventoryItems(List<Map<String, dynamic>> items, {bool isGiveaway = true}) async {
+    int count = 0;
+    for (final item in items) {
+      final ok = await addExistingItemToStream(item, isGiveaway: isGiveaway);
+      if (ok) count++;
+    }
+    return count;
+  }
+
+  /// Toggle or remove giveaway designation on an item in the show
+  Future<void> toggleGiveawaySpot(Map<String, dynamic> item) async {
+    final pid = (item['_id'] ?? item['id'] ?? '').toString();
+    final idx = streamInventoryItems.indexWhere((e) => (e['_id'] ?? e['id']).toString() == pid);
+    if (idx >= 0) {
+      final current = streamInventoryItems[idx]['isGiveaway'] == true;
+      final target = !current;
+      await addExistingItemToStream(item, isGiveaway: target);
+    }
   }
 
   /// Extracts a human-readable message from an API error body.
@@ -3460,6 +3546,185 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     streamInventoryItems.clear();
     currentProductIsGiveaway.value = false;
     giveawayPrizeName.value = '';
+    showTipBanner.value = false;
+    totalTipsReceived.value = 0.0;
+    tipCountReceived.value = 0;
+  }
+
+  // ─── TIPPING SYSTEM (Feature 5) ──────────────────────────────────────────
+
+  void _handleStreamTipEvent(dynamic data) {
+    if (data == null) return;
+    try {
+      final tipMap = (data is String)
+          ? Map<String, dynamic>.from(jsonDecode(data))
+          : Map<String, dynamic>.from(data as Map);
+
+      triggerTipCelebration(tipMap);
+
+      final sender = (tipMap['sender'] is Map) ? tipMap['sender'] as Map : {};
+      final senderName = sender['name']?.toString() ?? tipMap['senderName']?.toString() ?? 'A Supporter';
+      final amount = double.tryParse(tipMap['amount']?.toString() ?? '0') ?? 0.0;
+      final msg = tipMap['message']?.toString() ?? '';
+
+      final chatLine = '💛 Tipped \$${amount.toStringAsFixed(2)}!${msg.isNotEmpty ? ' "$msg"' : ''}';
+      chatMessages.add({
+        "user": senderName,
+        "message": chatLine,
+        "isTip": "true",
+      });
+
+      // Fire celebratory floating hearts
+      for (int i = 0; i < 6; i++) {
+        Future.delayed(Duration(milliseconds: i * 150), () {
+          triggerFloatingHeart();
+        });
+      }
+    } catch (e) {
+      debugPrint("❌ [_handleStreamTipEvent] error: $e");
+    }
+  }
+
+  void triggerTipCelebration(Map<String, dynamic> tipData) {
+    latestTip.assignAll(tipData);
+    final amount = double.tryParse(tipData['amount']?.toString() ?? '0') ?? 0.0;
+    totalTipsReceived.value += amount;
+    tipCountReceived.value += 1;
+    showTipBanner.value = true;
+    _tipBannerTimer?.cancel();
+    _tipBannerTimer = Timer(const Duration(seconds: 6), () {
+      showTipBanner.value = false;
+    });
+  }
+
+  Future<void> loadSavedCards() async {
+    isLoadingCards.value = true;
+    try {
+      final res = await _apiClient.getData(ApiUrl.paymentMethods);
+      if (res.statusCode == 200) {
+        final body = jsonDecode(res.body);
+        final rawData = body['data'];
+        List<Map<String, dynamic>> list = [];
+        if (rawData is List) {
+          list = rawData.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        } else if (rawData is Map && rawData['methods'] is List) {
+          list = (rawData['methods'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        }
+        savedCards.assignAll(list);
+        if (list.isNotEmpty && selectedPaymentMethodId.value.isEmpty) {
+          final def = list.firstWhere((c) => c['isDefault'] == true, orElse: () => list.first);
+          selectedPaymentMethodId.value = def['id']?.toString() ?? "";
+        }
+      }
+    } catch (_) {} finally {
+      isLoadingCards.value = false;
+    }
+  }
+
+  Future<bool> sendTip({
+    required double amount,
+    String? message,
+    String? paymentMethodId,
+  }) async {
+    if (amount < 1.0) {
+      showAppSnackbar("Invalid Amount", "Minimum tip amount is \$1.00", snackPosition: SnackPosition.BOTTOM);
+      return false;
+    }
+    isSendingTip.value = true;
+    try {
+      final payload = {
+        "streamId": streamId.value,
+        "amount": amount,
+        if (paymentMethodId != null && paymentMethodId.isNotEmpty)
+          "paymentMethodId": paymentMethodId,
+        if (message != null && message.trim().isNotEmpty)
+          "message": message.trim(),
+      };
+
+      final response = await _apiClient.postData(ApiUrl.createTipIntent, payload);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final body = jsonDecode(response.body);
+        final data = body['data'] is Map ? body['data'] : body;
+
+        // 1. Saved Card 1-Tap Success
+        if (data['status'] == 'succeeded') {
+          showAppSnackbar(
+            "Tip Sent! 🎉",
+            "You tipped \$${amount.toStringAsFixed(2)} to the host! Thank you for your support.",
+            backgroundColor: const Color(0xFF22C55E),
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 4),
+          );
+          return true;
+        }
+
+        // 2. Stripe PaymentSheet
+        if (data['clientSecret'] != null) {
+          final clientSecret = data['clientSecret'].toString();
+          final ephemeralKey = data['ephemeralKey']?.toString();
+          final customerId = data['customerId']?.toString();
+          final pubKey = data['publishableKey']?.toString() ?? "pk_test_51NJLdJF5nDLFMGmox0iseTJZp42wfLi6Ub41OGs7hoMl0GSFe93a0My7PxdF2eKsxV1rvUf8vVw4p6jl9h9pCmEQ00WSln5w44";
+
+          Stripe.publishableKey = pubKey;
+          await Stripe.instance.applySettings();
+
+          await Stripe.instance.initPaymentSheet(
+            paymentSheetParameters: SetupPaymentSheetParameters(
+              paymentIntentClientSecret: clientSecret,
+              customerEphemeralKeySecret: ephemeralKey,
+              customerId: customerId,
+              merchantDisplayName: 'AREIS Tip',
+              style: ThemeMode.dark,
+              appearance: const PaymentSheetAppearance(
+                colors: PaymentSheetAppearanceColors(
+                  primary: Color(0xFF8B9BFF),
+                  background: Color(0xFF161622),
+                  componentBackground: Color(0xFF1E1E2C),
+                  componentText: Colors.white,
+                  primaryText: Colors.white,
+                  secondaryText: Colors.white70,
+                ),
+              ),
+            ),
+          );
+
+          await Stripe.instance.presentPaymentSheet();
+
+          final confirmPayload = {
+            "streamId": streamId.value,
+            "paymentIntentId": (data['paymentIntentId'] ?? clientSecret.split('_secret_').first).toString(),
+            "amount": amount,
+            if (message != null && message.trim().isNotEmpty)
+              "message": message.trim(),
+          };
+          await _apiClient.postData(ApiUrl.confirmTip, confirmPayload);
+
+          showAppSnackbar(
+            "Tip Sent! 🎉",
+            "You tipped \$${amount.toStringAsFixed(2)} to the host! Thank you for your support.",
+            backgroundColor: const Color(0xFF22C55E),
+            colorText: Colors.white,
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 4),
+          );
+          return true;
+        }
+      } else {
+        final body = jsonDecode(response.body);
+        showAppSnackbar("Tip Failed", body['message'] ?? "Could not process tip", snackPosition: SnackPosition.BOTTOM);
+      }
+    } on StripeException catch (e) {
+      if (e.error.code != FailureCode.Canceled) {
+        showAppSnackbar("Payment Error", e.error.localizedMessage ?? "Stripe payment failed", snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      debugPrint("❌ [sendTip] error: $e");
+      showAppSnackbar("Tip Failed", "Payment could not be completed. Please try again.", snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      isSendingTip.value = false;
+    }
+    return false;
   }
 
   @override

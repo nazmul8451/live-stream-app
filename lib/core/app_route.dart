@@ -8,6 +8,7 @@ import '../view/screens/auth/screen/otp_screen.dart';
 import '../view/screens/auth/screen/reset_password_screen.dart';
 import '../view/screens/category/screen/category_screen.dart';
 import '../view/screens/main/screen/main_screen.dart';
+import '../view/screens/main/controller/main_controller.dart';
 import '../view/screens/live_stream/screen/live_stream_screen.dart';
 import '../view/screens/live_stream/screen/go_live_setup_screen.dart';
 import '../view/screens/live_stream/screen/host_live_screen.dart';
@@ -91,7 +92,15 @@ class AppRoute {
     GetPage(name: otp, page: () => const OtpScreen()),
     GetPage(name: resetPassword, page: () => const ResetPasswordScreen()),
     GetPage(name: category, page: () => const CategoryScreen()),
-    GetPage(name: main, page: () => const MainScreen()),
+    GetPage(
+      name: main,
+      page: () => const MainScreen(),
+      binding: BindingsBuilder(() {
+        if (!Get.isRegistered<MainController>()) {
+          Get.put<MainController>(MainController(), permanent: true);
+        }
+      }),
+    ),
     GetPage(name: trackOrder, page: () => const TrackOrderScreen()),
     GetPage(name: tradeDetails, page: () => const TradeDetailsScreen()),
     GetPage(

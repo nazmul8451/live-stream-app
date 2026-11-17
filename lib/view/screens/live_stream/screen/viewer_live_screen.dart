@@ -14,6 +14,8 @@ import '../widgets/swipe_to_bid_button.dart';
 import 'dart:convert';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 import 'package:live_stream_app/view/screens/live_stream/widgets/live_spin_wheel.dart';
+import 'package:live_stream_app/view/screens/live_stream/widgets/live_tip_dialog.dart';
+import 'package:live_stream_app/view/screens/live_stream/widgets/live_tip_banner.dart';
 import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class ViewerLiveScreen extends StatefulWidget {
@@ -372,7 +374,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                                 _buildChat(),
                                 SizedBox(height: 12.h),
                                 Obx(() {
-                                  if (!ctrl.auctionActive.value && ctrl.currentProductTitle.value.isEmpty) return const SizedBox.shrink();
+                                  if (ctrl.currentProductTitle.value.isEmpty) return const SizedBox.shrink();
                                   return _buildProductCard();
                                 }),
                               ],
@@ -454,6 +456,22 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                   onClose: () => ctrl.showViewerSpin.value = false,
                 ),
               );
+            }),
+
+            // ── Tip Celebration Banner Overlay (Feature 5)
+            Obx(() {
+              if (ctrl.showTipBanner.value && ctrl.latestTip.isNotEmpty) {
+                return Positioned(
+                  top: 70.h,
+                  left: 0,
+                  right: 0,
+                  child: LiveTipBanner(
+                    tip: ctrl.latestTip,
+                    onDismiss: () => ctrl.showTipBanner.value = false,
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
             }),
 
             // ── Giveaway Winner Overlay Popup (Feature 2)
@@ -1092,18 +1110,19 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
   }
 
   void _showCheckoutDialog(double winningAmount) {
-    final addressCtrl = TextEditingController(text: "123 Main St, New York");
-    final zipCtrl = TextEditingController(text: "10001");
+    final addressCtrl = TextEditingController();
+    final zipCtrl = TextEditingController();
     final isPaying = false.obs;
 
     Get.bottomSheet(
-      Container(
-        padding: EdgeInsets.all(24.r),
-        decoration: BoxDecoration(
-          color: const Color(0xFF11111A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
-        ),
+      SafeArea(
+        child: Container(
+          padding: EdgeInsets.all(24.r),
+          decoration: BoxDecoration(
+            color: const Color(0xFF11111A),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
+            border: Border.all(color: Colors.white.withOpacity(0.05)),
+          ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1259,6 +1278,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
             )),
           ],
         ),
+      ),
       ),
       isScrollControlled: true,
     );
@@ -2074,6 +2094,50 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
           );
         }),
         SizedBox(height: 12.h),
+
+        // ── Tip Button (Feature 5)
+        GestureDetector(
+          onTap: () => LiveTipBottomSheet.show(context, ctrl),
+          child: Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(12.r),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFB800), Color(0xFFFF528E)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFB800).withValues(alpha: 0.45),
+                      blurRadius: 10.r,
+                      spreadRadius: 1.r,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.volunteer_activism_rounded,
+                  color: Colors.white,
+                  size: 22.sp,
+                ),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                "Tip",
+                style: TextStyle(
+                  color: const Color(0xFFFFD700),
+                  fontSize: 12.sp,
+                  fontWeight: FontWeight.w900,
+                  shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        SizedBox(height: 12.h),
         GestureDetector(
           onTap: () => showAppSnackbar("Share", "Link copied to clipboard!", snackPosition: SnackPosition.BOTTOM),
           child: Container(
@@ -2196,7 +2260,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
         if (!_isTyping) SizedBox(width: 8.w),
 
         if (!_isTyping) Obx(() {
-          if (!ctrl.auctionActive.value) return const SizedBox.shrink();
+          if (!ctrl.auctionActive.value || ctrl.currentProductTitle.value.isEmpty) return const SizedBox.shrink();
           final currentBid = ctrl.currentBidPrice.value;
           final nextBid = currentBid > 0 ? (currentBid + ctrl.bidIncrement.value) : ctrl.bidIncrement.value;
           final isBidding = ctrl.isPlacingBid.value;
@@ -2708,6 +2772,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
   }
 
   void _showLiveProductsSheet() {
+    final selectedTab = 0.obs; // 0: All Items, 1: Giveaways 🎁
     Get.bottomSheet(
       Container(
         height: 580.h,
@@ -2742,7 +2807,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                 ),
                 SizedBox(width: 8.w),
                 Obx(() => Text(
-                  "Show Inventory (${ctrl.streamInventoryItems.length})",
+                  "Show Items & Giveaways (${ctrl.streamInventoryItems.length})",
                   style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
                 )),
                 const Spacer(),
@@ -2753,22 +2818,93 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
               ],
             ),
             SizedBox(height: 12.h),
+
+            // Tab Filter Bar: All Items vs Giveaways
+            Obx(() {
+              final giveawayCount = ctrl.streamInventoryItems.where((e) => e['isGiveaway'] == true).length;
+              return Container(
+                padding: EdgeInsets.all(4.r),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161B2E),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(color: const Color(0xFF22283F)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => selectedTab.value = 0,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 8.h),
+                          decoration: BoxDecoration(
+                            color: selectedTab.value == 0 ? const Color(0xFF8B9BFF) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            "All Items (${ctrl.streamInventoryItems.length})",
+                            style: TextStyle(
+                              color: selectedTab.value == 0 ? const Color(0xFF0F0B1E) : Colors.white60,
+                              fontSize: 11.5.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => selectedTab.value = 1,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 8.h),
+                          decoration: BoxDecoration(
+                            color: selectedTab.value == 1 ? const Color(0xFFFFB800) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            "Giveaways 🎁 ($giveawayCount)",
+                            style: TextStyle(
+                              color: selectedTab.value == 1 ? Colors.black : Colors.white60,
+                              fontSize: 11.5.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            SizedBox(height: 12.h),
+
             Expanded(
               child: Obx(() {
-                if (ctrl.streamInventoryItems.isEmpty) {
+                final displayedList = selectedTab.value == 1
+                    ? ctrl.streamInventoryItems.where((e) => e['isGiveaway'] == true).toList()
+                    : ctrl.streamInventoryItems;
+
+                if (displayedList.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.inventory_2_outlined, color: Colors.white24, size: 48.sp),
+                        Icon(
+                          selectedTab.value == 1 ? Icons.card_giftcard_rounded : Icons.inventory_2_outlined,
+                          color: selectedTab.value == 1 ? const Color(0xFFFFB800).withValues(alpha: 0.5) : Colors.white24,
+                          size: 48.sp,
+                        ),
                         SizedBox(height: 12.h),
                         Text(
-                          "No products listed yet",
+                          selectedTab.value == 1 ? "No Giveaway spots listed yet" : "No products listed yet",
                           style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w700),
                         ),
                         SizedBox(height: 6.h),
                         Text(
-                          "When the host lists products or giveaways, they appear here live.",
+                          selectedTab.value == 1
+                              ? "The host has not designated giveaway prizes for this live show yet."
+                              : "When the host lists products or giveaways, they appear here live.",
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.white38, fontSize: 11.5.sp),
                         ),
@@ -2779,10 +2915,10 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
 
                 return ListView.separated(
                   physics: const BouncingScrollPhysics(),
-                  itemCount: ctrl.streamInventoryItems.length,
+                  itemCount: displayedList.length,
                   separatorBuilder: (_, __) => SizedBox(height: 10.h),
                   itemBuilder: (context, index) {
-                    final item = ctrl.streamInventoryItems[index];
+                    final item = displayedList[index];
                     final title = item['title'] ?? item['name'] ?? 'Product';
                     final category = item['category'] ?? 'Item';
                     final price = item['buyNowPrice'] ?? item['price'] ?? item['startingBid'] ?? 0;

@@ -6,6 +6,8 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/push_notification_service.dart';
+import '../../../../data/services/socket_service.dart';
+import '../../profile/controller/profile_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class OtpController extends GetxController {
@@ -154,7 +156,42 @@ class OtpController extends GetxController {
           );
           if (!fromForgotPassword.value) {
             await SharePrefsHelper.setBool(SharePrefsHelper.isLoginKey, true);
+            await SharePrefsHelper.setGuest(false);
+
+            // Extract or fetch userId
+            String userId = "";
+            if (responseData['data'] is Map) {
+              final dm = responseData['data'];
+              userId = (dm['userId'] ?? dm['id'] ?? dm['_id'] ?? (dm['user'] is Map ? (dm['user']['_id'] ?? dm['user']['id']) : '')).toString();
+            }
+            if (userId.isEmpty) {
+              try {
+                final profRes = await _apiClient.getData(ApiUrl.profile);
+                if (profRes.statusCode == 200) {
+                  final profData = jsonDecode(profRes.body)['data'];
+                  if (profData is Map) {
+                    userId = (profData['_id'] ?? profData['id'] ?? '').toString();
+                    final name = (profData['fullName'] ?? profData['name'] ?? '').toString();
+                    if (name.isNotEmpty) await SharePrefsHelper.setString('fullName', name);
+                  }
+                }
+              } catch (_) {}
+            }
+            if (userId.isNotEmpty) {
+              await SharePrefsHelper.setString(SharePrefsHelper.userIdKey, userId);
+            }
+            await SharePrefsHelper.setString(SharePrefsHelper.userEmailKey, targetEmail);
+
+            // Connect socket and sync device token
+            if (Get.isRegistered<SocketService>()) {
+              Get.find<SocketService>().initSocket();
+            }
             PushNotificationService.instance.syncDeviceToken();
+
+            // Refresh Profile controller if present
+            if (Get.isRegistered<ProfileController>()) {
+              Get.find<ProfileController>().fetchProfileData();
+            }
           }
         }
 

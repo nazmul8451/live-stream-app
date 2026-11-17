@@ -9,6 +9,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/push_notification_service.dart';
+import '../../../../data/services/shorebird_service.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../controller/profile_controller.dart';
 import '../controller/profile_information_controller.dart';
@@ -261,6 +262,77 @@ class AccountSettingsScreen extends StatelessWidget {
                           ).withOpacity(0.3),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 32.h),
+
+                // App & Updates Section
+                _buildSectionTitle("APP & UPDATES"),
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF11111E),
+                    borderRadius: BorderRadius.circular(24.r),
+                  ),
+                  child: Column(
+                    children: [
+                      Obx(() {
+                        final shorebird = ShorebirdService.instance;
+                        final isAvail = shorebird.isAvailable.value;
+                        final patch = shorebird.currentPatch.value;
+                        final hasPending = shorebird.hasPendingRestart.value;
+                        final isDownloading = shorebird.isDownloading.value;
+                        final isChecking = shorebird.isChecking.value;
+
+                        String subtitleText;
+                        if (isDownloading) {
+                          subtitleText = "Downloading update in background...";
+                        } else if (hasPending) {
+                          subtitleText = "Update ready • Restart app to apply";
+                        } else if (isAvail) {
+                          subtitleText = patch != null
+                              ? "v1.0.3+12 • Patch #${patch.number} (Up to date)"
+                              : "v1.0.3+12 • Base release (Up to date)";
+                        } else {
+                          subtitleText = "v1.0.3+12 • Shorebird OTA enabled";
+                        }
+
+                        return _buildSettingsTile(
+                          icon: Icons.system_update_alt_rounded,
+                          title: "Check for Updates",
+                          subtitle: subtitleText,
+                          showArrow: true,
+                          trailing: isChecking || isDownloading
+                              ? SizedBox(
+                                  width: 18.r,
+                                  height: 18.r,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFF8B9BFF),
+                                  ),
+                                )
+                              : hasPending
+                                  ? Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(6.r),
+                                        border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.5)),
+                                      ),
+                                      child: Text(
+                                        "RESTART",
+                                        style: TextStyle(
+                                          color: const Color(0xFF22C55E),
+                                          fontSize: 10.sp,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    )
+                                  : null,
+                          onTap: () => shorebird.checkForUpdateManual(),
+                        );
+                      }),
                     ],
                   ),
                 ),

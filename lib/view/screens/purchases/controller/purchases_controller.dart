@@ -162,6 +162,8 @@ class PurchasesController extends GetxController {
           processingFee: (amountDetails is Map && amountDetails['processingFee'] != null ? (amountDetails['processingFee'] as num).toDouble() : 0.0),
           buyerContribution: (amountDetails is Map && amountDetails['charityContribution'] != null ? (amountDetails['charityContribution'] as num).toDouble() : 0.0),
           totalPaid: total.toDouble(),
+          spinWheelPrize: (item['spinWheelPrize'] ?? '').toString().isNotEmpty ? item['spinWheelPrize'].toString() : null,
+          isGiveaway: item['isGiveaway'] == true,
         );
       }).toList();
 
