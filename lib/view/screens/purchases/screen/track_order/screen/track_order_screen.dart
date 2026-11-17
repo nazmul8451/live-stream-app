@@ -8,6 +8,7 @@ import '../../../../../../data/services/api_url.dart';
 import '../../../../../../core/app_route.dart';
 import '../controller/track_order_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class TrackOrderScreen extends StatelessWidget {
   const TrackOrderScreen({super.key});
@@ -176,11 +177,7 @@ class TrackOrderScreen extends StatelessWidget {
                                     ? null
                                     : () => _showUpdateStatusBottomSheet(context, controller),
                                 icon: controller.isUpdatingStatus.value
-                                    ? SizedBox(
-                                        width: 20.w,
-                                        height: 20.w,
-                                        child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                                      )
+                                    ? ButtonLoader()
                                     : Icon(Icons.local_shipping_rounded, color: Colors.white, size: 20.sp),
                                 label: Text(
                                   controller.isUpdatingStatus.value ? "Updating..." : "Update Shipping Status",
@@ -229,7 +226,7 @@ class TrackOrderScreen extends StatelessWidget {
                                         }
                                       },
                                 icon: controller.isUpdatingStatus.value
-                                    ? SizedBox(width: 20.w, height: 20.w, child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                    ? ButtonLoader()
                                     : Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 20.sp),
                                 label: Text(
                                   controller.isUpdatingStatus.value ? "Confirming..." : "Confirm Received",
@@ -836,11 +833,7 @@ class TrackOrderScreen extends StatelessWidget {
                                 }
                               },
                         child: controller.isUpdatingStatus.value
-                            ? SizedBox(
-                                width: 22.r,
-                                height: 22.r,
-                                child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                              )
+                            ? ButtonLoader()
                             : Text("Update Tracking", style: TextStyle(color: Colors.black, fontSize: 16.sp, fontWeight: FontWeight.w800)),
                       ),
                     )),
@@ -881,14 +874,7 @@ class TrackOrderScreen extends StatelessWidget {
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Center(
-                      child: SizedBox(
-                        width: 20.w,
-                        height: 20.w,
-                        child: const CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFF8B9BFF),
-                        ),
-                      ),
+                      child: ButtonLoader(),
                     );
                   },
                   errorBuilder: (_, e, __) => _buildSummaryFallbackImage(),

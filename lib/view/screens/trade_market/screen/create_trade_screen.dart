@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../controller/create_trade_controller.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class CreateTradeScreen extends GetView<CreateTradeController> {
   const CreateTradeScreen({super.key});
@@ -1499,14 +1500,7 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
                       size: 20.sp,
                     ),
               label: isLoading
-                  ? SizedBox(
-                      width: 22.w,
-                      height: 22.h,
-                      child: const CircularProgressIndicator(
-                        color: Colors.black,
-                        strokeWidth: 2.5,
-                      ),
-                    )
+                  ? ButtonLoader()
                   : Text(
                       isTrade ? "Publish to Trade Market" : "Save to Inventory",
                       style: TextStyle(

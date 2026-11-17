@@ -16,6 +16,7 @@ import '../../trade_voting/widgets/tinder_swipeable_trade_voting.dart';
 import '../controller/home_controller.dart';
 import '../widgets/celebrity_spotlight_card.dart';
 import 'home_live_preview_widget.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -748,14 +749,7 @@ class HomeScreen extends StatelessWidget {
                               ],
                             ),
                             child: isEntering
-                                ? SizedBox(
-                                    width: 14.r,
-                                    height: 14.r,
-                                    child: const CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  )
+                                ? ButtonLoader(size: 14)
                                 : Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -1096,14 +1090,7 @@ class HomeScreen extends StatelessWidget {
                       elevation: 0,
                     ),
                     child: isEntering
-                        ? SizedBox(
-                            width: 20.r,
-                            height: 20.r,
-                            child: const CircularProgressIndicator(
-                              strokeWidth: 2.2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
+                        ? ButtonLoader()
                         : Text(
                             isEntered ? "YOU'RE ENTERED! 🎉" : "ENTER GIVEAWAY NOW",
                             style: TextStyle(

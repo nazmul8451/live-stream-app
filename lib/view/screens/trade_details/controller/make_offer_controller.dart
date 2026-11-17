@@ -13,6 +13,7 @@ import '../../../../core/app_route.dart';
 import '../../../../data/helpers/api_list.dart';
 import '../../messages/controller/messages_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/core/areis_categories.dart';
 
 class MakeOfferController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -46,20 +47,11 @@ class MakeOfferController extends GetxController {
   final customTitleController = TextEditingController();
   final customValueController = TextEditingController();
   final RxDouble customValue = 0.0.obs;
-  final RxString customCategory = "Sports Cards".obs;
+  final RxString customCategory = "Trading Cards & TCG".obs;
   final RxString customCondition = "Mint".obs;
   final Rxn<File> customImageFile = Rxn<File>();
 
-  final categoriesList = [
-    "Sports Cards",
-    "TCG",
-    "Streetwear",
-    "Fine Art",
-    "Electronics",
-    "Rare Spirits",
-    "Luxury Cars",
-    "Digital Assets",
-  ];
+  final categoriesList = areisCategoryNames;
   final conditionsList = ["Mint", "Near Mint", "Excellent", "Good", "Fair"];
 
   @override
@@ -462,10 +454,7 @@ class MakeOfferController extends GetxController {
 
   Future<void> fetchCategories() async {
     try {
-      var response = await _apiClient.getData("/categories");
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        response = await _apiClient.getData(ApiUrl.categoryList);
-      }
+      final response = await _apiClient.getData(ApiUrl.categoryList);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         var decoded = jsonDecode(response.body);

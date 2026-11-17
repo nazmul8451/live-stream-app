@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../controller/spin_wheel_controller.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class SpinWheelScreen extends StatelessWidget {
   const SpinWheelScreen({super.key});
@@ -180,11 +181,7 @@ class SpinWheelScreen extends StatelessWidget {
                     elevation: 0,
                   ),
                   icon: controller.isSpinning.value
-                      ? SizedBox(
-                          width: 20.w,
-                          height: 20.w,
-                          child: const CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
-                        )
+                      ? ButtonLoader()
                       : Icon(Icons.autorenew_rounded, size: 24.sp),
                   label: Text(
                     controller.isSpinning.value ? "Spinning..." : "SPIN NOW",

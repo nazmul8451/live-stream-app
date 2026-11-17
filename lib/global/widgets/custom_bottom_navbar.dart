@@ -303,7 +303,7 @@ class CustomBottomNavbar extends StatelessWidget {
               option(
                 icon: Icons.swap_horiz_rounded,
                 color: const Color(0xFF8B9BFF),
-                title: "TRADING",
+                title: "Trading",
                 subtitle: "List an item specifically for trading with another user.",
                 mode: 0,
               ),
@@ -311,7 +311,7 @@ class CustomBottomNavbar extends StatelessWidget {
               option(
                 icon: Icons.inventory_2_rounded,
                 color: const Color(0xFF10B981),
-                title: "ADD TO Inventory",
+                title: "Add to Inventory",
                 subtitle: "Upload and save products to your personal inventory for future giveaways and auctions in your live shows.",
                 mode: 1,
               ),

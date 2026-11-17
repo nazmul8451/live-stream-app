@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../controller/payment_methods_controller.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class PaymentMethodsScreen extends StatelessWidget {
   const PaymentMethodsScreen({super.key});
@@ -96,14 +97,7 @@ class PaymentMethodsScreen extends StatelessWidget {
                         ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              SizedBox(
-                                width: 20.r,
-                                height: 20.r,
-                                child: const CircularProgressIndicator(
-                                  color: Color(0xFF0F0B1E),
-                                  strokeWidth: 2.5,
-                                ),
-                              ),
+                              ButtonLoader(),
                               SizedBox(width: 12.w),
                               Text(
                                 "Connecting to Stripe...",

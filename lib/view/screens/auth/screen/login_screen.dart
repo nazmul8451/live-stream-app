@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../controller/login_controller.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -125,14 +126,7 @@ class LoginScreen extends StatelessWidget {
                           elevation: 0,
                         ),
                         child: controller.isLoading.value
-                            ? SizedBox(
-                                width: 24.w,
-                                height: 24.h,
-                                child: const CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2.5,
-                                ),
-                              )
+                            ? ButtonLoader()
                             : Text(
                                 "Login",
                                 style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w800),

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../controller/category_controller.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class CategoryScreen extends GetView<CategoryController> {
   const CategoryScreen({super.key});
@@ -116,14 +117,7 @@ class CategoryScreen extends GetView<CategoryController> {
                       elevation: 0,
                     ),
                     child: controller.isLoading.value
-                        ? SizedBox(
-                            width: 24.w,
-                            height: 24.h,
-                            child: const CircularProgressIndicator(
-                              color: Color(0xFF0F0B1E),
-                              strokeWidth: 2.5,
-                            ),
-                          )
+                        ? ButtonLoader()
                         : Text(
                             "Continue",
                             style: TextStyle(

@@ -55,7 +55,7 @@ class SocketService extends GetxService {
             .setTransports(['websocket', 'polling'])
             .enableAutoConnect()
             .enableReconnection() // Enable reconnection to make sockets robust!
-            .setReconnectionAttempts(10)
+            .setReconnectionAttempts(999999)
             .setReconnectionDelay(2000)
             .setQuery({'token': token, 'userId': userId})
             .build(),
@@ -271,6 +271,22 @@ class SocketService extends GetxService {
     if (socket == null || !isConnected.value) return;
     Get.log('🚪 [SocketService] Leaving: $chatId');
     socket?.emit('leave chat', chatId);
+  }
+
+  /// Reconnects if needed and waits briefly for the socket to come up.
+  Future<bool> ensureConnected({Duration timeout = const Duration(seconds: 4)}) async {
+    if (socket != null && isConnected.value) return true;
+    if (socket == null) {
+      initSocket();
+    } else {
+      socket!.connect();
+    }
+    final end = DateTime.now().add(timeout);
+    while (DateTime.now().isBefore(end)) {
+      if (isConnected.value) return true;
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
+    return isConnected.value;
   }
 
   void emitEvent(String event, dynamic data) {

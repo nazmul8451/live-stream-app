@@ -9,6 +9,7 @@ import '../../data/services/api_url.dart';
 import '../../data/services/push_notification_service.dart';
 import '../../data/services/socket_service.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class SafetyController extends GetxController {
   static SafetyController get instance {
@@ -466,7 +467,7 @@ class SafetyController extends GetxController {
                         elevation: 0,
                       ),
                       child: controller.isActionLoading.value
-                          ? SizedBox(width: 18.r, height: 18.r, child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          ? ButtonLoader(size: 18)
                           : Text("Submit Report", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
                     )),
                   ),
@@ -554,7 +555,7 @@ class SafetyController extends GetxController {
                         elevation: 0,
                       ),
                       child: controller.isActionLoading.value
-                          ? SizedBox(width: 18.r, height: 18.r, child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          ? ButtonLoader(size: 18)
                           : Text("Block User", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
                     )),
                   ),
@@ -670,7 +671,7 @@ class SafetyController extends GetxController {
                         elevation: 0,
                       ),
                       child: controller.isActionLoading.value
-                          ? SizedBox(width: 18.r, height: 18.r, child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          ? ButtonLoader(size: 18)
                           : Text("Delete", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900)),
                     )),
                   ),

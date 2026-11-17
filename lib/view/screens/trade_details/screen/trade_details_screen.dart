@@ -13,6 +13,7 @@ import '../../../../global/helper/share_helper.dart';
 import '../../../../data/services/api_client.dart';
 import '../../profile/controller/profile_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class TradeDetailsScreen extends GetView<TradeDetailsController> {
   const TradeDetailsScreen({super.key});
@@ -406,7 +407,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                               ),
                               alignment: Alignment.center,
                               child: controller.isOrdering.value
-                                  ? SizedBox(width: 22.r, height: 22.r, child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                                  ? ButtonLoader()
                                   : Text(
                                       "Buy Now \$$buyNowPriceVal",
                                       style: TextStyle(color: const Color(0xFF0F172A), fontSize: 16.sp, fontWeight: FontWeight.w900),
@@ -1290,7 +1291,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
     final cleanUrl = imgStr.startsWith('http') ? imgStr : "${ApiUrl.imageBaseUrl}${imgStr.startsWith('/') ? imgStr : '/$imgStr'}";
     debugPrint("🖼️ [TradeDetailsImage] Loading image: $cleanUrl");
     return Image.network(cleanUrl, fit: fit,
-      loadingBuilder: (_, child, progress) => progress == null ? child : Container(color: const Color(0xFF1A1A2E), child: Center(child: SizedBox(width: 22.r, height: 22.r, child: CircularProgressIndicator(strokeWidth: 2, color: const Color(0xFF8B9BFF).withOpacity(0.4))))),
+      loadingBuilder: (_, child, progress) => progress == null ? child : Container(color: const Color(0xFF1A1A2E), child: Center(child: ButtonLoader())),
       errorBuilder: (_, error, ___) {
         debugPrint("❌ [TradeDetailsImage] Failed to load image: $cleanUrl (Error: $error)");
         return Container(color: const Color(0xFF1A1A2E), child: Center(child: Icon(Icons.image_not_supported_outlined, color: Colors.white12, size: 32.sp)));
@@ -1638,11 +1639,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                   ),
                   alignment: Alignment.center,
                   child: controller.isSubmittingOffer.value
-                      ? SizedBox(
-                          width: 22.r,
-                          height: 22.r,
-                          child: const CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
-                        )
+                      ? ButtonLoader()
                       : Text(
                           "Send Offer",
                           style: TextStyle(

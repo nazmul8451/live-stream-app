@@ -14,6 +14,7 @@ import '../controller/agora_live_controller.dart';
 import 'host_live_screen.dart';
 import 'dart:convert';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class GoLiveSetupScreen extends StatefulWidget {
   const GoLiveSetupScreen({super.key});
@@ -874,7 +875,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                   ),
                   child: Center(
                     child: _isStarting
-                        ? const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                        ? const ButtonLoader()
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

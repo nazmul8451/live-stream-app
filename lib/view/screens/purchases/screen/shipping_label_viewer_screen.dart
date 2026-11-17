@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../../../../data/services/api_url.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class ShippingLabelViewerScreen extends StatelessWidget {
   const ShippingLabelViewerScreen({super.key});
@@ -277,7 +278,7 @@ class ShippingLabelViewerScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
                 ),
                 child: isPaying.value
-                    ? const CircularProgressIndicator(color: Colors.black)
+                    ? const ButtonLoader()
                     : Text(
                         "Confirm & Pay Now",
                         style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900),

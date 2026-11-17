@@ -61,6 +61,48 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   final RxString streamDescription = "".obs;
   final RxString sellerId = "".obs;
   final RxBool isFollowingHost = false.obs;
+  final RxBool isFollowBusy = false.obs;
+
+  /// Loads whether the signed-in viewer already follows this stream's host.
+  Future<void> loadFollowStatus() async {
+    final hostId = sellerId.value;
+    final me = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+    if (hostId.isEmpty || hostId == me) return;
+    try {
+      final res = await Get.find<ApiClient>().getData("/follow/$hostId/status");
+      if (res.statusCode == 200) {
+        final d = jsonDecode(res.body)['data'];
+        if (d is Map) isFollowingHost.value = d['following'] == true;
+      }
+    } catch (_) {}
+  }
+
+  /// Follow / unfollow the host. Optimistic, reverts if the server says no.
+  Future<void> toggleFollowHost() async {
+    final hostId = sellerId.value;
+    if (hostId.isEmpty || isFollowBusy.value) return;
+    if (hostId == SharePrefsHelper.getString(SharePrefsHelper.userIdKey)) return;
+    final before = isFollowingHost.value;
+    isFollowingHost.value = !before;
+    isFollowBusy.value = true;
+    try {
+      final res = await Get.find<ApiClient>().postData("/follow/$hostId", {});
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final d = jsonDecode(res.body)['data'];
+        if (d is Map && d['followed'] != null) isFollowingHost.value = d['followed'] == true;
+      } else {
+        isFollowingHost.value = before;
+        String msg = "Please try again in a moment.";
+        try { msg = (jsonDecode(res.body)['message'] ?? msg).toString(); } catch (_) {}
+        showAppSnackbar("Couldn't update follow", msg, backgroundColor: Colors.orange);
+      }
+    } catch (_) {
+      isFollowingHost.value = before;
+      showAppSnackbar("Couldn't update follow", "Please check your internet connection and try again.", backgroundColor: Colors.orange);
+    } finally {
+      isFollowBusy.value = false;
+    }
+  }
   final RxString viewersCount = "1".obs;
 
   // Analytics & Performance metrics
@@ -113,6 +155,10 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   // Spin Wheel Realtime Result (Update 3)
   final RxString spinWheelWinningPrize = "".obs;
   final RxInt spinWheelWinningIndex = (-1).obs;
+  // Viewer-side spin replay
+  final RxBool showViewerSpin = false.obs;
+  final RxList<String> viewerSpinItems = <String>[].obs;
+  final RxBool viewerSpinIsMe = false.obs;
 
   String _getSenderUsername() {
     try {
@@ -166,6 +212,27 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   final RxBool isMicOn = true.obs;
   final RxBool isLocalVideoReady = false.obs;
   final RxBool isHost = false.obs;
+
+  // Same system line arriving from REST + socket within a few seconds is shown once.
+  String _lastSystemMsg = '';
+  DateTime _lastSystemMsgAt = DateTime.fromMillisecondsSinceEpoch(0);
+  void _addSystemMessageOnce(String msg) {
+    final now = DateTime.now();
+    if (msg == _lastSystemMsg && now.difference(_lastSystemMsgAt).inSeconds < 5) return;
+    _lastSystemMsg = msg;
+    _lastSystemMsgAt = now;
+    chatMessages.add({
+      "user": "System",
+      "msg": msg,
+      "role": "system",
+      "isJoin": "false",
+      "userAvatar": "",
+    });
+  }
+
+  /// A bare 24-char ObjectId is meaningless to users; hide it.
+  String _readableCategory(String c) =>
+      RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(c.trim()) ? '' : c;
   final RxBool isInPiP = false.obs;
 
   void minimizeStream() {
@@ -313,7 +380,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           if (cat is Map) {
             currentProductCategory.value = cat['name']?.toString() ?? cat['title']?.toString() ?? "";
           } else if (cat != null) {
-            currentProductCategory.value = cat.toString();
+            currentProductCategory.value = _readableCategory(cat.toString());
           }
           if (currentProductCategory.value.isEmpty) {
             currentProductCategory.value = data['categoryName']?.toString() ?? "Rare Collectibles";
@@ -402,6 +469,9 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.on('messageReceived', _handleSocketMessage);
       socketService.on('newMessage', _handleSocketMessage);
       socketService.on('new message', _handleSocketMessage);
+      socketService.on('new-chat-message', _handleStreamChatEvent);
+      socketService.on('chat-message-liked', _handleChatLikedEvent);
+      socketService.on('stream-chat-error', _handleStreamChatError);
       socketService.on('message received', _handleSocketMessage);
       socketService.on('stream-ended', _handleStreamEndedEvent);
       socketService.on('stream_ended', _handleStreamEndedEvent);
@@ -483,13 +553,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
 
       startCountdown(remainingSeconds);
 
-      chatMessages.add({
-        "user": "System",
-        "msg": "📢 Starting a new auction for ${currentProductTitle.value.isNotEmpty ? currentProductTitle.value : 'item'}!",
-        "role": "system",
-        "isJoin": "false",
-        "userAvatar": "",
-      });
+      _addSystemMessageOnce("📢 Starting a new auction for ${currentProductTitle.value.isNotEmpty ? currentProductTitle.value : 'item'}!");
 
       debugPrint("🔥 [AgoraLiveSocket] auction-item-started: item=$aId, price=\$$startingOrCurrent, endsAt=$endsAtStr");
     } catch (e) {
@@ -720,7 +784,17 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       final winnerId = resMap['buyerId']?.toString() ?? '';
       spinWheelWinningPrize.value = prize;
       final currentUid = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
-      if (prize.isNotEmpty) {
+      final items = (resMap['items'] is List)
+          ? (resMap['items'] as List).map((e) => e.toString()).toList()
+          : <String>[];
+      final idx = (resMap['winningIndex'] as num?)?.toInt() ?? -1;
+      // Viewers watch the wheel spin and land on the server result.
+      if (!isHost.value && items.length >= 2 && idx >= 0 && idx < items.length) {
+        viewerSpinItems.assignAll(items);
+        spinWheelWinningIndex.value = idx;
+        viewerSpinIsMe.value = winnerId.isNotEmpty && winnerId == currentUid;
+        showViewerSpin.value = true;
+      } else if (prize.isNotEmpty && !isHost.value) {
         final isMe = winnerId.isNotEmpty && winnerId == currentUid;
         showAppSnackbar(
           isMe ? "🎉 YOU WON A PRIZE!" : "🎁 Spin Wheel Winner!",
@@ -894,6 +968,9 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.off('messageReceived', _handleSocketMessage);
       socketService.off('newMessage', _handleSocketMessage);
       socketService.off('new message', _handleSocketMessage);
+      socketService.off('new-chat-message', _handleStreamChatEvent);
+      socketService.off('chat-message-liked', _handleChatLikedEvent);
+      socketService.off('stream-chat-error', _handleStreamChatError);
       socketService.off('message received', _handleSocketMessage);
       socketService.off('stream-ended', _handleStreamEndedEvent);
       socketService.off('stream_ended', _handleStreamEndedEvent);
@@ -1055,13 +1132,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         final duration = int.tryParse(msgMap['timerDuration']?.toString() ?? '60') ?? 60;
         startCountdown(duration);
         
-        chatMessages.add({
-          "user": "System",
-          "msg": "📢 Starting a new auction for ${currentProductTitle.value}!",
-          "role": "system",
-          "isJoin": "false",
-          "userAvatar": "",
-        });
+        _addSystemMessageOnce("📢 Starting a new auction for ${currentProductTitle.value}!");
         return;
       }
 
@@ -1425,6 +1496,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         channelName.value = channel;
         streamTitle.value = streamData['title']?.toString() ?? "My Live Stream";
         sellerId.value = hostSellerId;
+        loadFollowStatus();
         _setupSocket();
         if (channel.isNotEmpty) {
           await _initAgora(isHost: true, channel: channel);
@@ -1464,6 +1536,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
 
       final seller = activeStream['sellerId'];
       sellerId.value = seller is Map ? (seller['_id'] ?? seller['id'] ?? '').toString() : (seller?.toString() ?? '');
+      loadFollowStatus();
       final vData = activeStream['viewersCount'] ?? activeStream['viewerCount'] ?? activeStream['viewers'];
       if (vData is List) {
         viewersCount.value = vData.length.toString();
@@ -1537,7 +1610,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
             }
             if (prod['category'] != null) {
               final cat = prod['category'];
-              currentProductCategory.value = (cat is Map) ? (cat['name'] ?? cat['title'] ?? '').toString() : cat.toString();
+              currentProductCategory.value = (cat is Map) ? (cat['name'] ?? cat['title'] ?? '').toString() : _readableCategory(cat.toString());
             }
           } else if (prod != null) {
             currentProductId.value = prod.toString();
@@ -1574,7 +1647,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         }
         if (pMap['category'] != null) {
           final cat = pMap['category'];
-          currentProductCategory.value = (cat is Map) ? (cat['name'] ?? cat['title'] ?? '').toString() : cat.toString();
+          currentProductCategory.value = (cat is Map) ? (cat['name'] ?? cat['title'] ?? '').toString() : _readableCategory(cat.toString());
         }
         auctionActive.value = true;
       }
@@ -2029,13 +2102,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       final duration = int.tryParse(payload['timerDuration']?.toString() ?? '60') ?? 60;
       startCountdown(duration);
 
-      chatMessages.add({
-        "user": "System",
-        "msg": "📢 Starting a new auction for ${currentProductTitle.value}!",
-        "role": "system",
-        "isJoin": "false",
-        "userAvatar": "",
-      });
+      _addSystemMessageOnce("📢 Starting a new auction for ${currentProductTitle.value}!");
     }
   }
 
@@ -3227,81 +3294,122 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
 
     final userFormatted = usernameStr.startsWith('@') ? usernameStr : '@$usernameStr';
 
-    // Add message locally
-    final existsLocally = chatMessages.any((m) => m['user'] == userFormatted && m['msg'] == cleanMsg);
-    if (!existsLocally) {
-      chatMessages.add({
-        "user": userFormatted,
-        "msg": cleanMsg,
-        "role": role,
-        "userAvatar": avatarUrl,
-      });
-    }
+    // Optimistic local bubble; the server echo fills in messageId.
+    final clientId = "${DateTime.now().microsecondsSinceEpoch}";
+    chatMessages.add({
+      "user": userFormatted,
+      "msg": cleanMsg,
+      "role": role,
+      "userAvatar": avatarUrl,
+      "clientId": clientId,
+      "likes": "0",
+      "likedByMe": "false",
+    });
 
-    // Broadcast message via Socket.io
     try {
       final socketService = Get.find<SocketService>();
-      final myUserId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
-      socketService.emitEvent('new message', {
-        "chat": streamId.value,
-        "chatId": streamId.value,
+      if (!await socketService.ensureConnected()) {
+        _markChatFailed(clientId);
+        showAppSnackbar("Message not sent", "You're offline. Check your connection and try again.", backgroundColor: Colors.orange);
+        return;
+      }
+      // After a reconnect make sure we are (re)joined to this stream's room.
+      socketService.emitEvent('join-stream', {"streamId": streamId.value});
+      socketService.emitEvent('stream-chat', {
         "streamId": streamId.value,
-        "room": streamId.value,
-        "content": cleanMsg,
-        "text": cleanMsg,
         "message": cleanMsg,
-        "senderName": userFormatted,
-        "username": userFormatted,
-        "user": userFormatted,
-        "name": userFormatted,
-        "fullName": userFormatted,
-        "sender": {
-          "_id": myUserId,
-          "id": myUserId,
-          "fullName": userFormatted,
-          "name": userFormatted,
-          "username": userFormatted,
-          "avatar": avatarUrl,
-        },
-        "senderId": myUserId,
-        "userAvatar": avatarUrl,
-        "avatar": avatarUrl,
-        "role": role,
-        "isLiveStream": true,
+        "clientId": clientId,
       });
     } catch (e) {
-      debugPrint("❌ Failed to broadcast comment via socket: $e");
+      debugPrint("❌ Failed to send comment: $e");
+      _markChatFailed(clientId);
     }
+  }
 
-    // Broadcast message via Data Stream (Agora fallback)
-    if (engine != null) {
-      try {
-        if (_dataStreamId == null) {
-          _dataStreamId = await engine?.createDataStream(
-            const DataStreamConfig(syncWithAudio: false, ordered: true),
-          );
-          debugPrint("✅ Created missing DataStreamId: $_dataStreamId");
-        }
-        if (_dataStreamId != null) {
-          final payload = jsonEncode({
-            "type": "comment",
-            "username": usernameStr,
-            "message": cleanMsg,
-            "role": role,
-            "avatar": avatarUrl,
-          });
-          final bytes = utf8.encode(payload);
-          await engine!.sendStreamMessage(
-            streamId: _dataStreamId!,
-            data: Uint8List.fromList(bytes),
-            length: bytes.length,
-          );
-          debugPrint("✅ Broadcasted comment via Agora Data Stream: $payload");
-        }
-      } catch (e) {
-        debugPrint("❌ Failed to broadcast comment via Agora: $e");
-      }
+  void _markChatFailed(String clientId) {
+    final i = chatMessages.indexWhere((m) => m['clientId'] == clientId);
+    if (i >= 0) {
+      chatMessages.removeAt(i);
     }
+  }
+
+  void _handleStreamChatEvent(dynamic data) {
+    if (data is! Map) return;
+    try {
+      final d = Map<String, dynamic>.from(data);
+      if ((d['streamId'] ?? '').toString() != streamId.value) return;
+      final messageId = (d['messageId'] ?? '').toString();
+      final clientId = (d['clientId'] ?? '').toString();
+      final user = d['user'] is Map ? Map<String, dynamic>.from(d['user']) : <String, dynamic>{};
+      final senderId = (user['_id'] ?? '').toString();
+      final myId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+
+      // Our own message: attach the server id to the optimistic bubble.
+      if (clientId.isNotEmpty) {
+        final i = chatMessages.indexWhere((m) => m['clientId'] == clientId);
+        if (i >= 0) {
+          final m = Map<String, String>.from(chatMessages[i]);
+          m['messageId'] = messageId;
+          chatMessages[i] = m;
+          return;
+        }
+      }
+      if (messageId.isNotEmpty && chatMessages.any((m) => m['messageId'] == messageId)) return;
+
+      final name = (user['name'] ?? 'User').toString();
+      final isFromHost = senderId.isNotEmpty && senderId == sellerId.value;
+      chatMessages.add({
+        "user": name.startsWith('@') ? name : '@$name',
+        "msg": (d['message'] ?? '').toString(),
+        "role": isFromHost ? "host" : (senderId == myId ? (isHost.value ? "host" : "viewer") : "viewer"),
+        "userAvatar": (user['image'] ?? '').toString(),
+        "messageId": messageId,
+        "likes": (d['likes'] ?? 0).toString(),
+        "likedByMe": "false",
+      });
+      if (chatMessages.length > 200) chatMessages.removeRange(0, chatMessages.length - 200);
+    } catch (e) {
+      debugPrint("❌ [_handleStreamChatEvent] $e");
+    }
+  }
+
+  void _handleChatLikedEvent(dynamic data) {
+    if (data is! Map) return;
+    final messageId = (data['messageId'] ?? '').toString();
+    final i = chatMessages.indexWhere((m) => m['messageId'] == messageId);
+    if (i < 0) return;
+    final m = Map<String, String>.from(chatMessages[i]);
+    m['likes'] = (data['likes'] ?? 0).toString();
+    if ((data['userId'] ?? '').toString() == SharePrefsHelper.getString(SharePrefsHelper.userIdKey)) {
+      m['likedByMe'] = data['liked'] == true ? "true" : "false";
+    }
+    chatMessages[i] = m;
+  }
+
+  void _handleStreamChatError(dynamic data) {
+    final clientId = data is Map ? (data['clientId'] ?? '').toString() : '';
+    if (clientId.isNotEmpty) _markChatFailed(clientId);
+    final msg = data is Map ? (data['message'] ?? '').toString() : '';
+    showAppSnackbar("Message not sent", msg.isNotEmpty ? msg : "Please try again.", backgroundColor: Colors.orange);
+  }
+
+  /// Like / unlike a comment. Optimistic, then the server broadcasts the real count.
+  void toggleCommentLike(int index) {
+    if (index < 0 || index >= chatMessages.length) return;
+    final m = Map<String, String>.from(chatMessages[index]);
+    final messageId = m['messageId'] ?? '';
+    if (messageId.isEmpty) return;
+    final liked = m['likedByMe'] == 'true';
+    final likes = int.tryParse(m['likes'] ?? '0') ?? 0;
+    m['likedByMe'] = liked ? 'false' : 'true';
+    m['likes'] = (liked ? (likes - 1).clamp(0, 1 << 30) : likes + 1).toString();
+    chatMessages[index] = m;
+    try {
+      Get.find<SocketService>().emitEvent('stream-chat-like', {
+        "streamId": streamId.value,
+        "messageId": messageId,
+      });
+    } catch (_) {}
   }
 
   // Hearts: every tap animates locally; taps are batched and sent ~1/sec.
@@ -3337,6 +3445,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   /// Clears everything that belongs to a single show so nothing leaks into
   /// the next stream (controller is a permanent singleton).
   void _resetPerStreamState() {
+    isFollowingHost.value = false;
     _heartFlushTimer?.cancel();
     _heartFlushTimer = null;
     _pendingHearts = 0;

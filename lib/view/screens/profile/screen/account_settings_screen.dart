@@ -14,6 +14,7 @@ import '../controller/profile_controller.dart';
 import '../controller/profile_information_controller.dart';
 import '../../../../global/controllers/safety_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
@@ -915,11 +916,7 @@ class AccountSettingsScreen extends StatelessWidget {
                     suffixIcon: isValidating.value
                         ? Padding(
                             padding: EdgeInsets.all(14.r),
-                            child: SizedBox(
-                              width: 16.r,
-                              height: 16.r,
-                              child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B9BFF)),
-                            ),
+                            child: ButtonLoader(size: 16),
                           )
                         : (isVerified.value
                             ? Icon(Icons.check_circle_rounded, color: const Color(0xFF22C55E), size: 20.r)
@@ -975,11 +972,7 @@ class AccountSettingsScreen extends StatelessWidget {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
                   ),
                   child: pCtrl.isApplyingPromo.value
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
-                        )
+                      ? ButtonLoader()
                       : Text(
                           "Apply Promo Code",
                           style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900),

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'dart:convert';
+import 'package:live_stream_app/data/services/api_client.dart';
+import 'package:live_stream_app/data/services/api_url.dart';
+import 'package:live_stream_app/global/helper/app_snackbar.dart';
 import '../../../../global/widgets/custom_background.dart';
+import 'package:live_stream_app/core/areis_categories.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class UserPreferencesScreen extends StatefulWidget {
   const UserPreferencesScreen({super.key});
@@ -11,49 +17,58 @@ class UserPreferencesScreen extends StatefulWidget {
 }
 
 class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
-  final List<String> selectedCategories = ["Fine Art", "Rare Spirits"];
+  final List<String> selectedCategories = [];
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInterests();
+  }
+
+  Future<void> _loadInterests() async {
+    try {
+      final res = await Get.find<ApiClient>().getData(ApiUrl.profile);
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body)['data'];
+        final list = (data is Map ? data['interest'] : null);
+        if (list is List && mounted) {
+          final valid = areisCategoryNames.toSet();
+          setState(() {
+            selectedCategories
+              ..clear()
+              ..addAll(list.map((e) => e.toString()).where(valid.contains));
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    if (selectedCategories.isEmpty) {
+      showAppSnackbar("Pick at least one", "Choose the categories you want to see more of.", backgroundColor: Colors.orange);
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      final res = await Get.find<ApiClient>().patchData(ApiUrl.updateProfile, {"interest": selectedCategories});
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        Get.back();
+        showAppSnackbar("Preferences saved", "Your feed will focus on what you love.", backgroundColor: Colors.green);
+      } else {
+        showAppSnackbar("Couldn't save", "Please try again in a moment.", backgroundColor: Colors.red);
+      }
+    } catch (_) {
+      showAppSnackbar("Couldn't save", "Please check your internet connection and try again.", backgroundColor: Colors.red);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   final List<Map<String, dynamic>> categories = [
-    {
-      "title": "Fine Art",
-      "subtitle": "Masterpieces & curated contemporary works.",
-      "icon": Icons.palette_outlined,
-    },
-    {
-      "title": "Sports Cards",
-      "subtitle": "Rare collectibles from legendary eras.",
-      "icon": Icons.emoji_events_outlined,
-    },
-    {
-      "title": "Rare Spirits",
-      "subtitle": "Aged excellence and limited vintages.",
-      "icon": Icons.liquor_outlined,
-    },
-    {
-      "title": "Luxury Cars",
-      "subtitle": "Exotics, classics, and hypercars.",
-      "icon": Icons.directions_car_outlined,
-    },
-    {
-      "title": "Electronics",
-      "subtitle": "Horological mastery and investment watches.",
-      "icon": Icons.watch_outlined,
-    },
-    {
-      "title": "Streetwear",
-      "subtitle": "Hype drops and archival garments.",
-      "icon": Icons.checkroom_outlined,
-    },
-    {
-      "title": "TCG",
-      "subtitle": "First editions and historical manuscripts.",
-      "icon": Icons.auto_stories_outlined,
-    },
-    {
-      "title": "Digital Assets",
-      "subtitle": "Web3 collectibles and digital fine art.",
-      "icon": Icons.layers_outlined,
-    },
+    for (final c in areisCategories)
+      {"title": c.name, "subtitle": c.subtitle, "icon": c.icon},
   ];
 
   @override
@@ -77,6 +92,14 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
             ),
           ),
           centerTitle: true,
+          actions: [
+            TextButton(
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? ButtonLoader(size: 18)
+                  : Text("Save", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 15.sp, fontWeight: FontWeight.w800)),
+            ),
+          ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(1),
             child: Divider(color: Colors.white.withOpacity(0.05), height: 1),
@@ -144,15 +167,19 @@ class _UserPreferencesScreenState extends State<UserPreferencesScreen> {
                     const Spacer(),
                     Text(
                       category["title"],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16.sp,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                     SizedBox(height: 6.h),
                     Text(
                       category["subtitle"],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white38,
                         fontSize: 10.sp,

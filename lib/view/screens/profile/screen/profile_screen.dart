@@ -14,6 +14,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../live_stream/controller/agora_live_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class ProfileScreen extends GetView<ProfileController> {
   const ProfileScreen({super.key});
@@ -1136,7 +1137,7 @@ class ProfileScreen extends GetView<ProfileController> {
                     boxShadow: [BoxShadow(color: const Color(0xFF8B9BFF).withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4))],
                   ),
                   child: isLoading
-                      ? SizedBox(width: 16.r, height: 16.r, child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      ? ButtonLoader(size: 16)
                       : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

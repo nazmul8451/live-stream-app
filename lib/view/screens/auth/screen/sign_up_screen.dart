@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../core/app_route.dart';
 import '../../../../data/services/api_url.dart';
 import '../controller/sign_up_controller.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
@@ -206,14 +207,7 @@ class SignUpScreen extends StatelessWidget {
                       suffixIcon: controller.isCheckingPromo.value
                           ? Padding(
                               padding: EdgeInsets.all(14.r),
-                              child: SizedBox(
-                                width: 18.r,
-                                height: 18.r,
-                                child: const CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Color(0xFF8B9BFF),
-                                ),
-                              ),
+                              child: ButtonLoader(size: 18),
                             )
                           : (controller.isPromoValid.value
                               ? Icon(
@@ -345,14 +339,7 @@ class SignUpScreen extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: controller.isLoading.value
-                          ? SizedBox(
-                              width: 24.w,
-                              height: 24.h,
-                              child: const CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.5,
-                              ),
-                            )
+                          ? ButtonLoader()
                           : Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [

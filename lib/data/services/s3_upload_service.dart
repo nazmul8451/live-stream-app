@@ -40,7 +40,7 @@ class S3UploadService {
           'contentType': contentType,
           'folder': folder,
         }),
-      );
+      ).timeout(const Duration(seconds: 20));
 
       if (presignRes.statusCode != 200 && presignRes.statusCode != 201) {
         debugPrint("❌ [S3UploadService] Presign request failed: ${presignRes.statusCode} - ${presignRes.body}");
@@ -63,7 +63,7 @@ class S3UploadService {
         Uri.parse(uploadUrl.toString()),
         headers: {'Content-Type': contentType},
         body: bytes,
-      );
+      ).timeout(const Duration(seconds: 60));
 
       if (s3Res.statusCode == 200 || s3Res.statusCode == 201 || s3Res.statusCode == 204) {
         debugPrint("✅ [S3UploadService] S3 Upload successful! File URL: $fileUrl");

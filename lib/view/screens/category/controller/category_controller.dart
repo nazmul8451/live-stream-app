@@ -6,6 +6,7 @@ import '../../../../core/app_route.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/core/areis_categories.dart';
 
 class CategoryController extends GetxController {
   var selectedCategories = <int>{}.obs;
@@ -13,14 +14,8 @@ class CategoryController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
 
   final List<CategoryModel> categories = [
-    CategoryModel(id: 1, title: "Fine Art", subtitle: "Masterpieces & curated contemporary works.", icon: Icons.palette_outlined),
-    CategoryModel(id: 2, title: "Sports Cards", subtitle: "Rare collectibles from legendary eras.", icon: Icons.emoji_events_outlined),
-    CategoryModel(id: 3, title: "Rare Spirits", subtitle: "Aged excellence and limited vintages.", icon: Icons.wine_bar_outlined),
-    CategoryModel(id: 4, title: "Luxury Cars", subtitle: "Exotics, classics, and hypercars.", icon: Icons.directions_car_outlined),
-    CategoryModel(id: 5, title: "Electronics", subtitle: "Horological mastery and investment watches.", icon: Icons.watch_outlined),
-    CategoryModel(id: 6, title: "Streetwear", subtitle: "Hype drops and archival garments.", icon: Icons.checkroom_outlined),
-    CategoryModel(id: 7, title: "TCG", subtitle: "First editions and historical manuscripts.", icon: Icons.menu_book_outlined),
-    CategoryModel(id: 8, title: "Digital Assets", subtitle: "Web3 collectibles and digital fine art.", icon: Icons.layers_outlined),
+    for (var i = 0; i < areisCategories.length; i++)
+      CategoryModel(id: i + 1, title: areisCategories[i].name, subtitle: areisCategories[i].subtitle, icon: areisCategories[i].icon),
   ];
 
   void toggleCategory(int id) {

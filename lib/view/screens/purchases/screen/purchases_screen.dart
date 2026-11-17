@@ -10,6 +10,7 @@ import '../model/purchase_model.dart';
 import '../../../../global/widgets/custom_bottom_navbar.dart';
 import '../../../../global/widgets/custom_shimmer.dart';
 import '../../../../global/widgets/custom_empty_state.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class PurchasesScreen extends GetView<PurchasesController> {
   const PurchasesScreen({super.key});
@@ -581,17 +582,7 @@ class PurchasesScreen extends GetView<PurchasesController> {
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return Center(
-                      child: SizedBox(
-                        width: 20.w,
-                        height: 20.w,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: const Color(0xFF8B9BFF),
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                              : null,
-                        ),
-                      ),
+                      child: ButtonLoader(),
                     );
                   },
                   errorBuilder: (_, __, ___) => _buildFallbackImage(),

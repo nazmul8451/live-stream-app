@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../model/trade_vote_model.dart';
 import '../../../../global/widgets/custom_shimmer.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class TradeVoteCard extends StatelessWidget {
   final TradeVoteModel trade;
@@ -272,14 +273,7 @@ class TradeVoteCard extends StatelessWidget {
                         ),
                       ),
                       child: isVoting
-                          ? SizedBox(
-                              height: 16.h,
-                              width: 16.h,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFF0F0B1E),
-                              ),
-                            )
+                          ? ButtonLoader(size: 16)
                           : Text(
                               trade.itemA.traderName.isNotEmpty
                                   ? "Vote ${trade.itemA.traderName}"
@@ -307,14 +301,7 @@ class TradeVoteCard extends StatelessWidget {
                         ),
                       ),
                       child: isVoting
-                          ? SizedBox(
-                              height: 16.h,
-                              width: 16.h,
-                              child: const CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Color(0xFF0F0B1E),
-                              ),
-                            )
+                          ? ButtonLoader(size: 16)
                           : Text(
                               trade.itemB.traderName.isNotEmpty
                                   ? "Vote ${trade.itemB.traderName}"

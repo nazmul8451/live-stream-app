@@ -21,7 +21,10 @@ void showAppSnackbar(
   Widget? icon,
   Widget? mainButton,
 }) {
-  final tone = _toneFor(backgroundColor, title);
+  // "Please enter / select ..." is a form hint, not a failure.
+  final isValidation = _isValidationHint(message) &&
+      RegExp(r'^\s*(error|required|invalid|missing|oops)?\s*$', caseSensitive: false).hasMatch(title);
+  final tone = isValidation ? _Tone.warning : _toneFor(backgroundColor, title);
   final accent = switch (tone) {
     _Tone.success => const Color(0xFF22C55E),
     _Tone.error => const Color(0xFFF43F5E),
@@ -35,7 +38,7 @@ void showAppSnackbar(
     _Tone.info => Icons.info_rounded,
   };
 
-  final cleanTitle = _friendlyTitle(title, tone);
+  final cleanTitle = isValidation ? 'Almost there' : _friendlyTitle(title, tone);
   final cleanMessage = _friendlyMessage(message, tone);
 
   if (Get.isSnackbarOpen) {
@@ -116,4 +119,9 @@ String _friendlyMessage(String message, _Tone tone) {
   }
   if (m.length > 180) return '${m.substring(0, 177)}...';
   return m;
+}
+
+bool _isValidationHint(String message) {
+  final m = message.trim().toLowerCase();
+  return RegExp(r'^(please (enter|select|add|choose|fill|provide|pick|upload)|.* (is|are) required)').hasMatch(m);
 }

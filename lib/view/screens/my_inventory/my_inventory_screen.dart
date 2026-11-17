@@ -9,6 +9,7 @@ import '../../../data/helpers/api_list.dart';
 import '../../../data/services/api_client.dart';
 import '../../../data/services/api_url.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 /// Seller's personal inventory (client spec: build inventory before live shows).
 class MyInventoryController extends GetxController {
@@ -312,7 +313,7 @@ class _ItemCard extends StatelessWidget {
           Obx(() {
             final busy = c.busyIds.contains(MyInventoryController.idOf(item));
             if (busy) {
-              return SizedBox(width: 40.w, child: const Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))));
+              return SizedBox(width: 40.w, child: const Center(child: ButtonLoader(size: 18)));
             }
             return PopupMenuButton<String>(
               color: const Color(0xFF1A223E),

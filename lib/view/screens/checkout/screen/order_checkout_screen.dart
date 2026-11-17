@@ -6,6 +6,7 @@ import '../../../../global/widgets/custom_background.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../core/app_route.dart';
 import '../controller/order_checkout_controller.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class OrderCheckoutScreen extends StatelessWidget {
   const OrderCheckoutScreen({super.key});
@@ -664,11 +665,7 @@ class OrderCheckoutScreen extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: controller.isProcessing.value
-                    ? SizedBox(
-                        width: 22.r,
-                        height: 22.r,
-                        child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                      )
+                    ? ButtonLoader()
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

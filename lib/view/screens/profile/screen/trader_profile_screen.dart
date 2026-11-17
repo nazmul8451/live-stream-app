@@ -10,6 +10,7 @@ import '../../../../data/services/api_url.dart';
 import '../../../../global/widgets/custom_shimmer.dart';
 import '../../../../global/controllers/safety_controller.dart';
 import '../../../../global/helper/share_helper.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class TraderProfileScreen extends GetView<TraderProfileController> {
   const TraderProfileScreen({super.key});
@@ -559,14 +560,7 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
                 ),
                 child: controller.isFollowLoading.value
                     ? Center(
-                        child: SizedBox(
-                          width: 20.r,
-                          height: 20.r,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: const Color(0xFF8B9BFF),
-                          ),
-                        ),
+                        child: ButtonLoader(),
                       )
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,

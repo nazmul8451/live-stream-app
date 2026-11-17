@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../controller/forgot_password_controller.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class ForgotPasswordScreen extends StatelessWidget {
   const ForgotPasswordScreen({super.key});
@@ -97,14 +98,7 @@ class ForgotPasswordScreen extends StatelessWidget {
                       elevation: 0,
                     ),
                     child: controller.isLoading.value
-                        ? SizedBox(
-                            width: 24.w,
-                            height: 24.h,
-                            child: const CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
+                        ? ButtonLoader()
                         : Text(
                             "Send Reset Code",
                             style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w800),

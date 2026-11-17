@@ -166,7 +166,8 @@ class OrderCheckoutController extends GetxController {
             final body1Tap = jsonDecode(res1Tap.body);
             final data1Tap = body1Tap['data'] is Map ? body1Tap['data'] : body1Tap;
             if (data1Tap['status'] == 'succeeded') {
-              await _createOrderRecordAndNotifySeller();
+              await _createOrderRecordAndNotifySeller(
+                  paymentIntentId: (data1Tap['paymentIntentId'] ?? data1Tap['id'])?.toString());
               showAppSnackbar(
                 "Payment Successful! 🎉",
                 "1-Tap checkout completed with saved card! Redirecting to Purchases...",
@@ -232,10 +233,10 @@ class OrderCheckoutController extends GetxController {
           showAppSnackbar("Error", resBody['message'] ?? "Failed to initiate payment session", snackPosition: SnackPosition.BOTTOM);
         }
       } else {
-        showAppSnackbar("Error", "Failed to initiate payment. Status: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Payment unavailable", "We couldn't start the payment. Please try again in a moment.", backgroundColor: Colors.red);
       }
     } catch (e) {
-      showAppSnackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
+      showAppSnackbar("Payment unavailable", "Please check your internet connection and try again.", backgroundColor: Colors.red);
     } finally {
       isProcessing.value = false;
     }
@@ -276,7 +277,12 @@ class OrderCheckoutController extends GetxController {
       );
 
       await Stripe.instance.presentPaymentSheet();
-      await _createOrderRecordAndNotifySeller();
+      // Send the PaymentIntent id so the backend can verify it with Stripe
+      // and mark the order as paid (pi_xxx_secret_yyy -> pi_xxx).
+      final intentId = (data['paymentIntentId']?.toString().isNotEmpty ?? false)
+          ? data['paymentIntentId'].toString()
+          : clientSecret.split('_secret_').first;
+      await _createOrderRecordAndNotifySeller(paymentIntentId: intentId);
 
       showAppSnackbar(
         "Payment Successful! 🎉",
@@ -292,7 +298,11 @@ class OrderCheckoutController extends GetxController {
       return true;
     } on StripeException catch (e) {
       Get.log("⚠️ Stripe Exception: ${e.error.localizedMessage}");
-      showAppSnackbar("Stripe Error", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
+      if (e.error.code == FailureCode.Canceled) {
+        showAppSnackbar("Payment cancelled", "No charge was made. You can try again anytime.", backgroundColor: Colors.orange);
+      } else {
+        showAppSnackbar("Payment failed", e.error.localizedMessage ?? "Your card was not charged. Please try again.", backgroundColor: Colors.red);
+      }
       return false;
     } catch (e) {
       Get.log("❌ Stripe Error: $e");
@@ -301,7 +311,7 @@ class OrderCheckoutController extends GetxController {
     }
   }
 
-  Future<void> _createOrderRecordAndNotifySeller() async {
+  Future<void> _createOrderRecordAndNotifySeller({String? paymentIntentId}) async {
     try {
       String userId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
       if (userId.isEmpty) {
@@ -328,6 +338,7 @@ class OrderCheckoutController extends GetxController {
         if (sellerId.isNotEmpty) "sellerId": sellerId,
         if (userId.isNotEmpty) "buyerId": userId,
         "totalPaid": totalAmount.value,
+        if (paymentIntentId != null && paymentIntentId.startsWith('pi_')) "paymentIntentId": paymentIntentId,
         "amountDetails": {
           "itemSubtotal": itemSubtotal.value,
           "shipping": shippingFee.value,
@@ -345,11 +356,8 @@ class OrderCheckoutController extends GetxController {
           "country": countryController.text.trim().isNotEmpty ? countryController.text.trim() : "USA"
         },
         "trackingDetails": {
-          "carrier": "USPS Priority",
-          "trackingNumber": "TRK-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}",
+          // Seller adds the real carrier + tracking number when shipping
           "status": "Order Placed",
-          "estimatedDelivery": "3-5 Business Days",
-          "currentLocation": "Vault Facility"
         }
       };
 

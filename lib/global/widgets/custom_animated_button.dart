@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class CustomAnimatedButton extends StatefulWidget {
   final String text;
@@ -102,14 +103,7 @@ class _CustomAnimatedButtonState extends State<CustomAnimatedButton> with Single
           ),
           child: Center(
             child: widget.isLoading
-                ? SizedBox(
-                    width: 22.sp,
-                    height: 22.sp,
-                    child: CircularProgressIndicator(
-                      color: widget.textColor,
-                      strokeWidth: 2.5,
-                    ),
-                  )
+                ? ButtonLoader()
                 : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,

@@ -17,6 +17,8 @@ import '../../profile/controller/profile_controller.dart';
 import '../../home/controller/home_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/view/screens/live_stream/widgets/live_spin_wheel.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class HostLiveScreen extends StatefulWidget {
   const HostLiveScreen({super.key});
@@ -983,11 +985,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(
-                          width: 18.r,
-                          height: 18.r,
-                          child: const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B9BFF)),
-                        ),
+                        ButtonLoader(size: 18),
                         SizedBox(width: 10.w),
                         Text("Loading your listings...", style: TextStyle(color: Colors.white54, fontSize: 12.sp)),
                       ],
@@ -1984,11 +1982,50 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
           itemCount: ctrl.chatMessages.length,
           itemBuilder: (context, index) {
             final m = ctrl.chatMessages[index];
+            final canLike = (m['messageId'] ?? '').isNotEmpty;
+            final liked = m['likedByMe'] == 'true';
+            final likes = int.tryParse(m['likes'] ?? '0') ?? 0;
             return Align(
               alignment: Alignment.bottomLeft,
               child: Padding(
                 padding: EdgeInsets.only(bottom: 8.h),
-                child: _buildCommentBubble(m),
+                child: !canLike
+                    ? _buildCommentBubble(m)
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: GestureDetector(
+                              onDoubleTap: () => ctrl.toggleCommentLike(index),
+                              child: _buildCommentBubble(m),
+                            ),
+                          ),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => ctrl.toggleCommentLike(index),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  AnimatedScale(
+                                    scale: liked ? 1.15 : 1.0,
+                                    duration: const Duration(milliseconds: 160),
+                                    child: Icon(
+                                      liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                      color: liked ? const Color(0xFFFF4D6D) : Colors.white70,
+                                      size: 18.sp,
+                                    ),
+                                  ),
+                                  if (likes > 0)
+                                    Text("$likes", style: TextStyle(color: Colors.white70, fontSize: 10.sp, fontWeight: FontWeight.w700)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             );
           },
@@ -2869,7 +2906,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
                             ),
                             icon: isSubmitting.value
-                                ? SizedBox(width: 16.r, height: 16.r, child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                ? ButtonLoader(size: 16)
                                 : Icon(isGiveaway.value ? Icons.stars_rounded : Icons.add_circle_outline_rounded, size: 18.sp),
                             label: Text(
                               isSubmitting.value
@@ -3971,73 +4008,4 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
   }
 }
 
-class _WheelPainter extends CustomPainter {
-  final List<String> items;
-
-  const _WheelPainter({required this.items});
-
-  static const List<Color> _colors = [
-    Color(0xFF7C3AED),
-    Color(0xFF3B82F6),
-    Color(0xFF10B981),
-    Color(0xFFF59E0B),
-    Color(0xFFEC4899),
-    Color(0xFF06B6D4),
-    Color(0xFF8B5CF6),
-    Color(0xFFF43F5E),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (items.isEmpty) return;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-    final sliceAngle = (2 * math.pi) / items.length;
-
-    final paint = Paint()..style = PaintingStyle.fill;
-    final linePaint = Paint()
-      ..color = Colors.black26
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    for (int i = 0; i < items.length; i++) {
-      final startAngle = i * sliceAngle;
-      paint.color = _colors[i % _colors.length];
-
-      // Draw slice
-      canvas.drawArc(rect, startAngle, sliceAngle, true, paint);
-      canvas.drawArc(rect, startAngle, sliceAngle, true, linePaint);
-
-      // Draw text label
-      canvas.save();
-      canvas.translate(center.dx, center.dy);
-      canvas.rotate(startAngle + sliceAngle / 2);
-
-      final textSpan = TextSpan(
-        text: items[i],
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          shadows: [Shadow(color: Colors.black45, blurRadius: 2)],
-        ),
-      );
-      final textPainter = TextPainter(
-        text: textSpan,
-        textDirection: TextDirection.ltr,
-        maxLines: 1,
-        ellipsis: '...',
-      )..layout(maxWidth: radius * 0.65);
-
-      textPainter.paint(canvas, Offset(radius * 0.25, -textPainter.height / 2));
-      canvas.restore();
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _WheelPainter oldDelegate) {
-    return !listEquals(oldDelegate.items, items);
-  }
-}
+typedef _WheelPainter = SpinWheelPainter;

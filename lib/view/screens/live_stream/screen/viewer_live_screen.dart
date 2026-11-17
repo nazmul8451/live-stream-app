@@ -13,6 +13,8 @@ import '../../../../global/controllers/safety_controller.dart';
 import '../widgets/swipe_to_bid_button.dart';
 import 'dart:convert';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/view/screens/live_stream/widgets/live_spin_wheel.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class ViewerLiveScreen extends StatefulWidget {
   final Map<String, dynamic> streamData;
@@ -26,10 +28,19 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
   late AgoraLiveController ctrl;
   final TextEditingController _chatController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  // While typing a comment the input takes the full width and the
+  // shop / custom-bid / swipe controls step aside.
+  final FocusNode _chatFocus = FocusNode();
+  bool _isTyping = false;
 
   @override
   void initState() {
     super.initState();
+    _chatFocus.addListener(() {
+      if (mounted && _isTyping != _chatFocus.hasFocus) {
+        setState(() => _isTyping = _chatFocus.hasFocus);
+      }
+    });
     ctrl = Get.put(AgoraLiveController(), permanent: true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (SharePrefsHelper.isGuest || SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isEmpty) {
@@ -56,6 +67,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
   @override
   void dispose() {
     _chatController.dispose();
+    _chatFocus.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -73,7 +85,15 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
           children: [
             // ── Remote Video (Host's camera)
             GestureDetector(
-              onDoubleTap: () => ctrl.sendLike(),
+              // Single tap anywhere on the video sends a heart
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                if (_chatFocus.hasFocus) {
+                  _chatFocus.unfocus();
+                  return;
+                }
+                ctrl.sendLike();
+              },
               child: Obx(() {
                 final isJoined = ctrl.remoteJoined.value;
                 final rUid = ctrl.remoteUid.value;
@@ -403,6 +423,23 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
               return const SizedBox.shrink();
             }),
 
+            // ── Spin wheel replay for viewers
+            Obx(() {
+              if (!ctrl.showViewerSpin.value || ctrl.viewerSpinItems.length < 2) {
+                return const SizedBox.shrink();
+              }
+              return Positioned.fill(
+                child: ViewerSpinOverlay(
+                  key: ValueKey(ctrl.viewerSpinItems.join('|') + ctrl.spinWheelWinningIndex.value.toString()),
+                  items: ctrl.viewerSpinItems.toList(),
+                  winningIndex: ctrl.spinWheelWinningIndex.value,
+                  winningItem: ctrl.spinWheelWinningPrize.value,
+                  isMe: ctrl.viewerSpinIsMe.value,
+                  onClose: () => ctrl.showViewerSpin.value = false,
+                ),
+              );
+            }),
+
             // ── Giveaway Winner Overlay Popup (Feature 2)
             Obx(() {
               if (ctrl.showGiveawayWinnerOverlay.value) {
@@ -622,14 +659,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                     ],
                   ),
                   child: isBidding
-                      ? SizedBox(
-                          width: 16.r,
-                          height: 16.r,
-                          child: const CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Color(0xFFFF2D55),
-                          ),
-                        )
+                      ? ButtonLoader(size: 16)
                       : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -1198,11 +1228,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
                     ),
                     child: isPaying.value
-                        ? SizedBox(
-                            width: 22.r,
-                            height: 22.r,
-                            child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
-                          )
+                        ? ButtonLoader()
                         : Text(
                             "Pay \$${winningAmount.toStringAsFixed(0)} Now",
                             style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
@@ -1487,7 +1513,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
               ),
               SizedBox(width: 8.w),
               Obx(() => GestureDetector(
-                onTap: () => ctrl.isFollowingHost.toggle(),
+                onTap: () => ctrl.toggleFollowHost(),
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
                   decoration: BoxDecoration(
@@ -1495,7 +1521,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                     borderRadius: BorderRadius.circular(16.r),
                   ),
                   child: Text(
-                    ctrl.isFollowingHost.value ? "FOLLOWED" : "FOLLOW",
+                    ctrl.isFollowingHost.value ? "FOLLOWING" : "FOLLOW",
                     style: TextStyle(
                       color: ctrl.isFollowingHost.value ? Colors.white70 : const Color(0xFF0F0B1E),
                       fontSize: 9.5.sp,
@@ -1524,11 +1550,50 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
           itemCount: ctrl.chatMessages.length,
           itemBuilder: (context, index) {
             final m = ctrl.chatMessages[index];
+            final canLike = (m['messageId'] ?? '').isNotEmpty;
+            final liked = m['likedByMe'] == 'true';
+            final likes = int.tryParse(m['likes'] ?? '0') ?? 0;
             return Align(
               alignment: Alignment.bottomLeft,
               child: Padding(
                 padding: EdgeInsets.only(bottom: 8.h),
-                child: _buildCommentBubble(m),
+                child: !canLike
+                    ? _buildCommentBubble(m)
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: GestureDetector(
+                              onDoubleTap: () => ctrl.toggleCommentLike(index),
+                              child: _buildCommentBubble(m),
+                            ),
+                          ),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => ctrl.toggleCommentLike(index),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  AnimatedScale(
+                                    scale: liked ? 1.15 : 1.0,
+                                    duration: const Duration(milliseconds: 160),
+                                    child: Icon(
+                                      liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                      color: liked ? const Color(0xFFFF4D6D) : Colors.white70,
+                                      size: 18.sp,
+                                    ),
+                                  ),
+                                  if (likes > 0)
+                                    Text("$likes", style: TextStyle(color: Colors.white70, fontSize: 10.sp, fontWeight: FontWeight.w700)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             );
           },
@@ -2009,6 +2074,8 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
   }
 
   Widget _buildBottomBar() {
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final _isTyping = this._isTyping && keyboardOpen;
     return Row(
       children: [
         // Chat Input Box
@@ -2025,9 +2092,13 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                 Expanded(
                   child: TextField(
                     controller: _chatController,
+                    focusNode: _chatFocus,
+                    textInputAction: TextInputAction.send,
+                    maxLength: 300,
                     style: TextStyle(color: Colors.white, fontSize: 13.sp),
                     decoration: InputDecoration(
-                      hintText: "Say something...",
+                      counterText: "",
+                      hintText: _isTyping ? "Write a comment..." : "Comment",
                       hintStyle: TextStyle(color: Colors.white38, fontSize: 13.sp),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(vertical: 11.h),
@@ -2035,24 +2106,37 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                     onSubmitted: (val) {
                       ctrl.sendChatMessage(val, role: 'viewer');
                       _chatController.clear();
+                      _chatFocus.requestFocus();
                     },
                   ),
                 ),
                 GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () {
+                    if (_chatController.text.trim().isEmpty) {
+                      _chatFocus.requestFocus();
+                      return;
+                    }
                     ctrl.sendChatMessage(_chatController.text, role: 'viewer');
                     _chatController.clear();
                   },
-                  child: Icon(Icons.send_rounded, color: Colors.white54, size: 18.sp),
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 8.w, top: 8.h, bottom: 8.h),
+                    child: Icon(
+                      Icons.send_rounded,
+                      color: _isTyping ? const Color(0xFF8B9BFF) : Colors.white54,
+                      size: 20.sp,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
         ),
-        SizedBox(width: 8.w),
+        if (!_isTyping) SizedBox(width: 8.w),
 
         // Live Products Tray Button (Update 1 & 2)
-        GestureDetector(
+        if (!_isTyping) GestureDetector(
           onTap: () => _showLiveProductsSheet(),
           child: Container(
             height: 48.r,
@@ -2089,9 +2173,9 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
             ),
           ),
         ),
-        SizedBox(width: 8.w),
+        if (!_isTyping) SizedBox(width: 8.w),
 
-        Obx(() {
+        if (!_isTyping) Obx(() {
           if (!ctrl.auctionActive.value) return const SizedBox.shrink();
           final currentBid = ctrl.currentBidPrice.value;
           final nextBid = currentBid > 0 ? (currentBid + ctrl.bidIncrement.value) : ctrl.bidIncrement.value;
@@ -2128,7 +2212,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                 isOutbid: isOutbid,
                 isLoading: isBidding,
                 height: 48.h,
-                width: 175.w,
+                width: 150.w,
                 onSwipeCompleted: () {
                   final dynamicNextBid = ctrl.currentBidPrice.value > 0
                       ? (ctrl.currentBidPrice.value + ctrl.bidIncrement.value)

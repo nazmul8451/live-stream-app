@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../controller/profile_information_controller.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class ProfileInformationScreen extends StatelessWidget {
   const ProfileInformationScreen({super.key});
@@ -175,14 +176,7 @@ class ProfileInformationScreen extends StatelessWidget {
                     ),
                     alignment: Alignment.center,
                     child: controller.isSaving.value
-                        ? SizedBox(
-                            width: 24.w,
-                            height: 24.h,
-                            child: const CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2.5,
-                            ),
-                          )
+                        ? ButtonLoader()
                         : Text(
                             "Save Changes",
                             style: TextStyle(

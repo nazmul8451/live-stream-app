@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../../../../data/services/api_url.dart';
 import '../controller/make_offer_controller.dart';
+import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class MakeOfferScreen extends GetView<MakeOfferController> {
   const MakeOfferScreen({super.key});
@@ -1119,11 +1120,7 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
                 ),
                 alignment: Alignment.center,
                 child: isSubmitting
-                    ? SizedBox(
-                        height: 22.r,
-                        width: 22.r,
-                        child: const CircularProgressIndicator(color: Colors.black, strokeWidth: 2.5),
-                      )
+                    ? ButtonLoader()
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
