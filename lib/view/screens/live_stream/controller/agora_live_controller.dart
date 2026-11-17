@@ -2175,16 +2175,15 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   //  AGORA INIT
   // ─────────────────────────────────────────────
   Future<bool> _initAgora({required bool isHost, required String channel}) async {
+    String token = "";
+    String dynamicAppId = agoraAppId; // Fallback to current appId if backend fails
+    int userUid = 0;
     try {
       // 0) Fetch dynamic token from backend
       final reqRole = isHost ? "publisher" : "subscriber";
       final response = await _apiClient.getData(
         "${ApiUrl.agoraToken}?channelName=$channel&uid=0&role=$reqRole"
       );
-      
-      String token = "";
-      String dynamicAppId = agoraAppId; // Fallback to current appId if backend fails
-      int userUid = 0;
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         final body = jsonDecode(response.body);
