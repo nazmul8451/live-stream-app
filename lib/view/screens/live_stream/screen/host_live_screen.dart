@@ -2897,6 +2897,10 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                       return;
                                     }
                                     final price = double.tryParse(priceController.text.trim()) ?? 0.0;
+                                    if (!isGiveaway.value && price <= 0) {
+                                      showAppSnackbar("Add a price", "Please enter a starting price above \$0, or mark it as a giveaway.", backgroundColor: Colors.orange);
+                                      return;
+                                    }
                                     isSubmitting.value = true;
                                     final ok = await ctrl.addLiveStreamItem(
                                       title: title,
@@ -2906,8 +2910,11 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                       isGiveaway: isGiveaway.value,
                                     );
                                     isSubmitting.value = false;
-                                    if (ok) {
-                                      Get.back();
+                                    // Navigator.pop (not Get.back) so an open success
+                                    // toast doesn't swallow the close and leave the
+                                    // sheet up — which led to duplicate items.
+                                    if (ok && context.mounted) {
+                                      Navigator.of(context).pop();
                                     }
                                   },
                             style: ElevatedButton.styleFrom(
