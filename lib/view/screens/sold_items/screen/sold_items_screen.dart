@@ -6,7 +6,6 @@ import 'package:get/get.dart';
 import '../../../../core/app_route.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../global/widgets/custom_background.dart';
-import '../../../../global/widgets/custom_bottom_navbar.dart';
 import '../../purchases/model/purchase_model.dart';
 import '../controller/sold_items_controller.dart';
 
@@ -18,11 +17,9 @@ class SoldItemsScreen extends StatelessWidget {
     final controller = Get.put(SoldItemsController());
 
     return CustomBackground(
-      child: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
+      safeAreaBottom: false,
+      child: Column(
+        children: [
                 // App Bar Header
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
@@ -136,7 +133,7 @@ class SoldItemsScreen extends StatelessWidget {
                       onRefresh: controller.fetchSoldItems,
                       color: const Color(0xFF8B9BFF),
                       child: ListView.builder(
-                        padding: EdgeInsets.only(left: 16.w, right: 16.w, bottom: 100.h, top: 8.h),
+                        padding: EdgeInsets.only(left: 16.w, right: 16.w, bottom: 36.h, top: 8.h),
                         itemCount: items.length,
                         itemBuilder: (context, index) {
                           return _buildSoldItemCard(context, items[index]);
@@ -147,16 +144,6 @@ class SoldItemsScreen extends StatelessWidget {
                 ),
               ],
             ),
-
-            const Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: CustomBottomNavbar(),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -271,6 +258,11 @@ class SoldItemsScreen extends StatelessWidget {
             ),
           ),
 
+          if (item.status == OrderStatus.processing && item.shipByDate != null) ...[
+            SizedBox(height: 12.h),
+            _buildShipDeadline(item.shipByDate!),
+          ],
+
           SizedBox(height: 20.h),
 
           // Action Buttons: Update Status & Contact Buyer
@@ -373,10 +365,64 @@ class SoldItemsScreen extends StatelessWidget {
     );
   }
 
+  /// Makes the shipping window visible, so a seller is never surprised by an
+  /// order cancelling itself.
+  Widget _buildShipDeadline(DateTime shipBy) {
+    final hoursLeft = shipBy.difference(DateTime.now()).inHours;
+    final overdue = hoursLeft < 0;
+    final urgent = !overdue && hoursLeft <= 24;
+
+    final Color accent = overdue
+        ? const Color(0xFFEF4444)
+        : (urgent ? const Color(0xFFF59E0B) : Colors.white54);
+
+    final String text;
+    if (overdue) {
+      text = "Shipping deadline passed — this order will be cancelled and refunded.";
+    } else if (hoursLeft <= 24) {
+      text = "Ship today to keep this order.";
+    } else {
+      final days = (hoursLeft / 24).ceil();
+      text = "Ship within $days ${days == 1 ? 'day' : 'days'} "
+          "(by ${shipBy.day}/${shipBy.month}).";
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 10.r),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: accent.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            overdue ? Icons.error_outline_rounded : Icons.local_shipping_outlined,
+            color: accent,
+            size: 16.sp,
+          ),
+          SizedBox(width: 8.w),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: accent,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatusBadge(OrderStatus status) {
     Color bg = Colors.white10;
     Color text = Colors.white70;
-    String label = "PROCESSING";
+    // The order is waiting on this seller — "PROCESSING" read as if someone
+    // else were already handling it, while the buyer's side said "Placed".
+    String label = "TO SHIP";
 
     if (status == OrderStatus.inTransit) {
       bg = const Color(0xFF5D2EEF);

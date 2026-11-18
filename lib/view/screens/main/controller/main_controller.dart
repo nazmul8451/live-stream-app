@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +15,8 @@ import '../../profile/screen/profile_screen.dart';
 class MainController extends GetxController {
   var currentIndex = 0.obs; // Default to Home
   final RxInt unreadMessageCount = 0.obs;
-  Timer? _badgeSyncTimer;
+  bool _isFetchingUnread = false;
+  DateTime? _lastUnreadFetch;
 
   final List<Widget> screens = [
     const HomeScreen(),
@@ -28,24 +28,11 @@ class MainController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // Ensure socket is active and listening
+    // SocketService handles real-time `updateChatList::$userId` events (debounced).
     if (Get.isRegistered<SocketService>()) {
       Get.find<SocketService>().initSocket();
     }
     fetchUnreadMessageCount();
-    _listenToIncomingMessages();
-    _startBadgeSyncTimer();
-  }
-
-  void _startBadgeSyncTimer() {
-    _badgeSyncTimer?.cancel();
-    final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
-    if (token.isEmpty || SharePrefsHelper.isGuest) return;
-
-    // Sync unread badge every 60 seconds as a light fallback (socket handles real-time messages)
-    _badgeSyncTimer = Timer.periodic(const Duration(seconds: 60), (_) {
-      fetchUnreadMessageCount();
-    });
   }
 
   final Set<String> _locallyReadChatIds = <String>{};
@@ -53,10 +40,22 @@ class MainController extends GetxController {
   void markChatAsRead(String chatId) {
     if (chatId.isEmpty) return;
     _locallyReadChatIds.add(chatId);
-    fetchUnreadMessageCount();
+    if (unreadMessageCount.value > 0) {
+      unreadMessageCount.value--;
+    }
   }
 
-  Future<void> fetchUnreadMessageCount() async {
+  Future<void> fetchUnreadMessageCount({bool force = false}) async {
+    if (_isFetchingUnread) return;
+    final now = DateTime.now();
+    if (!force &&
+        _lastUnreadFetch != null &&
+        now.difference(_lastUnreadFetch!) < const Duration(seconds: 3)) {
+      return;
+    }
+    _isFetchingUnread = true;
+    _lastUnreadFetch = now;
+
     try {
       final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
       if (token.isEmpty || SharePrefsHelper.isGuest) {
@@ -99,41 +98,15 @@ class MainController extends GetxController {
       }
     } catch (e) {
       Get.log("Note: fetchUnreadMessageCount exception: $e");
+    } finally {
+      _isFetchingUnread = false;
     }
-  }
-
-  void _listenToIncomingMessages() {
-    try {
-      if (Get.isRegistered<SocketService>()) {
-        final socket = Get.find<SocketService>();
-        void handleIncoming(_) {
-          unreadMessageCount.value++;
-          fetchUnreadMessageCount();
-        }
-
-        socket.on('message received', handleIncoming);
-        socket.on('messageReceived', handleIncoming);
-        socket.on('new message', handleIncoming);
-        socket.on('newMessage', handleIncoming);
-        socket.on('message', handleIncoming);
-        socket.on('receive-message', handleIncoming);
-        socket.on('receiveMessage', handleIncoming);
-        socket.on('notification', (_) => fetchUnreadMessageCount());
-      }
-    } catch (_) {}
   }
 
   void changeIndex(int index) {
     currentIndex.value = index;
-    if (index == 2) {
-      // Navigating to Messages tab
+    if (index == 2 && !Get.isRegistered<MessagesController>()) {
       fetchUnreadMessageCount();
     }
-  }
-
-  @override
-  void onClose() {
-    _badgeSyncTimer?.cancel();
-    super.onClose();
   }
 }

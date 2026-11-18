@@ -19,6 +19,7 @@ class CustomBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF02010A),
+      extendBody: bottomNavigationBar != null,
       bottomNavigationBar: bottomNavigationBar,
       body: Stack(
         children: [

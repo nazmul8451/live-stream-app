@@ -44,11 +44,29 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
     super.dispose();
   }
 
+  static const double _stripePercentFee = 0.029;
+  static const int _stripeFixedFeeCents = 30;
+
   double get _finalAmount {
     if (_isCustom) {
       return double.tryParse(_customAmountCtrl.text.trim()) ?? 0.0;
     }
     return _selectedAmount;
+  }
+
+  /// Gross-up Stripe card processing fee (2.9% + $0.30) paid by the sender
+  /// so the host retains 100% of the tip amount with $0 platform fee.
+  double _processingFeeFor(double tipAmount) {
+    if (tipAmount <= 0) return 0.0;
+    final tipCents = (tipAmount * 100).round();
+    final totalCents =
+        ((tipCents + _stripeFixedFeeCents) / (1 - _stripePercentFee)).ceil();
+    return (totalCents - tipCents) / 100.0;
+  }
+
+  double _totalChargeFor(double tipAmount) {
+    if (tipAmount <= 0) return 0.0;
+    return tipAmount + _processingFeeFor(tipAmount);
   }
 
   @override
@@ -408,12 +426,126 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
               );
             }),
 
-            SizedBox(height: 22.h),
+            SizedBox(height: 16.h),
+
+            // Transparent Fee Breakdown (0% platform fee; sender covers Stripe processing fee)
+            if (_finalAmount >= 1.0) ...[
+              Builder(
+                builder: (_) {
+                  final tip = _finalAmount;
+                  final processingFee = _processingFeeFor(tip);
+                  final total = _totalChargeFor(tip);
+                  return Container(
+                    padding: EdgeInsets.all(12.r),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF11111E),
+                      borderRadius: BorderRadius.circular(14.r),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Tip to Host (100%)",
+                              style: TextStyle(color: Colors.white70, fontSize: 12.sp),
+                            ),
+                            Text(
+                              "\$${tip.toStringAsFixed(2)}",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 6.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Platform Fee",
+                              style: TextStyle(color: Colors.white70, fontSize: 12.sp),
+                            ),
+                            Text(
+                              "\$0.00 (Free)",
+                              style: TextStyle(
+                                color: const Color(0xFF22C55E),
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 6.h),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Processing Fee",
+                              style: TextStyle(color: Colors.white70, fontSize: 12.sp),
+                            ),
+                            Text(
+                              "\$${processingFee.toStringAsFixed(2)}",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8.h),
+                          child: Divider(color: Colors.white12, height: 1.h),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "Total",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              "\$${total.toStringAsFixed(2)}",
+                              style: TextStyle(
+                                color: const Color(0xFFFFB800),
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 6.h),
+                        Text(
+                          "No fees on tips. Processing fee is covered by the sender so the host retains 100% of your tip.",
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 10.5.sp,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              SizedBox(height: 16.h),
+            ] else ...[
+              SizedBox(height: 6.h),
+            ],
 
             // Submit Button
             Obx(() {
               final isSending = widget.ctrl.isSendingTip.value;
               final amount = _finalAmount;
+              final total = _totalChargeFor(amount);
 
               return SizedBox(
                 width: double.infinity,
@@ -453,17 +585,17 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
                   ),
                   child: isSending
                       ? ButtonLoader()
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Send \$${amount.toStringAsFixed(2)} Tip 💛",
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w900,
-                              ),
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            amount >= 1.0
+                                ? "Send \$${amount.toStringAsFixed(2)} Tip · Total \$${total.toStringAsFixed(2)} 💛"
+                                : "Send Tip 💛",
+                            style: TextStyle(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w900,
                             ),
-                          ],
+                          ),
                         ),
                 ),
               );

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../../core/app_route.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
@@ -15,10 +14,13 @@ import '../controller/profile_controller.dart';
 import '../controller/profile_information_controller.dart';
 import '../../../../global/controllers/safety_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/helper/share_helper.dart';
 import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class AccountSettingsScreen extends StatelessWidget {
   const AccountSettingsScreen({super.key});
+
+  static final RxBool _isPublicProfile = true.obs;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,15 @@ class AccountSettingsScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: Container(
+              padding: EdgeInsets.all(6.r),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.06),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              ),
+              child: Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 16.sp),
+            ),
             onPressed: () => Get.back(),
           ),
           title: Text(
@@ -42,6 +52,7 @@ class AccountSettingsScreen extends StatelessWidget {
               color: Colors.white,
               fontSize: 18.sp,
               fontWeight: FontWeight.w900,
+              letterSpacing: 0.2,
             ),
           ),
           centerTitle: true,
@@ -52,129 +63,153 @@ class AccountSettingsScreen extends StatelessWidget {
               child: CircularProgressIndicator(color: Color(0xFF8B9BFF)),
             );
           }
-          return SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Column(
-              children: [
-                SizedBox(height: 32.h),
 
-                // Profile Header
-                Center(
-                  child: Column(
-                    children: [
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            width: 130.r,
-                            height: 130.r,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF8B9BFF), Color(0xFFFF8BFF)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFF8B9BFF,
-                                  ).withOpacity(0.3),
-                                  blurRadius: 20.r,
-                                  spreadRadius: 2.r,
-                                ),
-                              ],
+          final displayName = controller.fullNameController.text.isNotEmpty
+              ? controller.fullNameController.text
+              : "AREIS Member";
+          final displayEmail = controller.emailController.text.isNotEmpty
+              ? controller.emailController.text
+              : "";
+
+          return SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.fromLTRB(18.w, 12.h, 18.w, 28.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Elevated Profile Hero Card ──
+                  Container(
+                    padding: EdgeInsets.all(16.r),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF1D1E33),
+                          const Color(0xFF141524),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(22.r),
+                      border: Border.all(
+                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.24),
+                        width: 1.1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 18.r,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(2.5.r),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [Color(0xFF8B9BFF), Color(0xFFD946EF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
                           ),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(60.r),
+                          child: ClipOval(
                             child: controller.profileImageUrl.value.isNotEmpty
                                 ? Image.network(
                                     controller.profileImageUrl.value,
-                                    width: 120.r,
-                                    height: 120.r,
+                                    width: 58.r,
+                                    height: 58.r,
                                     fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            CircleAvatar(
-                                              radius: 60.r,
-                                              backgroundColor: Colors.white10,
-                                              child: Icon(
-                                                Icons.person,
-                                                color: Colors.white24,
-                                                size: 60.sp,
-                                              ),
-                                            ),
+                                    errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
                                   )
-                                : CircleAvatar(
-                                    radius: 60.r,
-                                    backgroundColor: Colors.white10,
-                                    child: Icon(
-                                      Icons.person,
-                                      color: Colors.white24,
-                                      size: 60.sp,
-                                    ),
-                                  ),
+                                : _buildFallbackAvatar(),
                           ),
-                        ],
-                      ),
-                      SizedBox(height: 24.h),
-                      Text(
-                        controller.fullNameController.text.isNotEmpty
-                            ? controller.fullNameController.text
-                            : "User Name",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24.sp,
-                          fontWeight: FontWeight.w900,
                         ),
-                      ),
-                      // SizedBox(height: 12.h),
-                      // Container(
-                      //   padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
-                      //   decoration: BoxDecoration(
-                      //     color: const Color(0xFF1E1E2C),
-                      //     borderRadius: BorderRadius.circular(20.r),
-                      //   ),
-                      //   child: Text(
-                      //     "CHANGE PICTURE",
-                      //     style: TextStyle(
-                      //       color: const Color(0xFF8B9BFF),
-                      //       fontSize: 12.sp,
-                      //       fontWeight: FontWeight.w900,
-                      //       letterSpacing: 1,
-                      //     ),
-                      //   ),
-                      // ),
-                    ],
+                        SizedBox(width: 14.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17.sp,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              if (displayEmail.isNotEmpty) ...[
+                                SizedBox(height: 3.h),
+                                Text(
+                                  displayEmail,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        InkWell(
+                          onTap: () => Get.toNamed(AppRoute.profileInformation),
+                          borderRadius: BorderRadius.circular(12.r),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 7.h),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF8B9BFF).withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(
+                                color: const Color(0xFF8B9BFF).withValues(alpha: 0.35),
+                              ),
+                            ),
+                            child: Text(
+                              "Edit",
+                              style: TextStyle(
+                                color: const Color(0xFFB5C0FF),
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-                SizedBox(height: 48.h),
+                  SizedBox(height: 24.h),
 
-                // Account Details Section
-                _buildSectionTitle("ACCOUNT DETAILS"),
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF11111E),
-                    borderRadius: BorderRadius.circular(24.r),
-                  ),
-                  child: Column(
+                  // ── Account Details Section ──
+                  _buildSectionTitle("ACCOUNT DETAILS"),
+                  _buildCardGroup(
                     children: [
                       _buildSettingsTile(
                         icon: Icons.person_outline_rounded,
+                        iconColor: const Color(0xFF8B9BFF),
                         title: "Profile Information",
+                        subtitle: "Name, username, phone & address",
                         showArrow: true,
                         onTap: () => Get.toNamed(AppRoute.profileInformation),
                       ),
-                      Divider(color: Colors.white.withOpacity(0.05), height: 1),
+                      _buildCardDivider(),
                       _buildSettingsTile(
                         icon: Icons.lock_outline_rounded,
+                        iconColor: const Color(0xFF38BDF8),
                         title: "Security & Password",
+                        subtitle: "Update your account password",
                         showArrow: true,
                         onTap: () => Get.toNamed(AppRoute.changePassword),
                       ),
-                      Divider(color: Colors.white.withOpacity(0.05), height: 1),
+                      _buildCardDivider(),
                       Obx(() {
                         final pCtrl = Get.isRegistered<ProfileController>() ? Get.find<ProfileController>() : null;
                         if (pCtrl == null) return const SizedBox.shrink();
@@ -182,6 +217,7 @@ class AccountSettingsScreen extends StatelessWidget {
                         final partner = pCtrl.partnerName.value;
                         return _buildSettingsTile(
                           icon: Icons.local_offer_outlined,
+                          iconColor: const Color(0xFFF59E0B),
                           title: "Partner / Promo Code",
                           subtitle: hasPromo
                               ? "Linked to: ${partner.isNotEmpty ? partner : pCtrl.promoCode.value}"
@@ -189,11 +225,11 @@ class AccountSettingsScreen extends StatelessWidget {
                           showArrow: true,
                           trailing: hasPromo
                               ? Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                                  padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF22C55E).withOpacity(0.15),
+                                    color: const Color(0xFF22C55E).withValues(alpha: 0.14),
                                     borderRadius: BorderRadius.circular(8.r),
-                                    border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.4)),
+                                    border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.4)),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -213,69 +249,65 @@ class AccountSettingsScreen extends StatelessWidget {
                       }),
                     ],
                   ),
-                ),
 
-                SizedBox(height: 32.h),
+                  SizedBox(height: 22.h),
 
-                // Preferences Section
-                _buildSectionTitle("PREFERENCES"),
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF11111E),
-                    borderRadius: BorderRadius.circular(24.r),
-                  ),
-                  child: Column(
+                  // ── Preferences & Privacy Section ──
+                  _buildSectionTitle("PREFERENCES & PRIVACY"),
+                  _buildCardGroup(
                     children: [
                       _buildSettingsTile(
                         icon: Icons.account_balance_wallet_outlined,
+                        iconColor: const Color(0xFF10B981),
                         title: "Payment Methods",
                         subtitle: "Manage saved cards & billing",
                         showArrow: true,
                         onTap: () => Get.toNamed(AppRoute.paymentMethods),
                       ),
-                      Divider(color: Colors.white.withOpacity(0.05), height: 1),
+                      _buildCardDivider(),
                       _buildSettingsTile(
                         icon: Icons.tune_rounded,
+                        iconColor: const Color(0xFFA78BFA),
                         title: "Preferences",
+                        subtitle: "Interests, categories & notifications",
                         showArrow: true,
                         onTap: () => Get.toNamed(AppRoute.userPreferences),
                       ),
-                      Divider(color: Colors.white.withOpacity(0.05), height: 1),
+                      _buildCardDivider(),
                       _buildSettingsTile(
                         icon: Icons.block_rounded,
+                        iconColor: const Color(0xFFFB923C),
                         title: "Blocked Users",
                         subtitle: "Manage accounts you have blocked",
                         showArrow: true,
                         onTap: () => Get.toNamed(AppRoute.blockedUsers),
                       ),
-                      Divider(color: Colors.white.withOpacity(0.05), height: 1),
-                      _buildSettingsTile(
-                        icon: Icons.visibility_outlined,
-                        title: "Public Profile",
-                        subtitle: "Visible to other bidders",
-                        trailing: Switch(
-                          value: true,
-                          onChanged: (v) {},
-                          activeColor: const Color(0xFF8B9BFF),
-                          activeTrackColor: const Color(
-                            0xFF8B9BFF,
-                          ).withOpacity(0.3),
-                        ),
-                      ),
+                      _buildCardDivider(),
+                      Obx(() => _buildSettingsTile(
+                            icon: Icons.visibility_outlined,
+                            iconColor: const Color(0xFF818CF8),
+                            title: "Public Profile",
+                            subtitle: _isPublicProfile.value
+                                ? "Visible to other collectors & bidders"
+                                : "Hidden from public search",
+                            trailing: Transform.scale(
+                              scale: 0.88,
+                              child: Switch.adaptive(
+                                value: _isPublicProfile.value,
+                                onChanged: (v) => _isPublicProfile.value = v,
+                                activeColor: const Color(0xFF8B9BFF),
+                                activeTrackColor: const Color(0xFF8B9BFF).withValues(alpha: 0.35),
+                              ),
+                            ),
+                          )),
                     ],
                   ),
-                ),
 
-                SizedBox(height: 32.h),
+                  SizedBox(height: 22.h),
 
-                // App & Updates Section
-                _buildSectionTitle("APP & UPDATES"),
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF11111E),
-                    borderRadius: BorderRadius.circular(24.r),
-                  ),
-                  child: Column(
+                  // ── App & Updates Section ──
+                  _buildSectionTitle("APP & UPDATES"),
+                  _buildCardGroup(
                     children: [
                       Obx(() {
                         final shorebird = ShorebirdService.instance;
@@ -295,11 +327,12 @@ class AccountSettingsScreen extends StatelessWidget {
                               ? "v1.0.3+12 • Patch #${patch.number} (Up to date)"
                               : "v1.0.3+12 • Base release (Up to date)";
                         } else {
-                          subtitleText = "v1.0.3+12 • Shorebird OTA enabled";
+                          subtitleText = "v1.0.3+12 • Up to date";
                         }
 
                         return _buildSettingsTile(
                           icon: Icons.system_update_alt_rounded,
+                          iconColor: const Color(0xFF2DD4BF),
                           title: "Check for Updates",
                           subtitle: subtitleText,
                           showArrow: true,
@@ -335,66 +368,71 @@ class AccountSettingsScreen extends StatelessWidget {
                       }),
                     ],
                   ),
-                ),
 
-                SizedBox(height: 32.h),
+                  SizedBox(height: 22.h),
 
-                // Account Safety & Danger Zone Section
-                _buildSectionTitle("ACCOUNT SAFETY"),
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF11111E),
-                    borderRadius: BorderRadius.circular(24.r),
-                  ),
-                  child: Column(
+                  // ── Danger Zone / Account Safety ──
+                  _buildSectionTitle("ACCOUNT SAFETY", accentColor: const Color(0xFFEF4444)),
+                  _buildCardGroup(
+                    borderColor: const Color(0xFFEF4444).withValues(alpha: 0.28),
+                    backgroundColor: const Color(0xFF1A121B),
                     children: [
                       _buildSettingsTile(
                         icon: Icons.delete_outline_rounded,
+                        iconColor: const Color(0xFFEF4444),
                         title: "Delete Account",
+                        titleColor: const Color(0xFFFCA5A5),
                         subtitle: "Permanently remove your account and data",
                         showArrow: true,
                         onTap: () => SafetyController.showDeleteAccountDialog(context),
                       ),
                     ],
                   ),
-                ),
 
-                SizedBox(height: 40.h),
+                  SizedBox(height: 26.h),
 
-                // Sign Out Button
-                GestureDetector(
-                  onTap: () => _showSignOutDialog(context),
-                  child: Container(
-                    width: double.infinity,
-                    height: 70.h,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E2C),
-                      borderRadius: BorderRadius.circular(35.r),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.logout_rounded,
-                          color: Colors.white38,
-                          size: 24.sp,
-                        ),
-                        SizedBox(width: 12.w),
-                        Text(
-                          "Sign Out",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w900,
+                  // ── Sleek Sign Out Button ──
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showSignOutDialog(context),
+                      borderRadius: BorderRadius.circular(18.r),
+                      child: Container(
+                        width: double.infinity,
+                        height: 54.h,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(18.r),
+                          border: Border.all(
+                            color: const Color(0xFFEF4444).withValues(alpha: 0.30),
+                            width: 1.1,
                           ),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.logout_rounded,
+                              color: const Color(0xFFF87171),
+                              size: 20.sp,
+                            ),
+                            SizedBox(width: 10.w),
+                            Text(
+                              "Sign Out",
+                              style: TextStyle(
+                                color: const Color(0xFFFCA5A5),
+                                fontSize: 15.5.sp,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-
-                SizedBox(height: 48.h),
-              ],
+                ],
+              ),
             ),
           );
         }),
@@ -402,18 +440,77 @@ class AccountSettingsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildFallbackAvatar() {
+    return Container(
+      width: 58.r,
+      height: 58.r,
+      color: const Color(0xFF23243A),
+      child: Icon(Icons.person_rounded, color: Colors.white54, size: 30.sp),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, {Color accentColor = const Color(0xFF8B9BFF)}) {
     return Padding(
-      padding: EdgeInsets.only(left: 4.w, bottom: 16.h),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: Colors.white38,
-          fontSize: 11.sp,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1,
-        ),
+      padding: EdgeInsets.only(left: 4.w, bottom: 10.h),
+      child: Row(
+        children: [
+          Container(
+            width: 3.w,
+            height: 12.h,
+            decoration: BoxDecoration(
+              color: accentColor,
+              borderRadius: BorderRadius.circular(2.r),
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white54,
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.1,
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildCardGroup({
+    required List<Widget> children,
+    Color? backgroundColor,
+    Color? borderColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor ?? const Color(0xFF151624),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: borderColor ?? Colors.white.withValues(alpha: 0.08),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.28),
+            blurRadius: 14.r,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20.r),
+        child: Column(children: children),
+      ),
+    );
+  }
+
+  Widget _buildCardDivider() {
+    return Divider(
+      color: Colors.white.withValues(alpha: 0.06),
+      height: 1,
+      indent: 68.w,
+      endIndent: 16.w,
     );
   }
 
@@ -421,6 +518,8 @@ class AccountSettingsScreen extends StatelessWidget {
     required IconData icon,
     required String title,
     String? subtitle,
+    Color iconColor = const Color(0xFF8B9BFF),
+    Color titleColor = Colors.white,
     bool showArrow = false,
     Widget? trailing,
     VoidCallback? onTap,
@@ -429,21 +528,27 @@ class AccountSettingsScreen extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16.r),
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+        splashColor: iconColor.withValues(alpha: 0.12),
+        highlightColor: Colors.white.withValues(alpha: 0.03),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
           child: Row(
             children: [
               Container(
-                padding: EdgeInsets.all(12.r),
+                width: 40.r,
+                height: 40.r,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E2C),
+                  color: iconColor.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: iconColor.withValues(alpha: 0.25),
+                    width: 1,
+                  ),
                 ),
-                child: Icon(icon, color: const Color(0xFF8B9BFF), size: 22.sp),
+                alignment: Alignment.center,
+                child: Icon(icon, color: iconColor, size: 20.sp),
               ),
-              SizedBox(width: 20.w),
+              SizedBox(width: 14.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,19 +557,22 @@ class AccountSettingsScreen extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.sp,
+                        color: titleColor,
+                        fontSize: 14.5.sp,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (subtitle != null) ...[
-                      SizedBox(height: 4.h),
+                    if (subtitle != null && subtitle.isNotEmpty) ...[
+                      SizedBox(height: 2.5.h),
                       Text(
                         subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
+                          color: Colors.white54,
+                          fontSize: 11.5.sp,
+                          fontWeight: FontWeight.w500,
+                          height: 1.25,
                         ),
                       ),
                     ],
@@ -472,15 +580,17 @@ class AccountSettingsScreen extends StatelessWidget {
                 ),
               ),
               if (trailing != null) ...[
+                SizedBox(width: 8.w),
                 trailing,
-                if (showArrow) SizedBox(width: 8.w),
               ],
-              if (showArrow)
+              if (showArrow) ...[
+                SizedBox(width: 6.w),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: Colors.white24,
-                  size: 24.sp,
+                  color: Colors.white30,
+                  size: 20.sp,
                 ),
+              ],
             ],
           ),
         ),
@@ -800,9 +910,10 @@ class AccountSettingsScreen extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         final code = pCtrl.promoCode.value;
-                        Share.share(
-                          "Join me on CultureCards! Use promo code $code when you sign up: https://areisco.com/signup?promo=$code",
-                          subject: "Join CultureCards with Promo Code $code",
+                        ShareHelper.shareText(
+                          context,
+                          "Join me on AREIS! Use promo code $code when you sign up: https://api.areisco.com/signup?promo=$code",
+                          subject: "Join AREIS with Promo Code $code",
                         );
                       },
                       icon: Icon(Icons.share_rounded, color: const Color(0xFF0F0B1E), size: 16.sp),
@@ -1076,9 +1187,10 @@ class AccountSettingsScreen extends StatelessWidget {
                     TextButton(
                       onPressed: () {
                         final myCode = pCtrl.username.value.isNotEmpty ? pCtrl.username.value.replaceAll('@', '') : 'OG';
-                        Share.share(
-                          "Join me on CultureCards! Sign up with my invite link: https://areisco.com/signup?promo=$myCode",
-                          subject: "Join CultureCards",
+                        ShareHelper.shareText(
+                          context,
+                          "Join me on AREIS! Sign up with my invite link: https://api.areisco.com/signup?promo=$myCode",
+                          subject: "Join AREIS",
                         );
                       },
                       child: Text("Share", style: TextStyle(color: const Color(0xFF8B9BFF), fontWeight: FontWeight.bold, fontSize: 13.sp)),

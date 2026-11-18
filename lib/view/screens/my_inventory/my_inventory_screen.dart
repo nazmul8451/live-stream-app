@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../data/helpers/api_list.dart';
+import '../../../data/helpers/shared_prefe.dart';
 import '../../../data/services/api_client.dart';
 import '../../../data/services/api_url.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
@@ -29,7 +30,13 @@ class MyInventoryController extends GetxController {
   Future<void> load() async {
     isLoading.value = items.isEmpty;
     try {
-      final res = await _api.getData(ApiUrl.myProducts);
+      var res = await _api.getData(ApiUrl.myProducts);
+      if (res.statusCode == 403) {
+        final uid = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+        if (uid.isNotEmpty) {
+          res = await _api.getData("${ApiUrl.products}?sellerId=$uid&limit=100");
+        }
+      }
       if (res.statusCode == 200) {
         items.assignAll(extractApiList(jsonDecode(res.body)));
       } else {

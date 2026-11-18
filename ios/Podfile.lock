@@ -149,6 +149,9 @@ PODS:
   - video_player_avfoundation (0.0.1):
     - Flutter
     - FlutterMacOS
+  - webview_flutter_wkwebview (0.0.1):
+    - Flutter
+    - FlutterMacOS
 
 DEPENDENCIES:
   - agora_rtc_engine (from `.symlinks/plugins/agora_rtc_engine/ios`)
@@ -166,6 +169,7 @@ DEPENDENCIES:
   - stripe_ios (from `.symlinks/plugins/stripe_ios/ios`)
   - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
   - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
+  - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
 
 SPEC REPOS:
   trunk:
@@ -220,6 +224,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
   video_player_avfoundation:
     :path: ".symlinks/plugins/video_player_avfoundation/darwin"
+  webview_flutter_wkwebview:
+    :path: ".symlinks/plugins/webview_flutter_wkwebview/darwin"
 
 SPEC CHECKSUMS:
   agora_rtc_engine: c8ad6313ec7a1b2f28ab3328ff485df6d19a32de
@@ -233,7 +239,7 @@ SPEC CHECKSUMS:
   FirebaseCoreInternal: 93b2d5f9e184c6818a04433891c358b0720a6a38
   FirebaseInstallations: 933b2747e8594084c9117b65e8358fce29d7ced7
   FirebaseMessaging: 422bb80cbf8ff83e69e50bea4d4984fc4704f665
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   flutter_local_notifications: 643a3eda1ce1c0599413ca31672536d423dee214
   GoogleDataTransport: a24e58982ab3ba2f64d79613e027fe7f57e88539
   GoogleUtilities: 4e0c2ad9fa0d0d18b5c4df8bf57b461cba35b0bb
@@ -256,6 +262,7 @@ SPEC CHECKSUMS:
   StripeUICore: 17a4f3adb81ae05ab885e1b353022a430176eab1
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
+  webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
 
 PODFILE CHECKSUM: cad1b68eeed63ef0c1980cd3ea5d334476676522
 

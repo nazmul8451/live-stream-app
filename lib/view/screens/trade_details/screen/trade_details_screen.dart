@@ -24,10 +24,14 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
     final detailsController = Get.isRegistered<TradeDetailsController>()
         ? Get.find<TradeDetailsController>()
         : Get.put(TradeDetailsController());
-    if (Get.arguments != null && Get.arguments is Map) {
+    if (Get.arguments != null &&
+        Get.arguments is Map &&
+        detailsController.product.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        detailsController.product.assignAll(Map<String, dynamic>.from(Get.arguments));
-        detailsController.currentImageIndex.value = 0;
+        if (detailsController.product.isEmpty) {
+          detailsController.product.assignAll(Map<String, dynamic>.from(Get.arguments));
+          detailsController.currentImageIndex.value = 0;
+        }
       });
     }
     return CustomBackground(
@@ -68,9 +72,15 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
               final dynamic categoryRaw = product['category'];
               String category = '';
               if (categoryRaw is Map) {
-                category = categoryRaw['name']?.toString() ?? '';
+                category = (categoryRaw['name'] ?? categoryRaw['title'] ?? '').toString().trim();
               } else if (categoryRaw != null) {
-                category = categoryRaw.toString();
+                category = categoryRaw.toString().trim();
+              }
+              // Never render a raw 24-hex MongoDB ObjectId while category name is resolving
+              if (RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(category)) {
+                category = '';
+              } else if (category == 'Other / Not Listed') {
+                category = 'Other';
               }
 
               final condition = (product['condition'] ?? '').toString();
@@ -236,7 +246,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                           SizedBox(height: 14.h),
                           _buildSimilarTrades(product),
 
-                          SizedBox(height: 120.h),
+                          SizedBox(height: 96.h),
                         ],
                       ),
                     ),
@@ -261,7 +271,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding: EdgeInsets.fromLTRB(24.w, 20.h, 24.w, 32.h),
+                    padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 12.h),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -269,7 +279,9 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                         colors: [Colors.black.withOpacity(0.0), Colors.black.withOpacity(0.95), Colors.black],
                       ),
                     ),
-                    child: Row(
+                    child: SafeArea(
+                      top: false,
+                      child: Row(
                       children: [
                         // Edit Listing Button
                         Expanded(
@@ -334,6 +346,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                         ),
                       ],
                     ),
+                    ),
                   ),
                 );
               }
@@ -352,7 +365,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: EdgeInsets.fromLTRB(24.w, 20.h, 24.w, 32.h),
+                  padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 12.h),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
@@ -360,7 +373,9 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                       colors: [Colors.black.withOpacity(0.0), Colors.black.withOpacity(0.95), Colors.black],
                     ),
                   ),
-                  child: Row(
+                  child: SafeArea(
+                    top: false,
+                    child: Row(
                     children: [
                       if (allowsOffers || hasTrade)
                         Expanded(
@@ -417,6 +432,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                           ),
                         ),
                     ],
+                  ),
                   ),
                 ),
               );

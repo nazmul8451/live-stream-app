@@ -19,6 +19,7 @@ import '../../home/controller/home_controller.dart';
 import '../../spin_wheel/controller/spin_wheel_controller.dart';
 import '../screen/post_show_summary_screen.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import '../../../../data/services/stripe_config.dart';
 
 class FloatingHeart {
   final double id;
@@ -2677,7 +2678,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   Future<bool> addLiveStreamItem({
     required String title,
     double price = 0.0,
-    String category = 'Other / Not Listed',
+    String category = 'Other',
     String condition = 'Near Mint',
     bool isGiveaway = false,
     String? image,
@@ -3115,7 +3116,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       if (pubKey != null && pubKey.toString().isNotEmpty) {
         Stripe.publishableKey = pubKey.toString();
       } else {
-        Stripe.publishableKey = "pk_test_51NJLdJF5nDLFMGmox0iseTJZp42wfLi6Ub41OGs7hoMl0GSFe93a0My7PxdF2eKsxV1rvUf8vVw4p6jl9h9pCmEQ00WSln5w44";
+        Stripe.publishableKey = StripeConfig.publishableKey;
       }
       await Stripe.instance.applySettings();
 
@@ -3649,7 +3650,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         if (data['status'] == 'succeeded') {
           showAppSnackbar(
             "Tip Sent! 🎉",
-            "You tipped \$${amount.toStringAsFixed(2)} to the host! Thank you for your support.",
+            "You tipped \$${amount.toStringAsFixed(2)} — 100% goes to the host! Thank you for your support.",
             backgroundColor: const Color(0xFF22C55E),
             colorText: Colors.white,
             snackPosition: SnackPosition.BOTTOM,
@@ -3663,7 +3664,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           final clientSecret = data['clientSecret'].toString();
           final ephemeralKey = data['ephemeralKey']?.toString();
           final customerId = data['customerId']?.toString();
-          final pubKey = data['publishableKey']?.toString() ?? "pk_test_51NJLdJF5nDLFMGmox0iseTJZp42wfLi6Ub41OGs7hoMl0GSFe93a0My7PxdF2eKsxV1rvUf8vVw4p6jl9h9pCmEQ00WSln5w44";
+          final pubKey = data['publishableKey']?.toString() ?? StripeConfig.publishableKey;
 
           Stripe.publishableKey = pubKey;
           await Stripe.instance.applySettings();
@@ -3701,7 +3702,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
 
           showAppSnackbar(
             "Tip Sent! 🎉",
-            "You tipped \$${amount.toStringAsFixed(2)} to the host! Thank you for your support.",
+            "You tipped \$${amount.toStringAsFixed(2)} — 100% goes to the host! Thank you for your support.",
             backgroundColor: const Color(0xFF22C55E),
             colorText: Colors.white,
             snackPosition: SnackPosition.BOTTOM,

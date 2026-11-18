@@ -16,6 +16,7 @@ class OrderCheckoutScreen extends StatelessWidget {
     final controller = Get.put(OrderCheckoutController());
 
     return CustomBackground(
+      safeAreaBottom: false,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -95,7 +96,7 @@ class OrderCheckoutScreen extends StatelessWidget {
             ),
           );
         }),
-        bottomNavigationBar: SafeArea(child: _buildBottomPayBar(controller)),
+        bottomNavigationBar: _buildBottomPayBar(controller),
       ),
     );
   }
@@ -608,84 +609,89 @@ class OrderCheckoutScreen extends StatelessWidget {
 
   Widget _buildBottomPayBar(OrderCheckoutController controller) {
     return Container(
-      padding: EdgeInsets.fromLTRB(24.w, 16.h, 24.w, 32.h),
       decoration: BoxDecoration(
         color: const Color(0xFF0F0B1E),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.6),
+            color: Colors.black.withValues(alpha: 0.6),
             blurRadius: 20.r,
             offset: const Offset(0, -6),
           ),
         ],
       ),
-      child: Obx(() => Row(
-        children: [
-          // Total amount summary on left
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 12.h),
+          child: Obx(() => Row(
             children: [
-              Text(
-                "TOTAL PAYABLE",
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                ),
+              // Total amount summary on left
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "TOTAL PAYABLE",
+                    style: TextStyle(
+                      color: Colors.white38,
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    "\$${controller.totalAmount.value.toStringAsFixed(2)}",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 2.h),
-              Text(
-                "\$${controller.totalAmount.value.toStringAsFixed(2)}",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.w900,
+              SizedBox(width: 20.w),
+
+              // Pay Button on right
+              Expanded(
+                child: SizedBox(
+                  height: 52.h,
+                  child: ElevatedButton(
+                    onPressed: controller.isProcessing.value ? null : () => controller.proceedToPayment(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B9BFF),
+                      disabledBackgroundColor: const Color(0xFF8B9BFF).withValues(alpha: 0.6),
+                      foregroundColor: const Color(0xFF0F0B1E),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(26.r),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: controller.isProcessing.value
+                        ? const ButtonLoader()
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.lock_outline_rounded, size: 18.sp, color: const Color(0xFF0F0B1E)),
+                              SizedBox(width: 8.w),
+                              Text(
+                                "Pay with Stripe",
+                                style: TextStyle(
+                                  fontSize: 15.5.sp,
+                                  fontWeight: FontWeight.w900,
+                                  color: const Color(0xFF0F0B1E),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 ),
               ),
             ],
-          ),
-          SizedBox(width: 20.w),
-
-          // Pay Button on right
-          Expanded(
-            child: SizedBox(
-              height: 56.h,
-              child: ElevatedButton(
-                onPressed: controller.isProcessing.value ? null : () => controller.proceedToPayment(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8B9BFF),
-                  disabledBackgroundColor: const Color(0xFF8B9BFF).withOpacity(0.6),
-                  foregroundColor: const Color(0xFF0F0B1E),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28.r),
-                  ),
-                  elevation: 0,
-                ),
-                child: controller.isProcessing.value
-                    ? ButtonLoader()
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.lock_outline_rounded, size: 18.sp, color: const Color(0xFF0F0B1E)),
-                          SizedBox(width: 8.w),
-                          Text(
-                            "Pay with Stripe",
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w900,
-                              color: const Color(0xFF0F0B1E),
-                            ),
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-          ),
-        ],
-      )),
+          )),
+        ),
+      ),
     );
   }
 }

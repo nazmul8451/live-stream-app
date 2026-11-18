@@ -20,8 +20,10 @@ class MessagesController extends GetxController {
   final updateLogs = <Map<String, dynamic>>[].obs;
   final Set<String> locallyReadChatIds = <String>{};
   final Set<String> locallyReadNotificationIds = <String>{};
+  bool _isFetchingRooms = false;
+  DateTime? _lastRoomsFetch;
 
-  void markRoomAsRead(String roomId) {
+  void markRoomAsRead(String roomId, {bool syncBackend = true}) {
     if (roomId.isEmpty) return;
     locallyReadChatIds.add(roomId);
 
@@ -35,9 +37,11 @@ class MessagesController extends GetxController {
       chatRooms.refresh();
     }
 
-    try {
-      _apiClient.patchData("${ApiUrl.chat}/$roomId/read", {});
-    } catch (_) {}
+    if (syncBackend && !roomId.startsWith('mock_')) {
+      try {
+        _apiClient.patchData("${ApiUrl.chat}/$roomId/read", {});
+      } catch (_) {}
+    }
 
     _updateGlobalBadge();
   }
@@ -84,13 +88,24 @@ class MessagesController extends GetxController {
     fetchNotifications();
   }
 
-  Future<void> fetchChatRooms() async {
+  Future<void> fetchChatRooms({bool force = false}) async {
     if (SharePrefsHelper.isGuest || SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isEmpty) {
       isLoading.value = false;
       chatRooms.clear();
       return;
     }
-    isLoading.value = true;
+    if (_isFetchingRooms) return;
+    final now = DateTime.now();
+    if (!force &&
+        _lastRoomsFetch != null &&
+        now.difference(_lastRoomsFetch!) < const Duration(seconds: 2)) {
+      return;
+    }
+    _isFetchingRooms = true;
+    _lastRoomsFetch = now;
+    if (chatRooms.isEmpty) {
+      isLoading.value = true;
+    }
     try {
       final response = await _apiClient.getData(ApiUrl.chat);
       if (response.statusCode == 200) {
@@ -230,6 +245,7 @@ class MessagesController extends GetxController {
       Get.log("Error fetching chat rooms: $e");
       _loadMockChatRooms();
     } finally {
+      _isFetchingRooms = false;
       isLoading.value = false;
     }
   }

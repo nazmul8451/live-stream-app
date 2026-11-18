@@ -9,6 +9,7 @@ import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/s3_upload_service.dart';
 import '../../profile/controller/profile_controller.dart';
+import 'package:live_stream_app/core/areis_categories.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class CreateTradeController extends GetxController {
@@ -35,46 +36,12 @@ class CreateTradeController extends GetxController {
   final RxBool allowOffers = true.obs; // Toggle for accepting custom offers
   final minOfferAmountController = TextEditingController(); // Minimum acceptable offer amount
 
-  static const List<String> default16Categories = [
-    "Trading Cards & TCG (Sports Cards, Pokémon, MTG)",
-    "Sports Memorabilia (Jerseys, Autographs, Memorabilia)",
-    "Toys & Collectibles (Action Figures, LEGO, Die-Cast, Plush)",
-    "Sneakers & Streetwear",
-    "Fashion & Apparel (Designer Bags, Clothing, Accessories)",
-    "Watches & Luxury",
-    "Jewelry & Accessories",
-    "Electronics & Tech (Phones, Tablets, Technology)",
-    "Coins & Currency",
-    "Comics, Anime & Manga",
-    "Video Games",
-    "Vintage & Antiques",
-    "Home & Lifestyle",
-    "Beauty & Personal Care",
-    "Books, Music & Media",
-    "Other / Not Listed",
-  ];
+  static List<String> get default16Categories => areisCategoryNames;
 
-  var selectedCategory = "Trading Cards & TCG (Sports Cards, Pokémon, MTG)".obs;
+  var selectedCategory = areisCategories.first.name.obs;
   var selectedCondition = "Mint".obs;
 
-  final RxList<String> categories = <String>[
-    "Trading Cards & TCG (Sports Cards, Pokémon, MTG)",
-    "Sports Memorabilia (Jerseys, Autographs, Memorabilia)",
-    "Toys & Collectibles (Action Figures, LEGO, Die-Cast, Plush)",
-    "Sneakers & Streetwear",
-    "Fashion & Apparel (Designer Bags, Clothing, Accessories)",
-    "Watches & Luxury",
-    "Jewelry & Accessories",
-    "Electronics & Tech (Phones, Tablets, Technology)",
-    "Coins & Currency",
-    "Comics, Anime & Manga",
-    "Video Games",
-    "Vintage & Antiques",
-    "Home & Lifestyle",
-    "Beauty & Personal Care",
-    "Books, Music & Media",
-    "Other / Not Listed",
-  ].obs;
+  final RxList<String> categories = List<String>.from(areisCategoryNames).obs;
   final RxMap<String, String> categoryNameToId = <String, String>{}.obs;
   final conditions = ["Mint", "Near Mint", "Excellent", "Good", "Fair"];
 
@@ -91,22 +58,7 @@ class CreateTradeController extends GetxController {
   var targetCategory = "Any Category".obs;
   final RxList<String> targetCategories = <String>[
     "Any Category",
-    "Trading Cards & TCG (Sports Cards, Pokémon, MTG)",
-    "Sports Memorabilia (Jerseys, Autographs, Memorabilia)",
-    "Toys & Collectibles (Action Figures, LEGO, Die-Cast, Plush)",
-    "Sneakers & Streetwear",
-    "Fashion & Apparel (Designer Bags, Clothing, Accessories)",
-    "Watches & Luxury",
-    "Jewelry & Accessories",
-    "Electronics & Tech (Phones, Tablets, Technology)",
-    "Coins & Currency",
-    "Comics, Anime & Manga",
-    "Video Games",
-    "Vintage & Antiques",
-    "Home & Lifestyle",
-    "Beauty & Personal Care",
-    "Books, Music & Media",
-    "Other / Not Listed",
+    ...areisCategoryNames,
   ].obs;
 
   Future<void> pickImages() async {
@@ -190,26 +142,45 @@ class CreateTradeController extends GetxController {
         }
 
         categoryNameToId.clear();
-        final List<String> parsed = [];
+        final Map<String, String> backendByLower = {};
         for (var item in dataList) {
           if (item is Map) {
-            final String name = item['name']?.toString() ?? item['title']?.toString() ?? "";
-            final String id = item['_id']?.toString() ?? item['id']?.toString() ?? "";
+            final String name =
+                (item['name']?.toString() ?? item['title']?.toString() ?? "")
+                    .trim();
+            final String id =
+                (item['_id']?.toString() ?? item['id']?.toString() ?? "")
+                    .trim();
             if (name.isNotEmpty && id.isNotEmpty) {
-              parsed.add(name);
-              categoryNameToId[name] = id;
+              backendByLower[name.toLowerCase()] = id;
+              // Also index base name before parentheses if present
+              final baseName = name.split('(').first.trim().toLowerCase();
+              backendByLower.putIfAbsent(baseName, () => id);
             }
           }
         }
 
-        Get.log("🔄 [fetchCategories] Successfully parsed ${parsed.length} categories: $parsed");
-
-        if (parsed.isNotEmpty) {
-          categories.assignAll(parsed);
-          targetCategories.assignAll(["Any Category", ...parsed]);
-          if (!categories.contains(selectedCategory.value)) {
-            selectedCategory.value = parsed[0];
+        // Always keep the exact 16 official AREIS categories (ending with "Other")
+        // in client-specified order, mapped to their backend MongoDB ObjectIds.
+        for (final officialName in areisCategoryNames) {
+          final lower = officialName.toLowerCase();
+          String? matchedId = backendByLower[lower];
+          if (matchedId == null && lower == 'other') {
+            matchedId = backendByLower['other / not listed'];
           }
+          if (matchedId != null && matchedId.isNotEmpty) {
+            categoryNameToId[officialName] = matchedId;
+          }
+        }
+
+        Get.log(
+          "🔄 [fetchCategories] Mapped ${categoryNameToId.length}/${areisCategoryNames.length} official AREIS categories",
+        );
+
+        categories.assignAll(areisCategoryNames);
+        targetCategories.assignAll(["Any Category", ...areisCategoryNames]);
+        if (!categories.contains(selectedCategory.value)) {
+          selectedCategory.value = categories.first;
         }
       }
     } catch (e) {
@@ -295,7 +266,11 @@ class CreateTradeController extends GetxController {
           ? double.tryParse(minOfferRaw)
           : null;
 
-      final selectedCategoryId = categoryNameToId[selectedCategory.value] ?? selectedCategory.value;
+      if (categoryNameToId.isEmpty) {
+        await fetchCategories();
+      }
+      final selectedCategoryId =
+          categoryNameToId[selectedCategory.value] ?? selectedCategory.value;
 
       final Map<String, dynamic> requestBody = {
         "title": title,

@@ -145,7 +145,10 @@ class MakeOfferController extends GetxController {
 
     isLoading.value = true;
     try {
-      final response = await _apiClient.getData(ApiUrl.myProducts);
+      var response = await _apiClient.getData(ApiUrl.myProducts);
+      if (response.statusCode == 403) {
+        response = await _apiClient.getData("${ApiUrl.products}?sellerId=$userId&limit=100");
+      }
       if (response.statusCode == 200) {
         final list = extractApiList(jsonDecode(response.body))
             .where((p) => isProductAvailable(p) && (p['allowTrade'] == true))
@@ -414,13 +417,17 @@ class MakeOfferController extends GetxController {
                         Get.back(); // close dialog
                         Get.back(); // close make offer screen
                         try {
-                          final mc = Get.put(MessagesController());
+                          final mc = Get.isRegistered<MessagesController>()
+                              ? Get.find<MessagesController>()
+                              : Get.put(MessagesController(), permanent: true);
                           final chatId = await mc.createChatRoom(receiverId);
                           if (chatId != null && chatId.isNotEmpty) {
                             Get.toNamed(
                               AppRoute.messageDetails,
                               arguments: {
                                 "chatId": chatId,
+                                "participantId": receiverId,
+                                "partnerId": receiverId,
                                 "name": receiverName.startsWith('@') ? receiverName : "@$receiverName",
                                 "avatar": receiverAvatar,
                               },

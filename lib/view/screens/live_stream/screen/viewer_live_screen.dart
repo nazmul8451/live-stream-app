@@ -13,6 +13,7 @@ import '../../../../global/controllers/safety_controller.dart';
 import '../widgets/swipe_to_bid_button.dart';
 import 'dart:convert';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/helper/share_helper.dart';
 import 'package:live_stream_app/view/screens/live_stream/widgets/live_spin_wheel.dart';
 import 'package:live_stream_app/view/screens/live_stream/widgets/live_tip_dialog.dart';
 import 'package:live_stream_app/view/screens/live_stream/widgets/live_tip_banner.dart';
@@ -2139,7 +2140,23 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
 
         SizedBox(height: 12.h),
         GestureDetector(
-          onTap: () => showAppSnackbar("Share", "Link copied to clipboard!", snackPosition: SnackPosition.BOTTOM),
+          onTap: () {
+            final sid = ctrl.streamId.value.isNotEmpty
+                ? ctrl.streamId.value
+                : (widget.streamData['_id'] ?? widget.streamData['id'] ?? '').toString();
+            if (sid.isEmpty) {
+              showAppSnackbar("Share", "Unable to share this stream right now.", snackPosition: SnackPosition.BOTTOM);
+              return;
+            }
+            ShareHelper.shareLiveStream(
+              context: context,
+              streamId: sid,
+              title: ctrl.streamTitle.value.isNotEmpty
+                  ? ctrl.streamTitle.value
+                  : (widget.streamData['title']?.toString() ?? "Live Show"),
+              hostName: ctrl.hostDisplayName,
+            );
+          },
           child: Container(
             padding: EdgeInsets.all(12.r),
             decoration: BoxDecoration(

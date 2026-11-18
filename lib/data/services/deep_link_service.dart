@@ -1,9 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/app_route.dart';
+import '../../global/helper/app_snackbar.dart';
+import '../../global/helper/auth_guard.dart';
 import '../helpers/shared_prefe.dart';
+import 'api_client.dart';
+import 'api_url.dart';
 
 class DeepLinkService extends GetxService {
   static DeepLinkService get to => Get.find();
@@ -140,6 +145,19 @@ class DeepLinkService extends GetxService {
           }
         }
       }
+      // Case 4: Live Stream: culturecards://live/:id or https://.../live/:id (also /stream/:id)
+      else if (host == 'live' ||
+          host == 'stream' ||
+          (pathSegments.isNotEmpty &&
+              (pathSegments[0] == 'live' || pathSegments[0] == 'stream'))) {
+        final String streamId = (host == 'live' || host == 'stream')
+            ? (pathSegments.isNotEmpty ? pathSegments[0] : '')
+            : (pathSegments.length > 1 ? pathSegments[1] : '');
+
+        if (streamId.isNotEmpty) {
+          await _openLiveStreamById(streamId);
+        }
+      }
       // Case 3: Promo / Referral Signup: culturecards://signup?promo=OG or https://.../signup?promo=OG
       else if (host == 'signup' || (pathSegments.isNotEmpty && pathSegments[0] == 'signup')) {
         final promoCode = uri.queryParameters['promo'] ?? 
@@ -176,6 +194,62 @@ class DeepLinkService extends GetxService {
       debugPrint('⚠️ [DeepLinkService] Error during deep link handling: $e');
     } finally {
       _isNavigating = false;
+    }
+  }
+
+  Future<void> _openLiveStreamById(String streamId) async {
+    final bool isLoggedIn =
+        SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isNotEmpty &&
+        !SharePrefsHelper.isGuest;
+    if (!isLoggedIn) {
+      AuthGuard.showAuthPrompt(
+        title: "Sign in to Watch Stream",
+        message: "Sign in or create an account to join this live show.",
+      );
+      return;
+    }
+
+    try {
+      final apiClient = Get.find<ApiClient>();
+      final response = await apiClient.getData("${ApiUrl.liveStreams}?status=live");
+      Map<String, dynamic>? found;
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final list = decoded is List
+            ? decoded
+            : (decoded is Map && decoded['data'] is List ? decoded['data'] as List : const []);
+        for (final item in list) {
+          if (item is Map) {
+            final id = (item['_id'] ?? item['id'] ?? '').toString();
+            if (id == streamId) {
+              found = Map<String, dynamic>.from(item);
+              break;
+            }
+          }
+        }
+      }
+
+      if (found != null) {
+        Get.toNamed(
+          AppRoute.viewerLive,
+          arguments: found,
+          preventDuplicates: true,
+        );
+      } else {
+        showAppSnackbar(
+          "Live Show Unavailable",
+          "This live show has ended or is not live right now.",
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
+    } catch (e) {
+      debugPrint('⚠️ [DeepLinkService] Failed to open live stream $streamId: $e');
+      showAppSnackbar(
+        "Unable to Open Show",
+        "Could not load this live show. Please try again.",
+        snackPosition: SnackPosition.BOTTOM,
+      );
     }
   }
 

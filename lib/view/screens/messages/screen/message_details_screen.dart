@@ -399,30 +399,35 @@ class MessageDetailsScreen extends GetView<MessageDetailsController> {
         children: [
           Container(
             constraints: BoxConstraints(maxWidth: 0.75.sw),
-            padding: EdgeInsets.all(20.r),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 13.h),
             decoration: BoxDecoration(
-              color: isMe ? const Color(0xFF8B9BFF) : const Color(0xFF1E1E2C),
+              color: isMe ? const Color(0xFF929BF5) : const Color(0xFF1E1E2C),
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(24.r),
-                topRight: Radius.circular(24.r),
-                bottomLeft: Radius.circular(isMe ? 24.r : 4.r),
-                bottomRight: Radius.circular(isMe ? 4.r : 24.r),
+                topLeft: Radius.circular(22.r),
+                topRight: Radius.circular(22.r),
+                bottomLeft: Radius.circular(isMe ? 22.r : 4.r),
+                bottomRight: Radius.circular(isMe ? 4.r : 22.r),
               ),
             ),
             child: Text(
               message,
-              style: TextStyle(color: isMe ? Colors.black : Colors.white70, fontSize: 14.sp, height: 1.5, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: isMe ? const Color(0xFF11152F) : Colors.white.withValues(alpha: 0.9),
+                fontSize: 14.sp,
+                height: 1.45,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           Padding(
-            padding: EdgeInsets.only(top: 8.h, bottom: 16.h),
+            padding: EdgeInsets.only(top: 6.h, bottom: 14.h),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(time, style: TextStyle(color: Colors.white24, fontSize: 10.sp, fontWeight: FontWeight.w700)),
+                Text(time, style: TextStyle(color: Colors.white30, fontSize: 10.sp, fontWeight: FontWeight.w700)),
                 if (isMe && isRead) ...[
                   SizedBox(width: 4.w),
-                  Icon(Icons.done_all_rounded, color: const Color(0xFF8B9BFF), size: 14.sp),
+                  Icon(Icons.done_all_rounded, color: const Color(0xFF929BF5), size: 14.sp),
                 ],
               ],
             ),

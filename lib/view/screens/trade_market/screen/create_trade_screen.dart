@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../controller/create_trade_controller.dart';
+import 'package:live_stream_app/core/areis_categories.dart';
 import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class CreateTradeScreen extends GetView<CreateTradeController> {
@@ -1347,31 +1348,43 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
             if (options.length > 5) ...[
               Container(
                 height: 48.h,
+                padding: EdgeInsets.symmetric(horizontal: 14.w),
                 decoration: BoxDecoration(
                   color: const Color(0xFF0F0B1E),
                   borderRadius: BorderRadius.circular(16.r),
                   border: Border.all(color: const Color(0xFF2E1E5D), width: 1.2),
                 ),
-                child: TextField(
-                  controller: searchCtrl,
-                  style: TextStyle(color: Colors.white, fontSize: 14.sp),
-                  onChanged: (query) {
-                    final q = query.toLowerCase().trim();
-                    if (q.isEmpty) {
-                      filteredOptions.assignAll(options);
-                    } else {
-                      filteredOptions.assignAll(
-                        options.where((opt) => opt.toLowerCase().contains(q)).toList(),
-                      );
-                    }
-                  },
-                  decoration: InputDecoration(
-                    hintText: "Search categories...",
-                    hintStyle: TextStyle(color: Colors.white38, fontSize: 13.sp),
-                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF8B9BFF), size: 20),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                  ),
+                alignment: Alignment.center,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_rounded, color: const Color(0xFF8B9BFF), size: 20.sp),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: TextField(
+                        controller: searchCtrl,
+                        textAlignVertical: TextAlignVertical.center,
+                        style: TextStyle(color: Colors.white, fontSize: 14.sp, height: 1.2),
+                        onChanged: (query) {
+                          final q = query.toLowerCase().trim();
+                          if (q.isEmpty) {
+                            filteredOptions.assignAll(options);
+                          } else {
+                            filteredOptions.assignAll(
+                              options.where((opt) => opt.toLowerCase().contains(q)).toList(),
+                            );
+                          }
+                        },
+                        decoration: InputDecoration(
+                          hintText: "Search categories...",
+                          hintStyle: TextStyle(color: Colors.white38, fontSize: 13.5.sp, height: 1.2),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               SizedBox(height: 16.h),
@@ -1397,6 +1410,13 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
                   itemBuilder: (context, index) {
                     final opt = filteredOptions[index];
                     IconData icon = _getCategoryIcon(opt);
+                    String? subtitle;
+                    for (final c in areisCategories) {
+                      if (c.name == opt) {
+                        subtitle = c.subtitle;
+                        break;
+                      }
+                    }
                     return ListTile(
                       contentPadding: EdgeInsets.symmetric(vertical: 2.h),
                       leading: Container(
@@ -1415,6 +1435,15 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      subtitle: subtitle != null
+                          ? Text(
+                              subtitle,
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11.5.sp,
+                              ),
+                            )
+                          : null,
                       onTap: () {
                         onSelect(opt);
                         Get.back();

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -13,6 +12,7 @@ import '../../main/controller/main_controller.dart';
 import 'messages_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 import 'package:live_stream_app/data/helpers/api_list.dart';
+import '../../../../data/services/stripe_config.dart';
 
 class MessageDetailsController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -35,12 +35,12 @@ class MessageDetailsController extends GetxController {
   final chatInputController = TextEditingController();
   final scrollController = ScrollController();
 
-  // Known message IDs — used to detect new messages from polling
+  // Known message IDs — used to deduplicate real-time socket events
   final Set<String> _knownMessageIds = {};
   // Track sent message IDs to suppress socket echo duplicates
   final Set<String> _sentMessageIds = {};
-
-  Timer? _pollingTimer;
+  // Active backend room event name: getMessage::<chatId>
+  String? _activeChatEvent;
 
   @override
   void onInit() {
@@ -86,7 +86,6 @@ class MessageDetailsController extends GetxController {
         fetchAssociatedTrades();
         fetchMessages(); // initial full load
         _setupSocketListener();
-        _startPolling(); // fallback polling every 3s
       } else if (partnerId.value.isNotEmpty) {
         _resolveExistingChatRoom(partnerId.value);
       } else {
@@ -95,13 +94,22 @@ class MessageDetailsController extends GetxController {
     });
   }
 
-  void markAsSeen() {
+  DateTime? _lastMarkedSeenAt;
+
+  void markAsSeen({bool force = false}) {
     if (chatId.value.isEmpty || chatId.value.startsWith('mock_')) return;
+    final now = DateTime.now();
+    if (!force &&
+        _lastMarkedSeenAt != null &&
+        now.difference(_lastMarkedSeenAt!) < const Duration(seconds: 3)) {
+      return;
+    }
+    _lastMarkedSeenAt = now;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 1. Mark in MessagesController
+      // 1. Mark in MessagesController (local UI state only — backend PATCH sent below)
       if (Get.isRegistered<MessagesController>()) {
-        Get.find<MessagesController>().markRoomAsRead(chatId.value);
+        Get.find<MessagesController>().markRoomAsRead(chatId.value, syncBackend: false);
       }
 
       // 2. Mark in MainController
@@ -156,7 +164,6 @@ class MessageDetailsController extends GetxController {
               fetchAssociatedTrades();
               fetchMessages();
               _setupSocketListener();
-              _startPolling();
               return;
             }
           }
@@ -179,7 +186,6 @@ class MessageDetailsController extends GetxController {
             fetchAssociatedTrades();
             fetchMessages();
             _setupSocketListener();
-            _startPolling();
             return;
           }
         }
@@ -213,17 +219,24 @@ class MessageDetailsController extends GetxController {
     } catch (_) {}
   }
 
-  // ─── SOCKET ────────────────────────────────────────────────────────────────
+  // ─── SOCKET (Real-time — no HTTP polling) ──────────────────────────────────
 
   void _setupSocketListener() {
+    if (chatId.value.isEmpty || chatId.value.startsWith('mock_')) return;
     try {
       final socketService = Get.find<SocketService>();
+      // Clean up any previous room listener before subscribing
+      if (_activeChatEvent != null) {
+        socketService.off(_activeChatEvent!, _onSocketMessage);
+      }
+      _activeChatEvent = 'getMessage::${chatId.value}';
       socketService.joinChat(chatId.value);
+      socketService.on(_activeChatEvent!, _onSocketMessage);
       socketService.on('messageReceived', _onSocketMessage);
       socketService.on('newMessage', _onSocketMessage);
       socketService.on('new message', _onSocketMessage);
       socketService.initSocket();
-      Get.log('🔧 [MessageCtrl] Socket ready for room: ${chatId.value}');
+      Get.log('🔧 [MessageCtrl] Socket listening on $_activeChatEvent');
     } catch (e) {
       Get.log('❌ [MessageCtrl] Socket setup error: $e');
     }
@@ -242,11 +255,16 @@ class MessageDetailsController extends GetxController {
         return;
       }
 
-      final String text = msgMap['text'] ?? msgMap['message'] ?? '';
-      if (text.isEmpty) return;
+      final String text = (msgMap['text'] ?? msgMap['message'] ?? '').toString();
+      final bool hasMedia = (msgMap['image']?.toString().isNotEmpty == true) ||
+          (msgMap['file']?.toString().isNotEmpty == true);
+      if (text.isEmpty && !hasMedia) return;
 
       // Only for this chat room
-      final String incomingChat = msgMap['chatId'] ?? '';
+      final dynamic rawChat = msgMap['chatId'];
+      final String incomingChat = rawChat is Map
+          ? (rawChat['_id'] ?? rawChat['id'] ?? '').toString()
+          : (rawChat ?? '').toString();
       if (incomingChat.isNotEmpty && incomingChat != chatId.value) return;
 
       final senderId = msgMap['senderId'] ?? msgMap['sender'] ?? '';
@@ -258,7 +276,7 @@ class MessageDetailsController extends GetxController {
         isMe = senderId['_id'] == currentUserId || senderId['id'] == currentUserId;
       }
 
-      final String msgId = msgMap['_id'] ?? msgMap['id'] ?? '';
+      final String msgId = (msgMap['_id'] ?? msgMap['id'] ?? '').toString();
 
       // If it's my own sent message, update the optimistic bubble instead of adding new
       if (isMe) {
@@ -269,8 +287,9 @@ class MessageDetailsController extends GetxController {
             '_id': msgId,
             'isMe': true,
             'message': text,
-            'time': _formatTime(msgMap['createdAt'] ?? ''),
-            'isRead': msgMap['isRead'] == true,
+            'time': _formatTime(msgMap['createdAt']?.toString() ?? ''),
+            'isRead': msgMap['isRead'] == true || msgMap['seen'] == true,
+            'raw': msgMap,
           };
           messages.refresh();
           if (msgId.isNotEmpty) _knownMessageIds.add(msgId);
@@ -287,8 +306,8 @@ class MessageDetailsController extends GetxController {
         '_id': msgId,
         'isMe': isMe,
         'message': text,
-        'time': _formatTime(msgMap['createdAt'] ?? ''),
-        'isRead': msgMap['isRead'] == true,
+        'time': _formatTime(msgMap['createdAt']?.toString() ?? ''),
+        'isRead': msgMap['isRead'] == true || msgMap['seen'] == true,
         'raw': msgMap,
       });
       if (msgMap['messageType'] == 'trade_proposal' ||
@@ -296,90 +315,12 @@ class MessageDetailsController extends GetxController {
           text.contains('Proposed a new cash offer')) {
         fetchAssociatedTrades();
       }
-      markAsSeen();
+      if (!isMe) {
+        markAsSeen();
+      }
       _scrollToBottom();
     } catch (e) {
       Get.log('❌ [Socket] Parse error: $e');
-    }
-  }
-
-  // ─── POLLING FALLBACK ───────────────────────────────────────────────────────
-
-  void _startPolling() {
-    _pollingTimer?.cancel();
-    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) async {
-      if (chatId.value.isEmpty || chatId.value.startsWith('mock_')) return;
-      await _pollNewMessages();
-    });
-  }
-
-  Future<void> _pollNewMessages() async {
-    try {
-      final response = await _apiClient.getData('${ApiUrl.message}/${chatId.value}');
-      if (response.statusCode != 200) return;
-
-      final List data = extractApiList(jsonDecode(response.body));
-      if (data.isEmpty) return;
-
-      // Sort data oldest first (ascending chronological order)
-      final List sortedData = List.from(data);
-      sortedData.sort((a, b) {
-        final String timeA = a['createdAt'] ?? '';
-        final String timeB = b['createdAt'] ?? '';
-        return timeA.compareTo(timeB);
-      });
-
-      final currentUserId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
-      bool hasNew = false;
-
-      for (var msg in sortedData) {
-        final String msgId = msg['_id'] ?? msg['id'] ?? '';
-        if (msgId.isEmpty || _knownMessageIds.contains(msgId)) continue;
-
-        // This is a new message not yet in our list
-        _knownMessageIds.add(msgId);
-        hasNew = true;
-
-        final sender = msg['senderId'] ?? msg['sender'];
-        final isMe = sender == currentUserId ||
-            (sender is Map &&
-                (sender['_id'] == currentUserId || sender['id'] == currentUserId));
-
-        // If it's my optimistic bubble, update it
-        final String text = msg['text'] ?? '';
-        if (isMe) {
-          final idx = messages.indexWhere(
-              (m) => m['isMe'] == true && m['message'] == text && m['time'] == 'Now');
-          if (idx != -1) {
-            messages[idx] = {
-              '_id': msgId,
-              'isMe': true,
-              'message': text,
-              'time': _formatTime(msg['createdAt'] ?? ''),
-              'isRead': msg['isRead'] == true,
-            };
-            messages.refresh();
-            continue;
-          }
-        }
-
-        // Add new message at BOTTOM
-        messages.add({
-          '_id': msgId,
-          'isMe': isMe,
-          'message': text,
-          'time': _formatTime(msg['createdAt'] ?? ''),
-          'isRead': msg['isRead'] == true,
-          'raw': msg,
-        });
-      }
-
-      if (hasNew) {
-        markAsSeen();
-        _scrollToBottom();
-      }
-    } catch (e) {
-      // Silently ignore polling errors
     }
   }
 
@@ -481,7 +422,6 @@ class MessageDetailsController extends GetxController {
           if (chatData is Map) {
             chatId.value = (chatData['_id'] ?? chatData['id'] ?? '').toString();
             _setupSocketListener();
-            _startPolling();
           }
         }
       }
@@ -544,14 +484,16 @@ class MessageDetailsController extends GetxController {
 
   @override
   void onClose() {
-    _pollingTimer?.cancel();
     if (chatId.value.isNotEmpty) {
       try {
         final socketService = Get.find<SocketService>();
         socketService.leaveChat(chatId.value);
-        socketService.off('messageReceived');
-        socketService.off('newMessage');
-        socketService.off('new message');
+        if (_activeChatEvent != null) {
+          socketService.off(_activeChatEvent!, _onSocketMessage);
+        }
+        socketService.off('messageReceived', _onSocketMessage);
+        socketService.off('newMessage', _onSocketMessage);
+        socketService.off('new message', _onSocketMessage);
       } catch (e) {
         Get.log('❌ [MessageCtrl] onClose cleanup error: $e');
       }
@@ -644,7 +586,7 @@ class MessageDetailsController extends GetxController {
                 if (pubKey != null && pubKey.toString().isNotEmpty) {
                   Stripe.publishableKey = pubKey.toString();
                 } else {
-                  Stripe.publishableKey = "pk_test_51NJLdJF5nDLFMGmox0iseTJZp42wfLi6Ub41OGs7hoMl0GSFe93a0My7PxdF2eKsxV1rvUf8vVw4p6jl9h9pCmEQ00WSln5w44";
+                  Stripe.publishableKey = StripeConfig.publishableKey;
                 }
                 await Stripe.instance.applySettings();
 

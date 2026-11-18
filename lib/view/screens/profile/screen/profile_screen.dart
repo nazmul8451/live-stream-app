@@ -287,29 +287,11 @@ class ProfileScreen extends GetView<ProfileController> {
                       ),
                     ),
                     if (controller.isVerified.value || controller.sellerVerified.value) ...[
-                      SizedBox(width: 8.w),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF22C55E).withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12.r),
-                          border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.verified_rounded, color: const Color(0xFF22C55E), size: 13.sp),
-                            SizedBox(width: 4.w),
-                            Text(
-                              "Verified",
-                              style: TextStyle(
-                                color: const Color(0xFF22C55E),
-                                fontSize: 10.sp,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ],
-                        ),
+                      SizedBox(width: 6.w),
+                      Icon(
+                        Icons.verified_rounded,
+                        color: const Color(0xFF22C55E),
+                        size: 20.sp,
                       ),
                     ],
                   ],
@@ -905,10 +887,11 @@ class ProfileScreen extends GetView<ProfileController> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildRoleSwitcherCard(),
-        SizedBox(height: 16.h),
+        SizedBox(height: 20.h),
         _buildSettingsSection("ACCOUNT", [
           _buildSettingsTile(
-            svgPath: "assets/icons/Edit Profile.svg",
+            icon: Icons.manage_accounts_outlined,
+            iconColor: const Color(0xFF8B9BFF),
             title: "Account Settings",
             subtitle: "Profile info, security, password & preferences",
             showArrow: true,
@@ -919,6 +902,7 @@ class ProfileScreen extends GetView<ProfileController> {
             final partner = controller.partnerName.value;
             return _buildSettingsTile(
               icon: Icons.local_offer_outlined,
+              iconColor: const Color(0xFFF59E0B),
               title: "Partner / Promo Code",
               subtitle: hasPromo
                   ? "Linked to: ${partner.isNotEmpty ? partner : controller.promoCode.value}"
@@ -926,9 +910,9 @@ class ProfileScreen extends GetView<ProfileController> {
               showArrow: true,
               trailing: hasPromo
                   ? Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF22C55E).withValues(alpha: 0.15),
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.14),
                         borderRadius: BorderRadius.circular(8.r),
                         border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.4)),
                       ),
@@ -949,52 +933,79 @@ class ProfileScreen extends GetView<ProfileController> {
             );
           }),
           _buildSettingsTile(
-            svgPath: "assets/icons/Username.svg",
+            icon: Icons.alternate_email_rounded,
+            iconColor: const Color(0xFF38BDF8),
             title: "Username",
+            subtitle: "Your public collector handle",
+            // Capped width: an unbounded chip let a long handle squeeze the
+            // title and subtitle until they read "User name" / "Your publi…".
             trailing: Obx(
-              () => Text(
-                controller.username.value,
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w700,
+              () => ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: 140.w),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(10.r),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                  ),
+                  child: Text(
+                    controller.username.value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
         ]),
-        SizedBox(height: 32.h),
-        _buildSettingsSection("PAYMENTS", [
+        SizedBox(height: 22.h),
+        _buildSettingsSection("ORDERS & INVENTORY", [
           _buildSettingsTile(
-            svgPath: "assets/icons/My Purchase.svg",
-            title: "My Purchase",
+            icon: Icons.shopping_bag_outlined,
+            iconColor: const Color(0xFF10B981),
+            title: "My Purchases",
+            subtitle: "Track pending, shipped & delivered orders",
             showArrow: true,
             onTap: () => Get.toNamed('/purchases'),
           ),
           _buildSettingsTile(
-            svgPath: "assets/icons/My Trades.svg",
+            icon: Icons.inventory_2_outlined,
+            iconColor: const Color(0xFFA78BFA),
             title: "My Inventory",
+            subtitle: "Manage items for live shows & listings",
             showArrow: true,
             onTap: () => Get.toNamed(AppRoute.myInventory),
           ),
           _buildSettingsTile(
-            svgPath: "assets/icons/My Trades.svg",
+            icon: Icons.swap_horiz_rounded,
+            iconColor: const Color(0xFF60A5FA),
             title: "My Trades",
+            subtitle: "View incoming, sent & active trade offers",
             showArrow: true,
             onTap: () => Get.toNamed('/my_trades'),
           ),
           _buildSettingsTile(
-            svgPath: "assets/icons/My Purchase.svg",
+            icon: Icons.sell_outlined,
+            iconColor: const Color(0xFFF472B6),
             title: "Sold Items",
+            subtitle: "Ship orders, print labels & view sales",
             showArrow: true,
             onTap: () => Get.toNamed(AppRoute.soldItems),
           ),
         ]),
-        SizedBox(height: 32.h),
+        SizedBox(height: 22.h),
         _buildSettingsSection("SUPPORT & LEGAL", [
           _buildSettingsTile(
-            svgPath: "assets/icons/Terms & Conditions.svg",
+            icon: Icons.description_outlined,
+            iconColor: const Color(0xFF94A3B8),
             title: "Terms & Conditions",
+            subtitle: "AREIS platform terms of service",
             showArrow: true,
             onTap: () {
               Get.toNamed(AppRoute.inAppWebView, arguments: {
@@ -1004,8 +1015,10 @@ class ProfileScreen extends GetView<ProfileController> {
             },
           ),
           _buildSettingsTile(
-            svgPath: "assets/icons/Terms & Conditions.svg",
+            icon: Icons.privacy_tip_outlined,
+            iconColor: const Color(0xFF2DD4BF),
             title: "Privacy Policy",
+            subtitle: "How your data & account are protected",
             showArrow: true,
             onTap: () {
               Get.toNamed(AppRoute.inAppWebView, arguments: {
@@ -1015,35 +1028,48 @@ class ProfileScreen extends GetView<ProfileController> {
             },
           ),
         ]),
-        SizedBox(height: 48.h),
+        SizedBox(height: 26.h),
 
-        // Logout Button
-        GestureDetector(
-          onTap: () => _showLogoutConfirmation(),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Container(
-              width: double.infinity,
-              height: 56.h,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A0A10),
-                borderRadius: BorderRadius.circular(28.r),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.logout_rounded, color: const Color(0xFFFF4B6E), size: 20.sp),
-                  SizedBox(width: 10.w),
-                  Text(
-                    "Logout",
-                    style: TextStyle(color: const Color(0xFFFF4B6E), fontSize: 15.sp, fontWeight: FontWeight.w900),
+        // Sleek Logout Button (matching Account Settings)
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 18.w),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _showLogoutConfirmation(),
+              borderRadius: BorderRadius.circular(18.r),
+              child: Container(
+                width: double.infinity,
+                height: 54.h,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(18.r),
+                  border: Border.all(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.30),
+                    width: 1.1,
                   ),
-                ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.logout_rounded, color: const Color(0xFFF87171), size: 20.sp),
+                    SizedBox(width: 10.w),
+                    Text(
+                      "Sign Out",
+                      style: TextStyle(
+                        color: const Color(0xFFFCA5A5),
+                        fontSize: 15.5.sp,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
+        SizedBox(height: 24.h),
       ],
     );
   }
@@ -1416,29 +1442,75 @@ class ProfileScreen extends GetView<ProfileController> {
   }
 
 
-  Widget _buildSettingsSection(String title, List<Widget> children) {
+  Widget _buildSettingsSection(
+    String title,
+    List<Widget> children, {
+    Color accentColor = const Color(0xFF8B9BFF),
+  }) {
+    final List<Widget> divided = [];
+    for (int i = 0; i < children.length; i++) {
+      divided.add(children[i]);
+      if (i < children.length - 1) {
+        divided.add(
+          Divider(
+            color: Colors.white.withValues(alpha: 0.06),
+            height: 1,
+            indent: 68.w,
+            endIndent: 16.w,
+          ),
+        );
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.only(left: 24.w, bottom: 16.h),
-          child: Text(
-            title,
-            style: TextStyle(
-              color: Colors.white24,
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-            ),
+          padding: EdgeInsets.only(left: 22.w, bottom: 10.h),
+          child: Row(
+            children: [
+              Container(
+                width: 3.w,
+                height: 12.h,
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ],
           ),
         ),
         Container(
-          margin: EdgeInsets.symmetric(horizontal: 16.w),
+          margin: EdgeInsets.symmetric(horizontal: 18.w),
           decoration: BoxDecoration(
-            color: const Color(0xFF11111A),
-            borderRadius: BorderRadius.circular(32.r),
+            color: const Color(0xFF151624),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 14.r,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          child: Column(children: children),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20.r),
+            child: Column(children: divided),
+          ),
         ),
       ],
     );
@@ -1447,6 +1519,7 @@ class ProfileScreen extends GetView<ProfileController> {
   Widget _buildSettingsTile({
     String? svgPath,
     IconData? icon,
+    Color iconColor = const Color(0xFF8B9BFF),
     required String title,
     String? subtitle,
     bool showArrow = false,
@@ -1457,28 +1530,39 @@ class ProfileScreen extends GetView<ProfileController> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16.r),
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: subtitle != null ? 16.h : 22.h),
+        splashColor: iconColor.withValues(alpha: 0.12),
+        highlightColor: Colors.white.withValues(alpha: 0.03),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
           child: Row(
             children: [
-              if (icon != null)
-                Container(
-                  width: 24.w,
-                  alignment: Alignment.centerLeft,
-                  child: Icon(icon, color: const Color(0xFF8B9BFF), size: 22.sp),
-                )
-              else if (svgPath != null)
-                SvgPicture.asset(
-                  svgPath,
-                  width: 24.w,
-                  colorFilter: const ColorFilter.mode(
-                    Color(0xFF8B9BFF),
-                    BlendMode.srcIn,
+              Container(
+                width: 40.r,
+                height: 40.r,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: iconColor.withValues(alpha: 0.25),
+                    width: 1,
                   ),
                 ),
-              SizedBox(width: 20.w),
+                alignment: Alignment.center,
+                child: icon != null
+                    ? Icon(icon, color: iconColor, size: 20.sp)
+                    : (svgPath != null
+                        ? SvgPicture.asset(
+                            svgPath,
+                            width: 20.r,
+                            height: 20.r,
+                            colorFilter: ColorFilter.mode(
+                              iconColor,
+                              BlendMode.srcIn,
+                            ),
+                          )
+                        : Icon(Icons.settings_outlined, color: iconColor, size: 20.sp)),
+              ),
+              SizedBox(width: 14.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1486,32 +1570,40 @@ class ProfileScreen extends GetView<ProfileController> {
                   children: [
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 15.sp,
+                        fontSize: 14.5.sp,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (subtitle != null) ...[
-                      SizedBox(height: 3.h),
+                    if (subtitle != null && subtitle.isNotEmpty) ...[
+                      SizedBox(height: 2.5.h),
                       Text(
                         subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white54,
-                          fontSize: 12.sp,
+                          fontSize: 11.5.sp,
                           fontWeight: FontWeight.w500,
+                          height: 1.25,
                         ),
                       ),
                     ],
                   ],
                 ),
               ),
-              ?trailing,
+              if (trailing != null) ...[
+                SizedBox(width: 8.w),
+                trailing,
+              ],
               if (showArrow) ...[
-                if (trailing != null) SizedBox(width: 8.w),
+                SizedBox(width: 6.w),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: Colors.white24,
+                  color: Colors.white30,
                   size: 20.sp,
                 ),
               ],

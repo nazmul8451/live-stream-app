@@ -12,6 +12,7 @@ import '../../../../data/services/socket_service.dart';
 import '../../purchases/controller/purchases_controller.dart';
 import '../../purchases/model/purchase_model.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import '../../../../data/services/stripe_config.dart';
 
 class MyTradesController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -404,7 +405,7 @@ class MyTradesController extends GetxController {
                 if (pubKey != null && pubKey.toString().isNotEmpty) {
                   Stripe.publishableKey = pubKey.toString();
                 } else {
-                  Stripe.publishableKey = "pk_test_51NJLdJF5nDLFMGmox0iseTJZp42wfLi6Ub41OGs7hoMl0GSFe93a0My7PxdF2eKsxV1rvUf8vVw4p6jl9h9pCmEQ00WSln5w44";
+                  Stripe.publishableKey = StripeConfig.publishableKey;
                 }
                 await Stripe.instance.applySettings();
 

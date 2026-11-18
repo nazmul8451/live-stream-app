@@ -61,11 +61,18 @@ class SocketService extends GetxService {
             .build(),
       );
 
-      // Register global real-time notifications
+      // Register global real-time notifications (debounced to prevent API spam)
+      DateTime? lastGlobalRefresh;
       void handleGlobalMessageReceived(dynamic data) {
-        Get.log('💬 [SocketService] Global message received: $data');
+        Get.log('💬 [SocketService] Global message/chat update received');
+        final now = DateTime.now();
+        if (lastGlobalRefresh != null &&
+            now.difference(lastGlobalRefresh!) < const Duration(seconds: 2)) {
+          return;
+        }
+        lastGlobalRefresh = now;
+
         if (Get.isRegistered<MainController>()) {
-          Get.find<MainController>().unreadMessageCount.value++;
           Get.find<MainController>().fetchUnreadMessageCount();
         }
         if (Get.isRegistered<MessagesController>()) {
@@ -73,6 +80,7 @@ class SocketService extends GetxService {
         }
       }
 
+      socket?.on('updateChatList::$userId', handleGlobalMessageReceived);
       socket?.on('message received', handleGlobalMessageReceived);
       socket?.on('messageReceived', handleGlobalMessageReceived);
       socket?.on('new message', handleGlobalMessageReceived);
@@ -81,14 +89,7 @@ class SocketService extends GetxService {
       socket?.on('chat-message', handleGlobalMessageReceived);
       socket?.on('receive-message', handleGlobalMessageReceived);
       socket?.on('receiveMessage', handleGlobalMessageReceived);
-      socket?.on('notification', (_) {
-        if (Get.isRegistered<MainController>()) {
-          Get.find<MainController>().fetchUnreadMessageCount();
-        }
-        if (Get.isRegistered<MessagesController>()) {
-          Get.find<MessagesController>().fetchChatRooms();
-        }
-      });
+      socket?.on('notification', handleGlobalMessageReceived);
 
       socket?.on('auction-won', (data) {
         Get.log('🏆 [SocketService] auction-won event: $data');

@@ -31,6 +31,9 @@ class PurchaseModel {
   final String? spinWheelPrize;
   final bool isGiveaway;
 
+  /// Deadline for the seller to ship before the order auto-cancels.
+  final DateTime? shipByDate;
+
   PurchaseModel({
     required this.id,
     required this.title,
@@ -58,5 +61,6 @@ class PurchaseModel {
     this.shippingLabelUrl,
     this.spinWheelPrize,
     this.isGiveaway = false,
+    this.shipByDate,
   });
 }

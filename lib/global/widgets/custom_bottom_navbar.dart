@@ -11,7 +11,9 @@ class CustomBottomNavbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<MainController>();
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final media = MediaQuery.of(context);
+    final bottomPadding =
+        media.padding.bottom > 0 ? media.padding.bottom : media.viewPadding.bottom;
 
     return Container(
       width: double.infinity,

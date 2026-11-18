@@ -11,6 +11,7 @@ import 'data/services/push_notification_service.dart';
 import 'data/services/shorebird_service.dart';
 import 'global/widgets/floating_live_stream_overlay.dart';
 import 'view/screens/live_stream/controller/agora_live_controller.dart';
+import 'data/services/stripe_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +37,7 @@ void main() async {
     if (dotenv.isInitialized) {
       key = dotenv.env['STRIPE_PUBLISHABLE_KEY'];
     }
-    key ??= "pk_test_51NJLdJF5nDLFMGmox0iseTJZp42wfLi6Ub41OGs7hoMl0GSFe93a0My7PxdF2eKsxV1rvUf8vVw4p6jl9h9pCmEQ00WSln5w44";
+    key ??= StripeConfig.publishableKey;
     if (key.isNotEmpty) {
       Stripe.publishableKey = key;
       Stripe.instance.applySettings();

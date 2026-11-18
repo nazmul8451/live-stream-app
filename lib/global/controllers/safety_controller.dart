@@ -488,7 +488,7 @@ class SafetyController extends GetxController {
     required String userName,
     VoidCallback? onBlocked,
   }) {
-    final controller = SafetyController.instance;
+    final controller = SafetyController. instance;
 
     Get.dialog(
       Dialog(

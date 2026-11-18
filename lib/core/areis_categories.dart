@@ -25,7 +25,7 @@ const List<AreisCategory> areisCategories = [
   AreisCategory('Home & Lifestyle', 'Decor, Lifestyle, More', Icons.chair_outlined),
   AreisCategory('Beauty & Personal Care', 'Skincare, Makeup, Fragrance', Icons.spa_outlined),
   AreisCategory('Books, Music & Media', 'Books, Movies, Music, More', Icons.library_music_outlined),
-  AreisCategory('Other / Not Listed', 'Miscellaneous Items', Icons.category_outlined),
+  AreisCategory('Other', 'Miscellaneous Items', Icons.category_outlined),
 ];
 
 List<String> get areisCategoryNames => areisCategories.map((c) => c.name).toList();

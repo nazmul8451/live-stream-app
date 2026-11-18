@@ -135,23 +135,67 @@ class TrackOrderController extends GetxController {
     return fallbackModel?.estimatedDelivery ?? '3-5 Business Days';
   }
 
+  /// Deadline by which the seller must hand the parcel over.
+  DateTime? get shipByDate {
+    final raw = orderData['shipByDate']?.toString();
+    if (raw == null || raw.isEmpty) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  String get cancelReason => orderData['cancelReason']?.toString() ?? '';
+
+  /// Plain-language line telling the buyer where the order actually stands
+  /// while it is still waiting on the seller.
+  String get shipByLabel {
+    final due = shipByDate;
+    if (due == null) return '';
+    final daysLeft = due.difference(DateTime.now()).inHours / 24;
+    if (daysLeft < 0) {
+      return "The shipping deadline has passed. This order will be cancelled "
+          "and refunded automatically.";
+    }
+    if (daysLeft < 1) return "The seller has until today to ship it.";
+    final days = daysLeft.ceil();
+    return "The seller has $days ${days == 1 ? 'day' : 'days'} left to ship it.";
+  }
+
   // 2. Journey Updates (Array)
+  ///
+  /// With no checkpoints from the server, the only thing that has actually
+  /// happened is the order being placed. This used to invent "Shipped" and
+  /// "Order Confirmed" rows, which told the buyer the parcel was on its way
+  /// while the order was still sitting on `pending`.
   List<dynamic> get journeyUpdates {
     final list = orderData['trackingDetails']?['journeyUpdates'];
     if (list is List && list.isNotEmpty) {
       return list.reversed.toList();
     }
+
+    final statusLower = deliveryStatus.toLowerCase();
+    final createdRaw = (orderData['createdAt'] ?? '').toString();
+    final placedAt = createdRaw.isNotEmpty ? createdRaw : (fallbackModel?.date ?? 'Recently');
+
+    if (statusLower.contains('cancel') || statusLower.contains('decline')) {
+      return [
+        {
+          "status": "Order Cancelled",
+          "description": cancelReason.isNotEmpty
+              ? cancelReason
+              : "This order has been cancelled.",
+          "timestamp": placedAt,
+        }
+      ];
+    }
+
+    final waiting = shipByLabel;
     return [
       {
-        "status": "Shipped",
-        "description": "Package handed over to courier",
-        "timestamp": "Today 10:25 AM"
+        "status": "Order Placed",
+        "description": waiting.isNotEmpty
+            ? "Payment confirmed and sent to the seller. $waiting"
+            : "Payment confirmed and sent to the seller.",
+        "timestamp": placedAt,
       },
-      {
-        "status": "Order Confirmed",
-        "description": "Seller accepted your order",
-        "timestamp": "Recently"
-      }
     ];
   }
 
@@ -204,8 +248,8 @@ class TrackOrderController extends GetxController {
 
   double get itemSubtotal {
     final val = amountDetails['itemSubtotal'];
-    if (val != null) return double.tryParse(val.toString()) ?? 115.0;
-    return fallbackModel?.itemPrice ?? 115.0;
+    if (val != null) return double.tryParse(val.toString()) ?? 0.0;
+    return fallbackModel?.itemPrice ?? 0.0;
   }
 
   double get shipping {
@@ -238,14 +282,14 @@ class TrackOrderController extends GetxController {
 
   double get charityContribution {
     final val = amountDetails['charityContribution'];
-    if (val != null) return double.tryParse(val.toString()) ?? 0.05;
-    return fallbackModel?.buyerContribution ?? 0.05;
+    if (val != null) return double.tryParse(val.toString()) ?? 0.0;
+    return fallbackModel?.buyerContribution ?? 0.0;
   }
 
   double get totalPaid {
     final val = amountDetails['totalPaid'];
-    if (val != null) return double.tryParse(val.toString()) ?? 130.05;
-    return fallbackModel?.totalPaid ?? 130.05;
+    if (val != null) return double.tryParse(val.toString()) ?? 0.0;
+    return fallbackModel?.totalPaid ?? 0.0;
   }
 
   // 5. Seller Info for Communication
@@ -323,14 +367,21 @@ class TrackOrderController extends GetxController {
 
   String get trackingNumber {
     final t = orderData['trackingDetails']?['trackingNumber'] ?? orderData['trackingNumber'] ?? fallbackModel?.trackingId;
-    if (t != null && t.toString().isNotEmpty) return t.toString();
-    return "9400 1118 9956 2489 1002 45";
+    if (t != null && t.toString().trim().isNotEmpty) return t.toString().trim();
+    return "Awaiting Seller";
+  }
+
+  bool get hasRealTrackingNumber {
+    final t = trackingNumber.toLowerCase();
+    return t.isNotEmpty && !t.contains('awaiting') && !t.contains('pending');
   }
 
   String get carrierName {
     final c = orderData['trackingDetails']?['carrier'] ?? orderData['carrier'] ?? fallbackModel?.carrier;
-    if (c != null && c.toString().isNotEmpty) return c.toString();
-    return "USPS Ground Advantage";
+    if (c != null && c.toString().trim().isNotEmpty) return c.toString().trim();
+    final s = deliveryStatus.toLowerCase();
+    if (s.contains('pending') || s.contains('processing')) return "Pending Shipment";
+    return "USPS Ground";
   }
 
   // 7. Update Shipping Journey (Seller Action)
@@ -366,8 +417,8 @@ class TrackOrderController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         await fetchOrderDetails();
         showAppSnackbar(
-          "Journey Updated 🎉",
-          "Tracking status updated to '$status'. Push notification sent to buyer!",
+          "Journey Updated",
+          "Tracking status updated to '$status'. Notification sent to buyer.",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: const Color(0xFF22C55E),
           colorText: Colors.white,
@@ -406,13 +457,15 @@ class TrackOrderController extends GetxController {
         "deliveryStatus": "delivered",
       };
 
+      // /orders/journey/:id already sets deliveryStatus. A second call to
+      // /orders/:id/status used to follow it, but no such route exists — it
+      // only ever returned 404.
       final response = await _apiClient.patchData("/orders/journey/$rawId", payload);
-      await _apiClient.patchData("/orders/$rawId/status", {"status": "delivered", "deliveryStatus": "delivered"});
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         await fetchOrderDetails();
         showAppSnackbar(
-          "Delivery Confirmed 🎉",
+          "Delivery Confirmed",
           "You've confirmed receipt of your order. Thank you!",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: const Color(0xFF22C55E),

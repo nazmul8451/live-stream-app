@@ -12,10 +12,14 @@ import '../../purchases/controller/purchases_controller.dart';
 import '../../purchases/model/purchase_model.dart';
 import '../../../../global/helper/auth_guard.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import '../../../../data/services/stripe_config.dart';
 
 class TradeDetailsController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
-  
+
+  static final Map<String, String> _categoryIdToName = {};
+  static final RegExp _objectIdRegex = RegExp(r'^[0-9a-fA-F]{24}$');
+
   var currentImageIndex = 0.obs;
   final RxMap<String, dynamic> product = <String, dynamic>{}.obs;
   final RxBool isOrdering = false.obs;
@@ -37,6 +41,7 @@ class TradeDetailsController extends GetxController {
             _fetchFullProductDetails(pId);
           } else {
             _checkAndFetchSellerDetails();
+            _resolveCategoryIfNeeded();
           }
         });
       }
@@ -52,10 +57,84 @@ class TradeDetailsController extends GetxController {
         if (data is Map) {
           product.assignAll(Map<String, dynamic>.from(data));
           _checkAndFetchSellerDetails();
+          _resolveCategoryIfNeeded();
         }
       }
     } catch (e) {
       Get.log("❌ [TradeDetailsController] Error fetching product by ID: $e");
+    }
+  }
+
+  Future<void> _resolveCategoryIfNeeded() async {
+    try {
+      final raw = product['category'];
+      if (raw is Map) {
+        final name = (raw['name'] ?? raw['title'] ?? '').toString().trim();
+        if (name.isNotEmpty && !_objectIdRegex.hasMatch(name)) return;
+      }
+      final rawId = (raw is Map ? (raw['_id'] ?? raw['id']) : raw)?.toString().trim() ?? '';
+      if (rawId.isEmpty || !_objectIdRegex.hasMatch(rawId)) return;
+
+      void applyResolvedName(String name) {
+        final clean = name.trim() == 'Other / Not Listed' ? 'Other' : name.trim();
+        if (clean.isEmpty) return;
+        final updated = Map<String, dynamic>.from(product);
+        updated['category'] = {'_id': rawId, 'name': clean};
+        product.assignAll(updated);
+      }
+
+      if (_categoryIdToName.containsKey(rawId)) {
+        applyResolvedName(_categoryIdToName[rawId]!);
+        return;
+      }
+
+      // Fetch categories once and cache ID -> Name in memory
+      if (_categoryIdToName.isEmpty) {
+        final res = await _apiClient.getData(ApiUrl.categoryList);
+        if (res.statusCode == 200) {
+          final decoded = jsonDecode(res.body);
+          List<dynamic> list = [];
+          if (decoded is List) {
+            list = decoded;
+          } else if (decoded is Map) {
+            if (decoded['data'] is List) {
+              list = decoded['data'];
+            } else if (decoded['data'] is Map && decoded['data']['data'] is List) {
+              list = decoded['data']['data'];
+            }
+          }
+          for (final item in list) {
+            if (item is Map) {
+              final id = (item['_id'] ?? item['id'] ?? '').toString().trim();
+              final name = (item['name'] ?? item['title'] ?? '').toString().trim();
+              if (id.isNotEmpty && name.isNotEmpty) {
+                _categoryIdToName[id] = name;
+              }
+            }
+          }
+        }
+      }
+
+      if (_categoryIdToName.containsKey(rawId)) {
+        applyResolvedName(_categoryIdToName[rawId]!);
+        return;
+      }
+
+      // Fallback: single category lookup (e.g. subcategory or archived category)
+      final singleRes = await _apiClient.getData("${ApiUrl.category}/$rawId");
+      if (singleRes.statusCode == 200) {
+        final decoded = jsonDecode(singleRes.body);
+        final cat = decoded is Map ? (decoded['data'] ?? decoded) : null;
+        if (cat is Map) {
+          final name = (cat['name'] ?? cat['title'] ?? '').toString().trim();
+          if (name.isNotEmpty) {
+            _categoryIdToName[rawId] = name;
+            applyResolvedName(name);
+          }
+        }
+      }
+    } catch (e) {
+      Get.log("⚠️ [TradeDetailsController] Category resolve error: $e");
     }
   }
 
@@ -192,7 +271,7 @@ class TradeDetailsController extends GetxController {
       if (pubKey != null && pubKey.toString().isNotEmpty) {
         Stripe.publishableKey = pubKey.toString();
       } else {
-        Stripe.publishableKey = "pk_test_51NJLdJF5nDLFMGmox0iseTJZp42wfLi6Ub41OGs7hoMl0GSFe93a0My7PxdF2eKsxV1rvUf8vVw4p6jl9h9pCmEQ00WSln5w44";
+        Stripe.publishableKey = StripeConfig.publishableKey;
       }
       await Stripe.instance.applySettings();
 
@@ -298,26 +377,26 @@ class TradeDetailsController extends GetxController {
       Get.log("📦 Order record response: ${res.statusCode} -> ${res.body}");
 
       final newPurchase = PurchaseModel(
-        id: "#ORD-${productId.length >= 5 ? productId.substring(0, 5).toUpperCase() : '24891'}",
+        id: "#ORD-${productId.length >= 5 ? productId.substring(0, 5).toUpperCase() : 'ITEM'}",
         title: productTitle,
         curator: "@seller",
         date: "Purchased just now",
-        price: "\$${(subtotal + 15.05).toStringAsFixed(2)}",
-        carrier: "USPS Ground Express",
+        price: "\$${(subtotal + 15.00).toStringAsFixed(2)}",
+        carrier: "Pending Shipment",
         image: product['images'] != null && product['images'] is List && product['images'].isNotEmpty
             ? product['images'][0].toString()
             : "",
-        trackingId: "TRK-${productId.length >= 6 ? productId.substring(0, 6).toUpperCase() : '98421A'}",
-        status: OrderStatus.inTransit,
-        trackingStep: 3,
-        estimatedDelivery: "Apr 23, 2026",
-        location: "Jersey City Distribution Center",
+        trackingId: "Awaiting Seller",
+        status: OrderStatus.processing,
+        trackingStep: 1,
+        estimatedDelivery: "Awaiting Seller",
+        location: "Order Placed · Sent to Seller",
         itemPrice: subtotal,
         shippingPrice: 15.00,
         taxes: 0.0,
         processingFee: 0.0,
-        buyerContribution: 0.05,
-        totalPaid: subtotal + 15.05,
+        buyerContribution: 0.0,
+        totalPaid: subtotal + 15.00,
       );
 
       try {
@@ -393,22 +472,21 @@ class TradeDetailsController extends GetxController {
 
       final response = await _apiClient.postData("/trades/offer", payload);
 
-      // Emit real-time notification to seller via socket
-      try {
-        if (Get.isRegistered<SocketService>()) {
-          final socket = Get.find<SocketService>();
-          socket.emitEvent('trade_offer', {
-            "senderId": senderId,
-            "receiverId": receiverId,
-            "productId": productId,
-            "offerAmount": offerAmount,
-            "productTitle": product['title'] ?? '',
-            "message": "NEW OFFER RECEIVED 🎁: \$${offerAmount.toStringAsFixed(0)} on ${product['title'] ?? 'item'}",
-          });
-        }
-      } catch (_) {}
-
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // Emit real-time notification to seller via socket only after server confirms
+        try {
+          if (Get.isRegistered<SocketService>()) {
+            final socket = Get.find<SocketService>();
+            socket.emitEvent('trade_offer', {
+              "senderId": senderId,
+              "receiverId": receiverId,
+              "productId": productId,
+              "offerAmount": offerAmount,
+              "productTitle": product['title'] ?? '',
+              "message": "NEW OFFER RECEIVED: \$${offerAmount.toStringAsFixed(0)} on ${product['title'] ?? 'item'}",
+            });
+          }
+        } catch (_) {}
         return true;
       } else {
         String errMsg = "Failed to submit offer.";

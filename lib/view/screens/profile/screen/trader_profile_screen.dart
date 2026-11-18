@@ -222,29 +222,11 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
               ),
             ),
             if (controller.isVerified.value) ...[
-              SizedBox(width: 8.w),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF22C55E).withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.verified_rounded, color: const Color(0xFF22C55E), size: 12.sp),
-                    SizedBox(width: 4.w),
-                    Text(
-                      "Verified",
-                      style: TextStyle(
-                        color: const Color(0xFF22C55E),
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                ),
+              SizedBox(width: 6.w),
+              Icon(
+                Icons.verified_rounded,
+                color: const Color(0xFF22C55E),
+                size: 20.sp,
               ),
             ],
           ],
@@ -470,17 +452,22 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
             child: GestureDetector(
               onTap: () async {
                 if (traderId.isNotEmpty) {
-                  final mc = Get.put(MessagesController());
+                  final mc = Get.isRegistered<MessagesController>()
+                      ? Get.find<MessagesController>()
+                      : Get.put(MessagesController(), permanent: true);
                   final chatId = await mc.createChatRoom(traderId);
                   if (chatId != null && chatId.isNotEmpty) {
                     Get.toNamed(AppRoute.messageDetails, arguments: {
                       'chatId': chatId,
+                      'participantId': traderId,
+                      'partnerId': traderId,
                       'name': name,
                       'avatar': avatar,
                     });
                   } else {
                     Get.toNamed(AppRoute.messageDetails, arguments: {
-                      'chatId': 'mock_room_1',
+                      'participantId': traderId,
+                      'partnerId': traderId,
                       'name': name,
                       'avatar': avatar,
                     });

@@ -11,9 +11,13 @@ import 'package:live_stream_app/global/widgets/user_avatar.dart';
 class MessagesScreen extends GetView<MessagesController> {
   const MessagesScreen({super.key});
 
+  MessagesController get _ctrl => Get.isRegistered<MessagesController>()
+      ? Get.find<MessagesController>()
+      : Get.put(MessagesController(), permanent: true);
+
   @override
   Widget build(BuildContext context) {
-    Get.put(MessagesController());
+    final msgController = _ctrl;
     return CustomBackground(
       child: SafeArea(
         child: Column(
@@ -37,8 +41,8 @@ class MessagesScreen extends GetView<MessagesController> {
                     color: const Color(0xFF8B9BFF),
                     backgroundColor: const Color(0xFF161622),
                     onRefresh: () async {
-                      await controller.fetchChatRooms();
-                      await controller.fetchNotifications();
+                      await msgController.fetchChatRooms(force: true);
+                      await msgController.fetchNotifications();
                     },
                     child: SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
@@ -62,7 +66,8 @@ class MessagesScreen extends GetView<MessagesController> {
                           _buildGuestMessagesView()
                         else
                           Obx(() {
-                            if (controller.isLoading.value) {
+                            final msgCtrl = _ctrl;
+                            if (msgCtrl.isLoading.value) {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -80,8 +85,8 @@ class MessagesScreen extends GetView<MessagesController> {
                             );
                           }
 
-                          final updates = controller.filteredUpdates;
-                          final chats = controller.filteredChats;
+                          final updates = msgCtrl.filteredUpdates;
+                          final chats = msgCtrl.filteredChats;
 
                           if (updates.isEmpty && chats.isEmpty) {
                             return Padding(
@@ -206,13 +211,14 @@ class MessagesScreen extends GetView<MessagesController> {
   }
 
   Widget _buildFilters() {
+    final msgCtrl = _ctrl;
     return Row(
-      children: List.generate(controller.filters.length, (index) {
+      children: List.generate(msgCtrl.filters.length, (index) {
         return Expanded(
           child: Obx(() {
-            final isSelected = controller.selectedFilter.value == index;
+            final isSelected = msgCtrl.selectedFilter.value == index;
             return GestureDetector(
-              onTap: () => controller.changeFilter(index),
+              onTap: () => msgCtrl.changeFilter(index),
               child: Container(
                 margin: EdgeInsets.symmetric(horizontal: 4.w),
                 padding: EdgeInsets.symmetric(vertical: 14.h),
@@ -221,8 +227,8 @@ class MessagesScreen extends GetView<MessagesController> {
                   borderRadius: BorderRadius.circular(28.r),
                 ),
                 child: Text(
-                  controller.filters[index],
-                  textAlign: Alignment.center.x == 0 ? TextAlign.center : null,
+                  msgCtrl.filters[index],
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     color: isSelected ? Colors.black : Colors.white38,
                     fontSize: 13.sp,
@@ -283,7 +289,7 @@ class MessagesScreen extends GetView<MessagesController> {
     return InkWell(
       onTap: () async {
         if (notifId.isNotEmpty) {
-          controller.markUpdateAsRead(notifId);
+          _ctrl.markUpdateAsRead(notifId);
         }
 
         final raw = itemData?['rawItem'] is Map ? Map<String, dynamic>.from(itemData!['rawItem']) : <String, dynamic>{};
@@ -291,6 +297,21 @@ class MessagesScreen extends GetView<MessagesController> {
         final rawProduct = (raw['product'] is Map)
             ? Map<String, dynamic>.from(raw['product'])
             : (rawData['product'] is Map ? Map<String, dynamic>.from(rawData['product']) : <String, dynamic>{});
+
+        if (type.toUpperCase().contains('MESSAGE') || type.toUpperCase().contains('CHAT')) {
+          final String chatId = (raw['chatId'] ?? rawData['chatId'] ?? '').toString();
+          final String senderId = (raw['senderId'] ?? rawData['senderId'] ?? '').toString();
+          if (chatId.isNotEmpty || senderId.isNotEmpty) {
+            Get.toNamed(AppRoute.messageDetails, arguments: {
+              "chatId": chatId,
+              "participantId": senderId,
+              "partnerId": senderId,
+              "name": name,
+              "avatar": avatar,
+            });
+            return;
+          }
+        }
 
         if (type.toUpperCase().contains('AUCTION')) {
           final String title = prodTitle.isNotEmpty
@@ -419,17 +440,20 @@ class MessagesScreen extends GetView<MessagesController> {
     required String participantId,
     bool isSpecial = false,
   }) {
-    return InkWell(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () {
-        controller.markRoomAsRead(id);
+        try {
+          _ctrl.markRoomAsRead(id, syncBackend: false);
+        } catch (_) {}
         Get.toNamed(AppRoute.messageDetails, arguments: {
           "chatId": id,
           "name": name,
           "avatar": avatar,
           "participantId": participantId,
+          "partnerId": participantId,
         });
       },
-      borderRadius: BorderRadius.circular(16.r),
       child: Padding(
         padding: EdgeInsets.only(bottom: 24.h),
         child: Row(
@@ -444,7 +468,15 @@ class MessagesScreen extends GetView<MessagesController> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(name, style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900)),
+                      Expanded(
+                        child: Text(
+                          name.isNotEmpty ? name : "Chat",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
                       Text(time, style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w700)),
                     ],
                   ),

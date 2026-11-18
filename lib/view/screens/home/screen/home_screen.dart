@@ -68,7 +68,7 @@ class HomeScreen extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          "Hello, ${controller.fullName.value} 👋",
+                          "Hello, ${controller.fullName.value}",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 22.sp,
@@ -659,13 +659,17 @@ class HomeScreen extends StatelessWidget {
                                 size: 14.sp,
                               ),
                               SizedBox(width: 4.w),
-                              Text(
-                                isEntered ? "YOU'RE ENTERED! 🎉" : "EXCLUSIVE GIVEAWAY",
-                                style: TextStyle(
-                                  color: isEntered ? const Color(0xFF10B981) : const Color(0xFF8B9BFF),
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 0.8,
+                              Flexible(
+                                child: Text(
+                                  isEntered ? "YOU'RE ENTERED!" : "EXCLUSIVE GIVEAWAY",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isEntered ? const Color(0xFF10B981) : const Color(0xFF8B9BFF),
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.6,
+                                  ),
                                 ),
                               ),
                             ],
@@ -732,7 +736,7 @@ class HomeScreen extends StatelessWidget {
                             }
                           },
                           child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 13.w, vertical: 6.h),
+                            padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 6.h),
                             decoration: BoxDecoration(
                               color: isEntered ? const Color(0xFF0F2E22) : const Color(0xFF14102B),
                               borderRadius: BorderRadius.circular(20.r),
@@ -753,13 +757,17 @@ class HomeScreen extends StatelessWidget {
                                 : Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Text(
-                                        isEntered ? "YOU'RE ENTERED! 🎉" : "ENTER HERE",
-                                        style: TextStyle(
-                                          color: isEntered ? const Color(0xFF6EE7B7) : Colors.white,
-                                          fontSize: 10.5.sp,
-                                          fontWeight: FontWeight.w900,
-                                          letterSpacing: 1.0,
+                                      Flexible(
+                                        child: Text(
+                                          isEntered ? "YOU'RE ENTERED!" : "ENTER HERE",
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: isEntered ? const Color(0xFF6EE7B7) : Colors.white,
+                                            fontSize: 10.sp,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 0.6,
+                                          ),
                                         ),
                                       ),
                                       SizedBox(width: 5.w),

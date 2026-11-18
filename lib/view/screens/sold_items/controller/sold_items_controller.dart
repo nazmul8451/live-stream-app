@@ -10,7 +10,7 @@ class SoldItemsController extends GetxController {
   final RxBool isLoading = false.obs;
   
   var selectedTab = 0.obs;
-  final tabs = ["All", "Processing", "Shipped", "Delivered", "Cancelled"];
+  final tabs = ["All", "To Ship", "Shipped", "Delivered", "Cancelled"];
   final soldItems = <PurchaseModel>[].obs;
 
   @override
@@ -175,6 +175,7 @@ class SoldItemsController extends GetxController {
               shippingAddress: shipAddr,
               rawOrderId: id,
               shippingLabelUrl: item['shippingLabelUrl']?.toString(),
+              shipByDate: DateTime.tryParse(item['shipByDate']?.toString() ?? ''),
             );
 
             seenIds.add(id);
@@ -193,7 +194,7 @@ class SoldItemsController extends GetxController {
   List<PurchaseModel> get filteredSoldItems {
     final tabName = tabs[selectedTab.value];
     if (tabName == "All") return soldItems;
-    if (tabName == "Processing") return soldItems.where((e) => e.status == OrderStatus.processing).toList();
+    if (tabName == "To Ship") return soldItems.where((e) => e.status == OrderStatus.processing).toList();
     if (tabName == "Shipped") return soldItems.where((e) => e.status == OrderStatus.inTransit).toList();
     if (tabName == "Delivered") return soldItems.where((e) => e.status == OrderStatus.delivered).toList();
     if (tabName == "Cancelled") return soldItems.where((e) => e.status == OrderStatus.cancelled).toList();

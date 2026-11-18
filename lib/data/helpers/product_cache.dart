@@ -21,7 +21,10 @@ class ProductCache {
     if (sellerId.isEmpty) return [];
 
     try {
-      final res = await client.getData(ApiUrl.myProducts);
+      var res = await client.getData(ApiUrl.myProducts);
+      if (res.statusCode == 403) {
+        res = await client.getData("${ApiUrl.products}?sellerId=$sellerId&limit=100");
+      }
       if (res.statusCode == 200) {
         // Only items that can still be sold/auctioned/given away
         final list = extractApiList(jsonDecode(res.body)).where(isProductAvailable).toList();

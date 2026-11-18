@@ -2520,7 +2520,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
       "Home & Lifestyle",
       "Beauty & Personal Care",
       "Books, Music & Media",
-      "Other / Not Listed",
+      "Other",
     ];
 
     final selectedCategory = categories.first.obs;

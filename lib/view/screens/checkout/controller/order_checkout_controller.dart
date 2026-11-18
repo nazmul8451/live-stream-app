@@ -7,8 +7,18 @@ import '../../../../core/app_route.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
+import '../../../../data/services/pending_order_service.dart';
 import '../../../../data/services/socket_service.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import '../../../../data/services/stripe_config.dart';
+
+/// Outcome of saving the order record for a payment that already succeeded.
+class OrderSubmitResult {
+  final bool ok;
+  final String? error;
+
+  const OrderSubmitResult(this.ok, [this.error]);
+}
 
 class OrderCheckoutController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -123,10 +133,13 @@ class OrderCheckoutController extends GetxController {
   Future<void> proceedToPayment() async {
     if (isProcessing.value) return;
 
-    if (streetController.text.trim().isEmpty || cityController.text.trim().isEmpty || zipCodeController.text.trim().isEmpty) {
+    if (streetController.text.trim().isEmpty ||
+        cityController.text.trim().isEmpty ||
+        stateController.text.trim().isEmpty ||
+        zipCodeController.text.trim().isEmpty) {
       showAppSnackbar(
         "Address Required",
-        "Please fill in your delivery street, city, and ZIP code.",
+        "Please fill in your delivery street, city, state, and ZIP code.",
         backgroundColor: const Color(0xFFFF6B35),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -166,9 +179,9 @@ class OrderCheckoutController extends GetxController {
             final body1Tap = jsonDecode(res1Tap.body);
             final data1Tap = body1Tap['data'] is Map ? body1Tap['data'] : body1Tap;
             if (data1Tap['status'] == 'succeeded') {
-              final orderCreated = await _createOrderRecordAndNotifySeller(
+              final result = await _createOrderRecordAndNotifySeller(
                   paymentIntentId: (data1Tap['paymentIntentId'] ?? data1Tap['id'])?.toString());
-              if (orderCreated) {
+              if (result.ok) {
                 showAppSnackbar(
                   "Payment Successful! 🎉",
                   "1-Tap checkout completed with saved card! Redirecting to Purchases...",
@@ -178,14 +191,7 @@ class OrderCheckoutController extends GetxController {
                   duration: const Duration(seconds: 4),
                 );
               } else {
-                showAppSnackbar(
-                  "Order Pending",
-                  "Payment received with saved card, finalizing order record.",
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
-                  snackPosition: SnackPosition.BOTTOM,
-                  duration: const Duration(seconds: 4),
-                );
+                _showOrderNotRecorded(result.error);
               }
               Get.offAllNamed(AppRoute.main);
               Get.toNamed(AppRoute.purchases);
@@ -263,7 +269,7 @@ class OrderCheckoutController extends GetxController {
       if (pubKey != null && pubKey.toString().isNotEmpty) {
         Stripe.publishableKey = pubKey.toString();
       } else {
-        Stripe.publishableKey = "pk_test_51NJLdJF5nDLFMGmox0iseTJZp42wfLi6Ub41OGs7hoMl0GSFe93a0My7PxdF2eKsxV1rvUf8vVw4p6jl9h9pCmEQ00WSln5w44";
+        Stripe.publishableKey = StripeConfig.publishableKey;
       }
       await Stripe.instance.applySettings();
 
@@ -293,9 +299,9 @@ class OrderCheckoutController extends GetxController {
       final intentId = (data['paymentIntentId']?.toString().isNotEmpty ?? false)
           ? data['paymentIntentId'].toString()
           : clientSecret.split('_secret_').first;
-      final orderCreated = await _createOrderRecordAndNotifySeller(paymentIntentId: intentId);
+      final result = await _createOrderRecordAndNotifySeller(paymentIntentId: intentId);
 
-      if (orderCreated) {
+      if (result.ok) {
         showAppSnackbar(
           "Payment Successful! 🎉",
           "Your order has been placed and sent to the seller! Redirecting to Purchases...",
@@ -305,14 +311,7 @@ class OrderCheckoutController extends GetxController {
           duration: const Duration(seconds: 4),
         );
       } else {
-        showAppSnackbar(
-          "Order Pending",
-          "Payment was received! Finalizing your order record...",
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 4),
-        );
+        _showOrderNotRecorded(result.error);
       }
 
       Get.offAllNamed(AppRoute.main);
@@ -333,82 +332,155 @@ class OrderCheckoutController extends GetxController {
     }
   }
 
-  Future<bool> _createOrderRecordAndNotifySeller({String? paymentIntentId}) async {
-    try {
-      String userId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
-      if (userId.isEmpty) {
-        try {
-          final profileRes = await _apiClient.getData(ApiUrl.profile);
-          if (profileRes.statusCode == 200) {
-            final profileData = jsonDecode(profileRes.body)['data'];
-            if (profileData != null) {
-              userId = (profileData['id'] ?? profileData['_id'] ?? '').toString();
-              if (userId.isNotEmpty) {
-                await SharePrefsHelper.setString(SharePrefsHelper.userIdKey, userId);
-              }
+  /// Tells the buyer the truth when the charge went through but the order did
+  /// not save, and makes clear they must not pay a second time.
+  void _showOrderNotRecorded(String? reason) {
+    final detail = (reason != null && reason.trim().isNotEmpty)
+        ? " ($reason)"
+        : "";
+    showAppSnackbar(
+      "Order not recorded",
+      "Your payment went through, but the order could not be saved$detail. "
+          "We'll keep retrying — please do not pay again. Contact support if it "
+          "doesn't show up in My Purchases.",
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 8),
+    );
+  }
+
+  /// Builds the order record that mirrors the payment the buyer just made.
+  Future<Map<String, dynamic>> _buildOrderPayload({String? paymentIntentId}) async {
+    String userId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+    if (userId.isEmpty) {
+      try {
+        final profileRes = await _apiClient.getData(ApiUrl.profile);
+        if (profileRes.statusCode == 200) {
+          final profileData = jsonDecode(profileRes.body)['data'];
+          if (profileData != null) {
+            userId = (profileData['id'] ?? profileData['_id'] ?? '').toString();
+            if (userId.isNotEmpty) {
+              await SharePrefsHelper.setString(SharePrefsHelper.userIdKey, userId);
             }
           }
-        } catch (_) {}
-      }
-
-      final productId = product['_id'] ?? product['id'] ?? "";
-      final seller = product['sellerId'];
-      final sellerId = (seller is Map) ? (seller['_id'] ?? seller['id'] ?? '') : seller.toString();
-
-      final orderPayload = {
-        "productId": productId,
-        if (sellerId.isNotEmpty) "sellerId": sellerId,
-        if (userId.isNotEmpty) "buyerId": userId,
-        "purchaseType": "buy_now",
-        "totalPaid": totalAmount.value,
-        if (paymentIntentId != null && paymentIntentId.startsWith('pi_')) "paymentIntentId": paymentIntentId,
-        "amountDetails": {
-          "itemSubtotal": itemSubtotal.value,
-          "shipping": shippingFee.value,
-          "taxes": estimatedTax.value,
-          "processingFee": 0.0,
-          "authenticationFee": 0.0,
-          "totalPaid": totalAmount.value,
-        },
-        "shippingAddress": {
-          "fullName": fullNameController.text.trim(),
-          "phone": phoneController.text.trim(),
-          "street": streetController.text.trim(),
-          "city": cityController.text.trim(),
-          "state": stateController.text.trim(),
-          "postalCode": zipCodeController.text.trim(),
-          "zipCode": zipCodeController.text.trim(),
-          "country": countryController.text.trim().isNotEmpty ? countryController.text.trim() : "USA"
-        },
-        "trackingDetails": {
-          // Seller adds the real carrier + tracking number when shipping
-          "status": "Order Placed",
         }
-      };
-
-      final orderRes = await _apiClient.postData(ApiUrl.orders, orderPayload);
-      if (orderRes.statusCode == 200 || orderRes.statusCode == 201) {
-        Get.log("✅ Order created in database successfully.");
-        // Socket notification to seller
-        if (sellerId.isNotEmpty && Get.isRegistered<SocketService>()) {
-          try {
-            Get.find<SocketService>().socket?.emit('order_created', {
-              'sellerId': sellerId,
-              'productId': productId,
-              'totalPaid': totalAmount.value,
-              'buyerId': userId,
-            });
-          } catch (_) {}
-        }
-        return true;
-      } else {
-        Get.log("❌ Order creation failed (${orderRes.statusCode}): ${orderRes.body}");
-        return false;
-      }
-    } catch (e) {
-      Get.log("⚠️ Failed to create backend order record: $e");
-      return false;
+      } catch (_) {}
     }
+
+    final productId = product['_id'] ?? product['id'] ?? "";
+    final seller = product['sellerId'];
+    final sellerId = (seller is Map) ? (seller['_id'] ?? seller['id'] ?? '') : seller.toString();
+
+    return <String, dynamic>{
+      "productId": productId,
+      if (sellerId.isNotEmpty) "sellerId": sellerId,
+      if (userId.isNotEmpty) "buyerId": userId,
+      "purchaseType": "buy_now",
+      "totalPaid": totalAmount.value,
+      if (paymentIntentId != null && paymentIntentId.startsWith('pi_')) "paymentIntentId": paymentIntentId,
+      "amountDetails": {
+        "itemSubtotal": itemSubtotal.value,
+        "shipping": shippingFee.value,
+        "taxes": estimatedTax.value,
+        "processingFee": 0.0,
+        "authenticationFee": 0.0,
+        "totalPaid": totalAmount.value,
+      },
+      "shippingAddress": {
+        "fullName": fullNameController.text.trim(),
+        "phone": phoneController.text.trim(),
+        "street": streetController.text.trim().isNotEmpty ? streetController.text.trim() : "N/A",
+        "city": cityController.text.trim().isNotEmpty ? cityController.text.trim() : "N/A",
+        "state": stateController.text.trim().isNotEmpty ? stateController.text.trim() : "N/A",
+        "postalCode": zipCodeController.text.trim().isNotEmpty ? zipCodeController.text.trim() : "00000",
+        "zipCode": zipCodeController.text.trim().isNotEmpty ? zipCodeController.text.trim() : "00000",
+        "country": countryController.text.trim().isNotEmpty ? countryController.text.trim() : "USA"
+      },
+      "trackingDetails": {
+        // Seller adds the real carrier + tracking number when shipping
+        "status": "Order Placed",
+      }
+    };
+  }
+
+  /// Saves the order for a payment that has already been charged.
+  ///
+  /// The money is gone by the time this runs, so a failure here must never be
+  /// silent: the call is retried, and anything still unsaved is queued in
+  /// [PendingOrderService] so it can be replayed later.
+  Future<OrderSubmitResult> _createOrderRecordAndNotifySeller({String? paymentIntentId}) async {
+    final Map<String, dynamic> orderPayload =
+        await _buildOrderPayload(paymentIntentId: paymentIntentId);
+
+    String lastError = "The order could not be saved";
+
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      try {
+        final orderRes = await _apiClient.postData(ApiUrl.orders, orderPayload);
+
+        if (orderRes.statusCode == 200 || orderRes.statusCode == 201) {
+          Get.log("✅ Order created in database successfully.");
+          _notifySellerOfOrder(orderPayload);
+          return const OrderSubmitResult(true);
+        }
+
+        // 409: this payment is already attached to an order, so it is settled.
+        if (orderRes.statusCode == 409) {
+          Get.log("ℹ️ Order already recorded for this payment.");
+          return const OrderSubmitResult(true);
+        }
+
+        lastError = _extractErrorMessage(orderRes.body) ?? lastError;
+        Get.log("❌ Order creation failed (attempt $attempt, ${orderRes.statusCode}): ${orderRes.body}");
+
+        // A payload the server rejects will be rejected again — only retry
+        // server faults, timeouts and rate limits.
+        if (orderRes.statusCode < 500 &&
+            orderRes.statusCode != 408 &&
+            orderRes.statusCode != 429) {
+          break;
+        }
+      } catch (e) {
+        lastError = "Could not reach the server";
+        Get.log("⚠️ Failed to create backend order record (attempt $attempt): $e");
+      }
+
+      if (attempt < 3) {
+        await Future.delayed(Duration(seconds: attempt));
+      }
+    }
+
+    // The buyer has paid, so hold on to the order and retry it later.
+    await PendingOrderService.record(orderPayload, lastError);
+    return OrderSubmitResult(false, lastError);
+  }
+
+  void _notifySellerOfOrder(Map<String, dynamic> orderPayload) {
+    final sellerId = orderPayload['sellerId']?.toString() ?? '';
+    if (sellerId.isEmpty || !Get.isRegistered<SocketService>()) return;
+    try {
+      Get.find<SocketService>().socket?.emit('order_created', {
+        'sellerId': sellerId,
+        'productId': orderPayload['productId'],
+        'totalPaid': orderPayload['totalPaid'],
+        'buyerId': orderPayload['buyerId'],
+      });
+    } catch (_) {}
+  }
+
+  /// Pulls the server's own explanation out of an error response body.
+  String? _extractErrorMessage(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map) {
+        final message = decoded['message'];
+        if (message is String && message.trim().isNotEmpty) {
+          return message.trim();
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   @override

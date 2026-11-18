@@ -46,7 +46,7 @@ class PushNotificationService {
 
   static const String _channelId = 'high_importance_channel';
   static const String _channelName = 'High Importance Notifications';
-  static const String _channelDescription = 'Push notifications for CultureCards live streams, trades, orders, and chats.';
+  static const String _channelDescription = 'Push notifications for AREIS live streams, trades, orders, and chats.';
 
   bool _isInitialized = false;
 
@@ -82,8 +82,14 @@ class PushNotificationService {
         // Request Permissions
         await requestPermission();
 
-        // Get & Cache Device Token
-        await getDeviceToken();
+        // Get & Cache Device Token, and sync to server if already logged in
+        final token = await getDeviceToken();
+        if (token != null &&
+            token.isNotEmpty &&
+            !SharePrefsHelper.isGuest &&
+            SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isNotEmpty) {
+          syncDeviceToken(token: token);
+        }
 
         // Listen for Token Rotation / Refresh
         _listenToTokenRefresh();
@@ -375,12 +381,14 @@ class PushNotificationService {
     debugPrint("🧭 [PushNotificationService] Handling redirection for type: '$type' with payload: $data");
 
     switch (type) {
-      // 1. NEW_MESSAGE -> Open Chat room with senderId
+      // 1. NEW_MESSAGE -> Open Chat room with chatId / senderId
       case 'NEW_MESSAGE':
+        final String chatId = (data['chatId'] ?? '').toString();
         final String senderId = (data['senderId'] ?? data['participantId'] ?? data['userId'] ?? '').toString();
         final String messagePreview = (data['messagePreview'] ?? '').toString();
-        if (senderId.isNotEmpty) {
+        if (chatId.isNotEmpty || senderId.isNotEmpty) {
           Get.toNamed(AppRoute.messageDetails, arguments: {
+            if (chatId.isNotEmpty) 'chatId': chatId,
             'senderId': senderId,
             'partnerId': senderId,
             'participantId': senderId,
@@ -392,7 +400,15 @@ class PushNotificationService {
         }
         break;
 
-      // 2. TRADE_ACCEPTED -> Open Trade/Escrow detail screen for tradeOfferId
+      // 2. NEW_TRADE_OFFER / TRADE_OFFER / TRADE_ACCEPTED -> Open My Trades or Trade Detail
+      case 'NEW_TRADE_OFFER':
+      case 'TRADE_OFFER':
+        final String tradeOfferId = (data['tradeOfferId'] ?? data['tradeId'] ?? data['offerId'] ?? '').toString();
+        Get.toNamed(AppRoute.myTrades, arguments: {
+          if (tradeOfferId.isNotEmpty) 'tradeOfferId': tradeOfferId,
+        });
+        break;
+
       case 'TRADE_ACCEPTED':
         final String tradeOfferId = (data['tradeOfferId'] ?? data['tradeId'] ?? data['offerId'] ?? '').toString();
         if (tradeOfferId.isNotEmpty) {
@@ -479,11 +495,25 @@ class PushNotificationService {
         }
         break;
 
-      // 8. NEW_REPORT -> (Admin Only) Open admin reporting ticket details
+      // 8. NEW_FOLLOW -> Open Follower's Trader Profile
+      case 'NEW_FOLLOW':
+        final String followerId = (data['followerId'] ?? data['userId'] ?? '').toString();
+        if (followerId.isNotEmpty) {
+          Get.toNamed(AppRoute.traderProfile, arguments: {
+            'id': followerId,
+            'traderId': followerId,
+          });
+        } else {
+          Get.toNamed(AppRoute.notifications);
+        }
+        break;
+
+      // 9. LIVE_TIP / NEW_REPORT -> Open Notifications
+      case 'LIVE_TIP':
       case 'NEW_REPORT':
         final String reportId = (data['reportId'] ?? '').toString();
         Get.toNamed(AppRoute.notifications, arguments: {
-          'reportId': reportId,
+          if (reportId.isNotEmpty) 'reportId': reportId,
         });
         break;
 
