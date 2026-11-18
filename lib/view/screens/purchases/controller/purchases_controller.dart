@@ -65,17 +65,12 @@ class PurchasesController extends GetxController {
         return [];
       }
 
-      // 1. Primary query for buyer orders
-      var response = await _apiClient.getData("${ApiUrl.userOrders}?role=buyer");
+      // Buyer orders only. The retry without a role that used to follow an
+      // empty result just repeated the same query — /orders/user already
+      // defaults to the buyer view.
+      final response = await _apiClient.getData("${ApiUrl.userOrders}?role=buyer");
       Get.log("📦 [Purchases] GET /orders/user?role=buyer -> ${response.statusCode}");
-      var list = extractListFromResponse(response);
-
-      // 2. Only fallback if primary endpoint returned empty
-      if (list.isEmpty) {
-        response = await _apiClient.getData(ApiUrl.userOrders);
-        Get.log("📦 [Purchases] Fallback GET /orders/user -> ${response.statusCode}");
-        list = extractListFromResponse(response);
-      }
+      final list = extractListFromResponse(response);
       Get.log("📦 [Purchases] Raw orders count: ${list.length}");
 
       final Map<String, dynamic> uniqueOrders = {};

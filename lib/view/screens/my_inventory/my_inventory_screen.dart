@@ -53,8 +53,8 @@ class MyInventoryController extends GetxController {
   static bool isSold(Map<String, dynamic> p) => p['status'] == 'sold' || p['isSold'] == true;
   static bool isReserved(Map<String, dynamic> p) => p['status'] == 'pending';
 
-  List<Map<String, dynamic>> get visible {
-    switch (filter.value) {
+  List<Map<String, dynamic>> itemsFor(String f) {
+    switch (f) {
       case 'inventory':
         return items.where((p) => p['allowTrade'] != true && !isSold(p)).toList();
       case 'trade':
@@ -66,13 +66,13 @@ class MyInventoryController extends GetxController {
     }
   }
 
-  int count(String f) {
-    final prev = filter.value;
-    filter.value = f;
-    final n = visible.length;
-    filter.value = prev;
-    return n;
-  }
+  List<Map<String, dynamic>> get visible => itemsFor(filter.value);
+
+  /// Count for a tab label. This used to swap `filter.value` in and out to
+  /// reuse `visible`, which wrote to an observable while the tab bar was
+  /// building — Flutter threw "setState() or markNeedsBuild() called during
+  /// build" and the screen turned into a red error box.
+  int count(String f) => itemsFor(f).length;
 
   Future<void> toggleTradeListing(Map<String, dynamic> p) async {
     final id = idOf(p);

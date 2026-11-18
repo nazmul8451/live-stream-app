@@ -351,7 +351,9 @@ class MessagesController extends GetxController {
           for (var item in data) {
             final title = (item['title'] ?? "Notification").toString();
             final String rawType = (item['type'] ?? 'Alert').toString();
-            final itemData = item['data'] is Map ? item['data'] : <String, dynamic>{};
+            final itemData = item['metadata'] is Map
+                ? item['metadata']
+                : (item['data'] is Map ? item['data'] : <String, dynamic>{});
 
             // Exclude social follow alerts from Messages tab (Issue 14)
             final String rawTypeLower = rawType.toLowerCase();
@@ -388,10 +390,12 @@ class MessagesController extends GetxController {
             final String amountStr = rawAmount != null ? "\$$rawAmount" : "";
 
             // Determine message text
-            String msg = (item['text'] ??
+            String msg = (item['content'] ??
+                item['text'] ??
                 item['message'] ??
                 item['body'] ??
                 item['description'] ??
+                itemData['content'] ??
                 itemData['message'] ??
                 itemData['text'] ??
                 '')?.toString() ?? '';

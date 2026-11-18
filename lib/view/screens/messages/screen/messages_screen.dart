@@ -336,8 +336,25 @@ class MessagesScreen extends GetView<MessagesController> {
           return;
         }
 
-        if (type.toUpperCase().contains('ORDER') || type.toUpperCase().contains('PURCHASE')) {
-          Get.toNamed(AppRoute.purchases);
+        final String orderId = (itemData?['orderId'] ??
+                raw['orderId'] ??
+                rawData['orderId'] ??
+                (raw['metadata'] is Map ? raw['metadata']['orderId'] : null) ??
+                '')
+            .toString();
+
+        if (type.toUpperCase() == 'NEW_ORDER') {
+          if (orderId.isNotEmpty) {
+            Get.toNamed(AppRoute.trackOrder, arguments: {'orderId': orderId});
+          } else {
+            Get.toNamed(AppRoute.soldItems);
+          }
+        } else if (type.toUpperCase().contains('ORDER') || type.toUpperCase().contains('PURCHASE')) {
+          if (orderId.isNotEmpty) {
+            Get.toNamed(AppRoute.trackOrder, arguments: {'orderId': orderId});
+          } else {
+            Get.toNamed(AppRoute.purchases);
+          }
         } else if (type.toUpperCase().contains('TRADE')) {
           Get.toNamed(AppRoute.myTrades);
         } else {

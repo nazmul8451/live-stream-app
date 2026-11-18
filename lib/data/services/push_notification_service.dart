@@ -430,7 +430,8 @@ class PushNotificationService {
         });
         break;
 
-      // 4. ORDER_UPDATE -> Open Order Tracking/Shipment screen for orderId
+      // 4. NEW_ORDER / ORDER_UPDATE -> Open Order Tracking/Shipment screen for orderId
+      case 'NEW_ORDER':
       case 'ORDER_UPDATE':
         final String orderId = (data['orderId'] ?? data['id'] ?? data['_id'] ?? '').toString();
         if (orderId.isNotEmpty) {
@@ -440,7 +441,7 @@ class PushNotificationService {
             '_id': orderId,
           });
         } else {
-          Get.toNamed(AppRoute.purchases);
+          Get.toNamed(type == 'NEW_ORDER' ? AppRoute.soldItems : AppRoute.purchases);
         }
         break;
 

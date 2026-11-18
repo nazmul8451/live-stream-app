@@ -52,15 +52,13 @@ class SoldItemsController extends GetxController {
         return [];
       }
 
-      // 1. Primary query for seller orders
-      var response = await _apiClient.getData("${ApiUrl.userOrders}?role=seller");
-      var rawList = extractListFromResponse(response);
-
-      // 2. Only fallback if primary endpoint returned empty
-      if (rawList.isEmpty) {
-        response = await _apiClient.getData(ApiUrl.userOrders);
-        rawList = extractListFromResponse(response);
-      }
+      // Seller orders only. There used to be a fallback to /orders/user with
+      // no role when this came back empty, but that endpoint defaults to the
+      // BUYER view — so anyone who had sold nothing saw their own purchases
+      // listed here as if they had sold them. An empty result means exactly
+      // that: nothing sold yet.
+      final response = await _apiClient.getData("${ApiUrl.userOrders}?role=seller");
+      final rawList = extractListFromResponse(response);
 
       Set<String> seenIds = {};
       List<PurchaseModel> loadedList = [];

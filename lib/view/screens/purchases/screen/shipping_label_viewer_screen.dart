@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../../../../data/services/api_url.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
-import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class ShippingLabelViewerScreen extends StatelessWidget {
   const ShippingLabelViewerScreen({super.key});
@@ -22,11 +22,15 @@ class ShippingLabelViewerScreen extends StatelessWidget {
     final String carrier = (args['carrier'] ?? 'USPS Ground Advantage').toString();
     final String sellerName = (args['sellerName'] ?? 'Verified Curator').toString();
     final String shippingAddress = (args['shippingAddress'] ?? '123 Main St, New York, NY 10001, USA').toString();
-    final String shippingWeight = (args['shippingWeight'] ?? '1.5 lbs').toString();
+    final String rawWeight = (args['shippingWeight'] ?? '1.5 lbs').toString().trim();
+    final String shippingWeight = RegExp(r'^\d+(\.\d+)?$').hasMatch(rawWeight)
+        ? '$rawWeight lbs'
+        : rawWeight;
     final String shippingLabelUrl = (args['shippingLabelUrl'] ?? '').toString();
     final bool isSeller = args['isSeller'] == true;
 
     return CustomBackground(
+      safeAreaBottom: false,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -80,7 +84,7 @@ class ShippingLabelViewerScreen extends StatelessWidget {
                       child: Text(
                         isSeller
                             ? "Affix this pre-paid label onto the package before dropping it off at your local postal station."
-                            : "Pre-paid CultureCards authentication & routing label generated for this order.",
+                            : "Pre-paid AREIS authentication & routing label generated for this order.",
                         style: TextStyle(
                           color: const Color(0xFF8B9BFF),
                           fontSize: 12.sp,
@@ -107,72 +111,48 @@ class ShippingLabelViewerScreen extends StatelessWidget {
                 isSeller: isSeller,
               ),
 
-              SizedBox(height: 32.h),
+              SizedBox(height: 28.h),
 
               // ── Action Buttons ───────────────────────────────────────────
-              if (!isSeller) ...[
-                SizedBox(
-                  width: double.infinity,
-                  height: 56.h,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _showCheckoutBottomSheet(context, productTitle, orderId),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFFFB800),
-                      foregroundColor: const Color(0xFF0F172A),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28.r),
-                      ),
-                      elevation: 0,
-                    ),
-                    icon: Icon(Icons.payment_rounded, size: 22.sp),
-                    label: Text(
-                      "Pay Now & Complete Checkout",
-                      style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 14.h),
-              ],
-
               SizedBox(
                 width: double.infinity,
-                height: 56.h,
+                height: 52.h,
                 child: ElevatedButton.icon(
                   onPressed: () => _printLabel(shippingLabelUrl, orderId),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF8B9BFF),
                     foregroundColor: const Color(0xFF0F172A),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28.r),
+                      borderRadius: BorderRadius.circular(18.r),
                     ),
                     elevation: 0,
                   ),
-                  icon: Icon(Icons.print_rounded, size: 22.sp),
+                  icon: Icon(Icons.print_rounded, size: 20.sp),
                   label: Text(
                     "Print Shipping Label",
-                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w900),
+                    style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900),
                   ),
                 ),
               ),
 
-              SizedBox(height: 14.h),
+              SizedBox(height: 12.h),
 
               SizedBox(
                 width: double.infinity,
-                height: 56.h,
+                height: 52.h,
                 child: OutlinedButton.icon(
                   onPressed: () => _downloadLabel(shippingLabelUrl, orderId),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28.r),
+                      borderRadius: BorderRadius.circular(18.r),
                     ),
                   ),
-                  icon: Icon(Icons.picture_as_pdf_rounded, color: const Color(0xFF8B9BFF), size: 22.sp),
+                  icon: Icon(Icons.picture_as_pdf_rounded, color: const Color(0xFF8B9BFF), size: 20.sp),
                   label: Text(
                     "Download PDF Label",
-                    style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -182,113 +162,6 @@ class ShippingLabelViewerScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-
-  void _showCheckoutBottomSheet(BuildContext context, String title, String orderId) {
-    final addressCtrl = TextEditingController(text: "123 Main St, New York");
-    final zipCtrl = TextEditingController(text: "10001");
-    final RxBool isPaying = false.obs;
-
-    Get.bottomSheet(
-      Container(
-        padding: EdgeInsets.all(24.r),
-        decoration: BoxDecoration(
-          color: const Color(0xFF11111A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40.w,
-                height: 4.h,
-                margin: EdgeInsets.only(bottom: 20.h),
-                decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(2.r)),
-              ),
-            ),
-            Text("Complete Payment", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w900)),
-            SizedBox(height: 4.h),
-            Text("Order: $orderId • $title", style: TextStyle(color: Colors.white38, fontSize: 12.sp)),
-            SizedBox(height: 20.h),
-
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF161622),
-                borderRadius: BorderRadius.circular(14.r),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: TextField(
-                controller: addressCtrl,
-                style: TextStyle(color: Colors.white, fontSize: 13.sp),
-                decoration: InputDecoration(
-                  labelText: "Shipping Address",
-                  labelStyle: const TextStyle(color: Colors.white38),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                ),
-              ),
-            ),
-            SizedBox(height: 12.h),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF161622),
-                borderRadius: BorderRadius.circular(14.r),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: TextField(
-                controller: zipCtrl,
-                style: TextStyle(color: Colors.white, fontSize: 13.sp),
-                decoration: InputDecoration(
-                  labelText: "ZIP / Postal Code",
-                  labelStyle: const TextStyle(color: Colors.white38),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                ),
-              ),
-            ),
-            SizedBox(height: 24.h),
-
-            Obx(() => SizedBox(
-              width: double.infinity,
-              height: 54.h,
-              child: ElevatedButton(
-                onPressed: isPaying.value
-                    ? null
-                    : () async {
-                        isPaying.value = true;
-                        await Future.delayed(const Duration(seconds: 1));
-                        isPaying.value = false;
-                        Get.back();
-                        showAppSnackbar(
-                          "Payment Successful! ⚡",
-                          "Your order has been paid and is being prepared for shipment.",
-                          backgroundColor: const Color(0xFF22C55E),
-                          colorText: Colors.white,
-                          snackPosition: SnackPosition.TOP,
-                          duration: const Duration(seconds: 4),
-                        );
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFB800),
-                  foregroundColor: const Color(0xFF0F0B1E),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
-                ),
-                child: isPaying.value
-                    ? const ButtonLoader()
-                    : Text(
-                        "Confirm & Pay Now",
-                        style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w900),
-                      ),
-              ),
-            )),
-          ],
-        ),
-      ),
-      isScrollControlled: true,
     );
   }
 
@@ -325,31 +198,33 @@ class ShippingLabelViewerScreen extends StatelessWidget {
           // Top Postage Row
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "PRIORITY MAIL 2-DAY®",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "PRIORITY MAIL 2-DAY®",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 14.5.sp,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.4,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 2.h),
-                  Text(
-                    "CultureCards Hub Verification Service",
-                    style: TextStyle(
-                      color: Colors.black54,
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w700,
+                    SizedBox(height: 2.h),
+                    Text(
+                      "AREIS Hub Verification Service",
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              SizedBox(width: 8.w),
               Container(
                 padding: EdgeInsets.all(8.r),
                 decoration: BoxDecoration(
@@ -363,7 +238,7 @@ class ShippingLabelViewerScreen extends StatelessWidget {
                       style: TextStyle(color: Colors.black, fontSize: 8.sp, fontWeight: FontWeight.w900),
                     ),
                     Text(
-                      "CultureCards LLC",
+                      "AREIS LLC",
                       style: TextStyle(color: Colors.black87, fontSize: 8.sp, fontWeight: FontWeight.w700),
                     ),
                     Text(
@@ -486,16 +361,18 @@ class ShippingLabelViewerScreen extends StatelessWidget {
 
           // Item ref
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "REF: $orderId • $productTitle",
-                style: TextStyle(color: Colors.black54, fontSize: 9.sp, fontWeight: FontWeight.w700),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: Text(
+                  "REF: $orderId • $productTitle",
+                  style: TextStyle(color: Colors.black54, fontSize: 9.sp, fontWeight: FontWeight.w700),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              SizedBox(width: 8.w),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
+                padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
                 decoration: BoxDecoration(
                   color: Colors.black,
                   borderRadius: BorderRadius.circular(4.r),
@@ -516,26 +393,27 @@ class ShippingLabelViewerScreen extends StatelessWidget {
   // BARCODE WIDGET (Simulated High-Resolution PostNet / GS1-128 Bars)
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildBarcodeWidget() {
-    // Generate a randomized-looking but deterministic sequence of bar widths
     const List<double> barWidths = [
       3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 4, 1, 2, 3, 1, 4, 2, 1, 3, 2, 4, 1, 2, 3,
       1, 4, 2, 1, 3, 2, 1, 4, 3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 1, 3, 4, 1, 2, 3, 1, 4,
     ];
 
-    return Container(
+    return SizedBox(
       height: 60.h,
       width: double.infinity,
-      alignment: Alignment.center,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: barWidths.map((w) {
-          return Container(
-            width: w.w,
-            height: 60.h,
-            margin: EdgeInsets.symmetric(horizontal: 1.w),
-            color: Colors.black,
-          );
-        }).toList(),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: barWidths.map((w) {
+            return Container(
+              width: w.w,
+              height: 60.h,
+              margin: EdgeInsets.symmetric(horizontal: 1.w),
+              color: Colors.black,
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -589,7 +467,7 @@ class ShippingLabelViewerScreen extends StatelessWidget {
       }
     }
     showAppSnackbar(
-      "Print Job Sent 🖨️",
+      "Print Job Sent",
       "Shipping label for $orderId has been queued to your default printer.",
       backgroundColor: const Color(0xFF22C55E),
       colorText: Colors.white,
@@ -607,7 +485,7 @@ class ShippingLabelViewerScreen extends StatelessWidget {
       }
     }
     showAppSnackbar(
-      "PDF Downloaded 📥",
+      "PDF Downloaded",
       "Shipping label for $orderId downloaded to device storage.",
       backgroundColor: const Color(0xFF8B9BFF),
       colorText: Colors.black,
@@ -616,8 +494,9 @@ class ShippingLabelViewerScreen extends StatelessWidget {
   }
 
   void _shareLabel(String trackingNumber, String orderId) {
+    Clipboard.setData(ClipboardData(text: trackingNumber));
     showAppSnackbar(
-      "Share Label 🔗",
+      "Tracking Copied",
       "Tracking Number $trackingNumber copied to clipboard.",
       backgroundColor: const Color(0xFF8B9BFF),
       colorText: Colors.black,

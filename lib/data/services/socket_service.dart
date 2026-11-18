@@ -6,6 +6,9 @@ import '../helpers/shared_prefe.dart';
 import 'api_url.dart';
 import '../../view/screens/main/controller/main_controller.dart';
 import '../../view/screens/messages/controller/messages_controller.dart';
+import '../../view/screens/notifications/controller/notification_controller.dart';
+import '../../view/screens/sold_items/controller/sold_items_controller.dart';
+import '../../core/app_route.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class _SocketListener {
@@ -90,6 +93,58 @@ class SocketService extends GetxService {
       socket?.on('receive-message', handleGlobalMessageReceived);
       socket?.on('receiveMessage', handleGlobalMessageReceived);
       socket?.on('notification', handleGlobalMessageReceived);
+
+      socket?.on('new-order', (data) {
+        Get.log('📦 [SocketService] new-order event: $data');
+        if (data is Map) {
+          final orderId = (data['orderId'] ?? data['_id'] ?? data['id'] ?? '').toString();
+          final productTitle = (data['productTitle'] ?? 'your item').toString();
+          final buyerName = (data['buyerName'] ?? 'A buyer').toString();
+          final totalPaid = data['totalPaid'];
+          final amountPart = (totalPaid is num && totalPaid > 0)
+              ? ' (\$${totalPaid.toStringAsFixed(2)})'
+              : '';
+          final message = (data['message']?.toString().isNotEmpty == true)
+              ? data['message'].toString()
+              : '$buyerName purchased $productTitle$amountPart';
+
+          showAppSnackbar(
+            "New Order Received",
+            message,
+            duration: const Duration(seconds: 8),
+            backgroundColor: const Color(0xFF10B981),
+            colorText: Colors.white,
+            mainButton: TextButton(
+              onPressed: () {
+                if (orderId.isNotEmpty) {
+                  Get.toNamed(AppRoute.trackOrder, arguments: {'orderId': orderId});
+                } else {
+                  Get.toNamed(AppRoute.soldItems);
+                }
+              },
+              child: const Text(
+                "VIEW",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+              ),
+            ),
+          );
+
+          if (Get.isRegistered<MainController>()) {
+            Get.find<MainController>().fetchUnreadMessageCount(force: true);
+          }
+          if (Get.isRegistered<MessagesController>()) {
+            final mc = Get.find<MessagesController>();
+            mc.fetchChatRooms(force: true);
+            mc.fetchNotifications();
+          }
+          if (Get.isRegistered<SoldItemsController>()) {
+            Get.find<SoldItemsController>().fetchSoldItems();
+          }
+          if (Get.isRegistered<NotificationController>()) {
+            Get.find<NotificationController>().fetchNotifications();
+          }
+        }
+      });
 
       socket?.on('auction-won', (data) {
         Get.log('🏆 [SocketService] auction-won event: $data');
