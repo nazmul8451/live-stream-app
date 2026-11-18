@@ -14,6 +14,7 @@ import '../../../../data/services/api_client.dart';
 import '../../profile/controller/profile_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 import 'package:live_stream_app/global/widgets/button_loader.dart';
+import 'package:live_stream_app/global/widgets/user_avatar.dart';
 
 class TradeDetailsScreen extends GetView<TradeDetailsController> {
   const TradeDetailsScreen({super.key});
@@ -1050,13 +1051,8 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
     final address = sellerMap?['address'] ?? '';
     final isVerified = sellerMap?['isVerified'] == true;
 
-    String avatarUrl = '';
     final sellerImage = (sellerMap?['profile'] ?? sellerMap?['image'] ?? sellerMap?['profileImageUrl'] ?? sellerMap?['avatar'])?.toString();
-    if (sellerImage != null && sellerImage.isNotEmpty) {
-      avatarUrl = (sellerImage.startsWith('http') || sellerImage.startsWith('data:image/'))
-          ? sellerImage
-          : "${ApiUrl.imageBaseUrl}${sellerImage.startsWith('/') ? sellerImage : '/$sellerImage'}";
-    }
+    final String avatarUrl = UserAvatar.sanitizeUrl(sellerImage);
 
     return GestureDetector(
       onTap: () => Get.toNamed('/trader_profile', arguments: {
@@ -1071,15 +1067,12 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
         child: Row(
           children: [
             // Avatar
-            Container(
-              width: 48.r,
-              height: 48.r,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white10),
-              child: ClipOval(
-                child: avatarUrl.isNotEmpty
-                    ? _buildDetailsProductImage(avatarUrl)
-                    : Center(child: Icon(Icons.person, color: Colors.white24, size: 26.sp)),
-              ),
+            UserAvatar(
+              imageUrl: avatarUrl,
+              radius: 24.r,
+              backgroundColor: const Color(0xFF232238),
+              iconColor: const Color(0xFF8B9BFF),
+              iconSize: 26.sp,
             ),
             SizedBox(width: 14.w),
             Expanded(

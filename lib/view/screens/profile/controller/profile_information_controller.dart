@@ -8,6 +8,7 @@ import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import 'profile_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/widgets/user_avatar.dart';
 
 class ProfileInformationController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -42,18 +43,7 @@ class ProfileInformationController extends GetxController {
         phoneController.text = data['phone'] ?? "";
         bioController.text = data['description'] ?? "";
 
-        final profilePath = data['profile'] ?? "";
-        if (profilePath.isNotEmpty) {
-          if (profilePath.startsWith('http')) {
-            profileImageUrl.value = profilePath;
-          } else {
-            // Ensure path starts with /
-            final formattedPath = profilePath.startsWith('/')
-                ? profilePath
-                : '/$profilePath';
-            profileImageUrl.value = "${ApiUrl.imageBaseUrl}$formattedPath";
-          }
-        }
+        profileImageUrl.value = UserAvatar.sanitizeUrl(data['profile']?.toString());
       } else {
         showAppSnackbar(
           "Error",

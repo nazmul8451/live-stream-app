@@ -7,6 +7,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/helpers/user_cache.dart';
 import '../../main/controller/main_controller.dart';
 import 'package:live_stream_app/data/helpers/api_list.dart';
+import 'package:live_stream_app/global/widgets/user_avatar.dart';
 
 class MessagesController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -410,14 +411,21 @@ class MessagesController extends GetxController {
                 itemAvatar = pImgs;
               }
             }
-            if (itemAvatar.isEmpty) {
-              itemAvatar = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200";
-            }
+            itemAvatar = UserAvatar.sanitizeUrl(itemAvatar);
 
             final String notifId = (item['_id'] ?? item['id'] ?? '').toString();
             final bool isLocallyRead = locallyReadNotificationIds.contains(notifId);
             final time = item['createdAt'] ?? "";
             final isRead = (item['isRead'] == true) || isLocallyRead;
+
+            final String friendlyTag = rawType
+                .replaceAll('_', ' ')
+                .trim()
+                .split(RegExp(r'\s+'))
+                .map((w) => w.isEmpty
+                    ? ''
+                    : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
+                .join(' ');
 
             parsedUpdates.add({
               "id": notifId,
@@ -426,7 +434,7 @@ class MessagesController extends GetxController {
               "time": _formatTime(time),
               "hasNew": !isRead,
               "avatar": itemAvatar,
-              "tags": [rawType],
+              "tags": friendlyTag.isNotEmpty ? [friendlyTag] : <String>[],
               "type": rawType,
               "actionUrl": (item['actionUrl'] ?? itemData['actionUrl'] ?? item['checkoutUrl'] ?? itemData['checkoutUrl'] ?? '')?.toString(),
               "orderId": (item['orderId'] ?? itemData['orderId'] ?? '')?.toString(),

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
 import '../../../../core/app_route.dart';
 import '../../../../global/widgets/custom_background.dart';
 import '../../../../global/widgets/custom_shimmer.dart';
+import '../../../../global/widgets/user_avatar.dart';
 import '../controller/bidshwap_controller.dart';
 import '../model/trade_model.dart';
 import '../../../../data/services/api_url.dart';
@@ -244,223 +244,479 @@ class BidShwapScreen extends GetView<BidShwapController> {
   }
 
   Widget _buildTradeCard(TradeModel trade) {
+    final bool hasBuyNow = trade.hasBuyNow;
+    final bool canOffer = trade.allowTrade || trade.allowOffers;
+
+    // Listing type badge styling
+    final String listingBadgeLabel = hasBuyNow && trade.allowTrade
+        ? "BUY • TRADE"
+        : hasBuyNow
+            ? "BUY NOW"
+            : "TRADE";
+    final Color listingBadgeColor =
+        hasBuyNow ? const Color(0xFF10B981) : const Color(0xFF8B9BFF);
+
+    // Clean seller rating / trades subtitle (never "New ()")
+    String sellerMeta = "";
+    if (trade.userRating.isNotEmpty && trade.tradesCount.isNotEmpty) {
+      sellerMeta = "${trade.userRating} • ${trade.tradesCount}";
+    } else if (trade.userRating.isNotEmpty) {
+      sellerMeta = trade.userRating;
+    } else if (trade.tradesCount.isNotEmpty) {
+      sellerMeta = trade.tradesCount;
+    }
+
     return GestureDetector(
       onTap: () => Get.toNamed(AppRoute.tradeDetails, arguments: trade.rawProduct),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        margin: EdgeInsets.only(bottom: 20.h),
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+        margin: EdgeInsets.only(bottom: 16.h),
         decoration: BoxDecoration(
-          color: const Color(0xFF161622),
-          borderRadius: BorderRadius.circular(28.r),
+          color: const Color(0xFF161624),
+          borderRadius: BorderRadius.circular(22.r),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.07),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.28),
+              blurRadius: 16.r,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // User Info
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 18.r,
-                  backgroundColor: Colors.white10,
-                  child: ClipOval(
-                    child: Image.network(
-                      trade.userAvatar,
-                      width: 36.r,
-                      height: 36.r,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Image.network(
-                        "",
-                        width: 36.r,
-                        height: 36.r,
-                        fit: BoxFit.cover,
+            // 1. Product Hero Image with Clean Corner Badges
+            SizedBox(
+              height: 196.h,
+              width: double.infinity,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  _buildTradeItemImageWidget(
+                    trade.offeredItemImage,
+                    fit: BoxFit.cover,
+                  ),
+
+                  // Subtle top & bottom scrim so badges stay crisp on bright photos
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.45),
+                            Colors.transparent,
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.55),
+                          ],
+                          stops: const [0.0, 0.32, 0.65, 1.0],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(trade.userName, style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900)),
-                      Row(
-                        children: [
-                          Icon(Icons.star, color: const Color(0xFFFF8BFF), size: 12.sp),
-                          SizedBox(width: 4.w),
-                          Text("${trade.userRating} (${trade.tradesCount})", style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w800)),
+
+                  // Top-Left: Listing Type + Condition badges
+                  Positioned(
+                    top: 12.h,
+                    left: 12.w,
+                    right: 12.w,
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w,
+                            vertical: 5.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: listingBadgeColor.withOpacity(0.92),
+                            borderRadius: BorderRadius.circular(20.r),
+                          ),
+                          child: Text(
+                            listingBadgeLabel,
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                        if (trade.condition.isNotEmpty) ...[
+                          SizedBox(width: 6.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 9.w,
+                              vertical: 5.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.58),
+                              borderRadius: BorderRadius.circular(20.r),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.18),
+                              ),
+                            ),
+                            child: Text(
+                              trade.condition,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
                         ],
+                        const Spacer(),
+                        if (trade.categoryName.isNotEmpty)
+                          Flexible(
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 9.w,
+                                vertical: 5.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.58),
+                                borderRadius: BorderRadius.circular(20.r),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.14),
+                                ),
+                              ),
+                              child: Text(
+                                trade.categoryName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  // Bottom-Right: Bold Price / Est. Value Pill
+                  if (trade.offeredItemValue.isNotEmpty)
+                    Positioned(
+                      right: 12.w,
+                      bottom: 12.h,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 6.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0E0C1D).withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(14.r),
+                          border: Border.all(
+                            color: hasBuyNow
+                                ? const Color(0xFF10B981).withOpacity(0.65)
+                                : const Color(0xFF8B9BFF).withOpacity(0.55),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: Text(
+                          trade.offeredItemValue,
+                          style: TextStyle(
+                            color: hasBuyNow
+                                ? const Color(0xFF34D399)
+                                : Colors.white,
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
                       ),
+                    ),
+                ],
+              ),
+            ),
+
+            // 2. Clean Product Details Body
+            Padding(
+              padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 16.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Product Title
+                  Text(
+                    trade.offeredItemName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
+
+                  SizedBox(height: 10.h),
+
+                  // Compact Seller Row (Real Photo or Clean Person Icon)
+                  Row(
+                    children: [
+                      UserAvatar(
+                        imageUrl: trade.userAvatar,
+                        radius: 13.r,
+                        backgroundColor: const Color(0xFF23223A),
+                        iconColor: const Color(0xFF9EA8FF),
+                        iconSize: 15.sp,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.12),
+                          width: 1,
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Flexible(
+                        child: Text(
+                          trade.userName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (trade.isVerified) ...[
+                        SizedBox(width: 4.w),
+                        Icon(
+                          Icons.verified_rounded,
+                          color: const Color(0xFF8B9BFF),
+                          size: 14.sp,
+                        ),
+                      ],
+                      const Spacer(),
+                      if (sellerMeta.isNotEmpty)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (trade.userRating.isNotEmpty) ...[
+                              Icon(
+                                Icons.star_rounded,
+                                color: const Color(0xFFFFC107),
+                                size: 14.sp,
+                              ),
+                              SizedBox(width: 3.w),
+                            ],
+                            Text(
+                              sellerMeta,
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 11.5.sp,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 3.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Text(
+                            "New Seller",
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 10.5.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.04),
-                    borderRadius: BorderRadius.circular(10.r),
-                  ),
-                  child: Text("VERIFIED AVAILABLE", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 9.sp, fontWeight: FontWeight.w900)),
-                ),
-              ],
-            ),
-            
-            SizedBox(height: 16.h),
-            
-            // Offered Item & Looking For Section
-            Stack(
-              alignment: Alignment.center,
-              clipBehavior: Clip.none,
-              children: [
-                Column(
-                  children: [
-                    Container(
-                      height: 200.h,
-                      width: double.infinity,
-                      clipBehavior: Clip.antiAlias,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20.r),
-                      ),
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: _buildTradeItemImageWidget(
-                              trade.offeredItemImage,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          Positioned(
-                            left: 12.w,
-                            bottom: 12.h,
-                            child: Container(
-                              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.4),
-                                borderRadius: BorderRadius.circular(14.r),
-                                border: Border.all(color: Colors.white10),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text("OFFERED ITEM", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.sp, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                                  SizedBox(height: 4.h),
-                                  Text(trade.offeredItemName, style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w900)),
-                                  Text(trade.offeredItemValue, style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w700)),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 12.w,
-                            bottom: 12.h,
-                            child: Container(
-                              width: 38.r,
-                              height: 38.r,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Center(
-                                child: Icon(Icons.add, color: Colors.black, size: 22.sp),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    SizedBox(height: 12.h),
 
-                    // Looking For
+                  // Conditional "Looking For" Trade Banner (only shown when seller specified trade preferences)
+                  if (trade.hasLookingFor) ...[
+                    SizedBox(height: 12.h),
                     Container(
                       width: double.infinity,
-                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 10.h,
+                      ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0F0B1E),
-                        borderRadius: BorderRadius.circular(20.r),
+                        color: const Color(0xFF0F0C20),
+                        borderRadius: BorderRadius.circular(14.r),
+                        border: Border.all(
+                          color: const Color(0xFF8B9BFF).withOpacity(0.18),
+                        ),
                       ),
                       child: Row(
                         children: [
+                          Container(
+                            width: 28.r,
+                            height: 28.r,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF8B9BFF).withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.swap_horiz_rounded,
+                              color: const Color(0xFF8B9BFF),
+                              size: 16.sp,
+                            ),
+                          ),
+                          SizedBox(width: 10.w),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("LOOKING FOR", style: TextStyle(color: const Color(0xFFFF8BFF), fontSize: 11.sp, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-                                SizedBox(height: 8.h),
-                                Text(trade.lookingForItemName, style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w900)),
+                                Text(
+                                  "OPEN TO TRADE FOR",
+                                  style: TextStyle(
+                                    color: const Color(0xFFFF8BFF),
+                                    fontSize: 9.5.sp,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
                                 SizedBox(height: 2.h),
-                                Text(trade.lookingForItemValue, style: TextStyle(color: Colors.white38, fontSize: 12.sp, fontWeight: FontWeight.w700)),
+                                Text(
+                                  trade.lookingForItemName.isNotEmpty
+                                      ? trade.lookingForItemName
+                                      : "Open to trade offers",
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          Icon(Icons.watch_outlined, color: Colors.white10, size: 28.sp),
+                          if (trade.lookingForItemValue.isNotEmpty) ...[
+                            SizedBox(width: 8.w),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8.w,
+                                vertical: 4.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: Text(
+                                trade.lookingForItemValue,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
                   ],
-                ),
 
-                // Center Swap Icon floating cleanly over cards
-                Positioned(
-                  top: 178.h,
-                  child: Container(
-                    width: 48.r,
-                    height: 48.r,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color(0xFF8B9BFF),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF8B9BFF).withOpacity(0.4),
-                          blurRadius: 16.r,
-                          offset: const Offset(0, 4),
+                  SizedBox(height: 14.h),
+
+                  // 3. Context-Aware Action Buttons
+                  Row(
+                    children: [
+                      if (hasBuyNow) ...[
+                        Expanded(
+                          child: _buildActionButton(
+                            canOffer ? "Make Offer" : "View Details",
+                            Colors.white.withOpacity(0.07),
+                            Colors.white,
+                            icon: canOffer
+                                ? Icons.swap_horiz_rounded
+                                : Icons.info_outline_rounded,
+                            onTap: canOffer
+                                ? () {
+                                    AuthGuard.check(
+                                      title: "Sign in to Make an Offer",
+                                      message:
+                                          "Guest mode is browse-only. Sign in or create an account to make custom trade offers.",
+                                      onAuthorized: () => Get.toNamed(
+                                        '/make_offer',
+                                        arguments: trade.rawProduct,
+                                      ),
+                                    );
+                                  }
+                                : () => Get.toNamed(
+                                      AppRoute.tradeDetails,
+                                      arguments: trade.rawProduct,
+                                    ),
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: _buildActionButton(
+                            "Buy ${trade.offeredItemValue}",
+                            const Color(0xFF10B981),
+                            Colors.black,
+                            icon: Icons.shopping_bag_rounded,
+                            onTap: () {
+                              AuthGuard.check(
+                                title: "Sign in to Buy Now",
+                                message:
+                                    "Sign in or create an account to complete your purchase securely.",
+                                onAuthorized: () => Get.toNamed(
+                                  AppRoute.checkout,
+                                  arguments: trade.rawProduct,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ] else ...[
+                        Expanded(
+                          child: _buildActionButton(
+                            "View Details",
+                            Colors.white.withOpacity(0.07),
+                            Colors.white,
+                            icon: Icons.visibility_outlined,
+                            onTap: () => Get.toNamed(
+                              AppRoute.tradeDetails,
+                              arguments: trade.rawProduct,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: _buildActionButton(
+                            "Make Offer",
+                            const Color(0xFF8B9BFF),
+                            Colors.black,
+                            icon: Icons.swap_horiz_rounded,
+                            onTap: () {
+                              AuthGuard.check(
+                                title: "Sign in to Make an Offer",
+                                message:
+                                    "Guest mode is browse-only. Sign in or create an account to make custom trade offers.",
+                                onAuthorized: () => Get.toNamed(
+                                  '/make_offer',
+                                  arguments: trade.rawProduct,
+                                ),
+                              );
+                            },
+                          ),
                         ),
                       ],
-                    ),
-                    child: Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(8.r),
-                        child: SvgPicture.asset(
-                          "assets/icons/Container1.svg",
-                          fit: BoxFit.contain,
-                          colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            
-            SizedBox(height: 16.h),
-            
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionButton(
-                    "View Details",
-                    Colors.white.withOpacity(0.06),
-                    Colors.white,
-                    onTap: () => Get.toNamed(AppRoute.tradeDetails, arguments: trade.rawProduct),
-                  ),
-                ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: _buildActionButton(
-                    "Make Offer",
-                    const Color(0xFF8B9BFF),
-                    Colors.black,
-                    onTap: () {
-                      AuthGuard.check(
-                        title: "Sign in to Make an Offer",
-                        message: "Guest mode is browse-only. Sign in or create an account to make custom trade offers.",
-                        onAuthorized: () => Get.toNamed('/make_offer', arguments: trade.rawProduct),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -649,38 +905,82 @@ class BidShwapScreen extends GetView<BidShwapController> {
   //   );
   // }
 
-  Widget _buildActionButton(String text, Color bg, Color textCol, {VoidCallback? onTap}) {
+  Widget _buildActionButton(
+    String text,
+    Color bg,
+    Color textCol, {
+    IconData? icon,
+    VoidCallback? onTap,
+  }) {
     return SizedBox(
-      height: 48.h,
+      height: 44.h,
       child: ElevatedButton(
         onPressed: onTap ?? () {},
         style: ElevatedButton.styleFrom(
           backgroundColor: bg,
           foregroundColor: textCol,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
           elevation: 0,
-          padding: EdgeInsets.symmetric(horizontal: 4.w),
+          padding: EdgeInsets.symmetric(horizontal: 10.w),
         ),
-        child: Text(
-          text,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: textCol, size: 16.sp),
+              SizedBox(width: 6.w),
+            ],
+            Flexible(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13.5.sp, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildTradeItemImageWidget(String imgStr, {BoxFit fit = BoxFit.cover}) {
-    final placeholder = Image.network(
-      "https://images.unsplash.com/photo-1613771404721-1f92d799e49f?q=80&w=2069&auto=format&fit=crop",
-      fit: fit,
+    final Widget placeholder = Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1F1C36), Color(0xFF121024)],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              color: Colors.white24,
+              size: 40.sp,
+            ),
+            SizedBox(height: 6.h),
+            Text(
+              "No Photo",
+              style: TextStyle(
+                color: Colors.white24,
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
 
     if (imgStr.isEmpty) {
       return placeholder;
     }
-    
+
     if (imgStr.startsWith('data:image/') && imgStr.contains('base64,')) {
       try {
         final base64Content = imgStr.split('base64,').last;
@@ -694,7 +994,7 @@ class BidShwapScreen extends GetView<BidShwapController> {
         return placeholder;
       }
     }
-    
+
     final cleanUrl = imgStr.startsWith('http')
         ? imgStr
         : "${ApiUrl.imageBaseUrl}${imgStr.startsWith('/') ? imgStr : '/$imgStr'}";
@@ -1022,32 +1322,35 @@ class BidShwapScreen extends GetView<BidShwapController> {
               ),
 
               // Bottom Apply Bar
-              Container(
-                padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 24.h),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F0B1E),
-                  border: Border(top: BorderSide(color: Colors.white10, width: 1.w)),
-                ),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 52.h,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      controller.applyFilterAndSearch();
-                      Get.back();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B9BFF),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26.r)),
-                      elevation: 4,
-                    ),
-                    child: Text(
-                      "Apply Filters",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
+              SafeArea(
+                top: false,
+                child: Container(
+                  padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 16.h),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F0B1E),
+                    border: Border(top: BorderSide(color: Colors.white10, width: 1.w)),
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52.h,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        controller.applyFilterAndSearch();
+                        Get.back();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B9BFF),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26.r)),
+                        elevation: 4,
+                      ),
+                      child: Text(
+                        "Apply Filters",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ),

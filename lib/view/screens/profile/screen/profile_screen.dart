@@ -15,6 +15,7 @@ import '../../../../data/services/api_client.dart';
 import '../../live_stream/controller/agora_live_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 import 'package:live_stream_app/global/widgets/button_loader.dart';
+import 'package:live_stream_app/global/widgets/user_avatar.dart';
 
 class ProfileScreen extends GetView<ProfileController> {
   const ProfileScreen({super.key});
@@ -246,23 +247,12 @@ class ProfileScreen extends GetView<ProfileController> {
                             ),
                           ],
                         ),
-                        child: CircleAvatar(
+                        child: UserAvatar(
+                          imageUrl: profileUrl,
                           radius: 44.r,
                           backgroundColor: const Color(0xFF0D0D1A),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(44.r),
-                            child: profileUrl.isNotEmpty
-                                ? SizedBox(
-                                    width: 88.r,
-                                    height: 88.r,
-                                    child: _buildProfileProductImage(profileUrl),
-                                  )
-                                : Icon(
-                                    Icons.person,
-                                    color: Colors.white24,
-                                    size: 44.sp,
-                                  ),
-                          ),
+                          iconColor: const Color(0xFF8B9BFF),
+                          iconSize: 44.sp,
                         ),
                       ),
                     ],

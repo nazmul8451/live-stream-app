@@ -5,6 +5,7 @@ import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../model/trade_model.dart';
 import 'package:live_stream_app/data/helpers/api_list.dart';
+import 'package:live_stream_app/global/widgets/user_avatar.dart';
 
 class BidShwapController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -117,6 +118,16 @@ class BidShwapController extends GetxController {
           if (selectedFilter.value >= filters.length) {
             selectedFilter.value = 0;
           }
+          // Re-resolve category names on already-loaded items if categories arrived after products
+          if (allTrades.isNotEmpty) {
+            for (int i = 0; i < allTrades.length; i++) {
+              final raw = allTrades[i].rawProduct;
+              if (raw != null && allTrades[i].categoryName.isEmpty) {
+                allTrades[i] = _parseProductToTradeModel(raw);
+              }
+            }
+            applyFilterAndSearch();
+          }
           Get.log("✅ [BidShwapController] Loaded ${parsed.length} dynamic categories: $parsed");
         }
       }
@@ -125,80 +136,159 @@ class BidShwapController extends GetxController {
     }
   }
 
+  String _formatMoney(num value) {
+    final d = value.toDouble();
+    if (d == d.roundToDouble()) {
+      return "\$${d.toInt()}";
+    }
+    return "\$${d.toStringAsFixed(2)}";
+  }
+
+  String _resolveCategoryName(dynamic rawCat) {
+    if (rawCat == null) return '';
+    if (rawCat is Map) {
+      final name = (rawCat['name'] ?? rawCat['title'] ?? '').toString().trim();
+      final id = (rawCat['_id'] ?? rawCat['id'] ?? '').toString().trim();
+      if (name.isNotEmpty && !(name.length == 24 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(name))) {
+        return name;
+      }
+      if (id.isNotEmpty && categoryIdToName.containsKey(id)) {
+        return categoryIdToName[id]!;
+      }
+      return '';
+    }
+    if (rawCat is String) {
+      final trimmed = rawCat.trim();
+      if (trimmed.isEmpty) return '';
+      if (trimmed.length == 24 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(trimmed)) {
+        return categoryIdToName[trimmed] ?? '';
+      }
+      return trimmed;
+    }
+    return '';
+  }
+
+  TradeModel _parseProductToTradeModel(Map<String, dynamic> item) {
+    final seller = item['sellerId'];
+    final Map<String, dynamic>? sellerMap =
+        seller is Map ? Map<String, dynamic>.from(seller) : null;
+
+    final String name = (sellerMap?['username'] ??
+            sellerMap?['fullName'] ??
+            sellerMap?['name'] ??
+            "Collector")
+        .toString()
+        .trim();
+
+    final dynamic rawRating = sellerMap?['rating'] ?? sellerMap?['averageRating'];
+    final double? parsedRating =
+        rawRating != null ? double.tryParse(rawRating.toString()) : null;
+    final String rating =
+        (parsedRating != null && parsedRating > 0) ? parsedRating.toStringAsFixed(1) : "";
+
+    final dynamic rawTradesCount = sellerMap?['tradesCount'] ?? sellerMap?['totalTrades'];
+    final int parsedTradesCount =
+        rawTradesCount != null ? (int.tryParse(rawTradesCount.toString()) ?? 0) : 0;
+    final String tradesCountStr = parsedTradesCount > 0 ? "$parsedTradesCount trades" : "";
+
+    final bool isVerified = sellerMap?['sellerVerified'] == true ||
+        sellerMap?['isVerified'] == true ||
+        sellerMap?['verified'] == true;
+
+    final sellerImage = (sellerMap?['profile'] ??
+            sellerMap?['image'] ??
+            sellerMap?['profileImageUrl'] ??
+            sellerMap?['avatar'])
+        ?.toString();
+    final String avatarUrl = UserAvatar.sanitizeUrl(sellerImage);
+
+    String imageUrl = "";
+    final imagesList = item['images'];
+    if (imagesList != null && imagesList is List && imagesList.isNotEmpty) {
+      final imagePath = imagesList[0].toString().trim();
+      if (imagePath.isNotEmpty) {
+        imageUrl = (imagePath.startsWith('http') || imagePath.startsWith('data:image/'))
+            ? imagePath
+            : "${ApiUrl.imageBaseUrl}${imagePath.startsWith('/') ? imagePath : '/$imagePath'}";
+      }
+    }
+
+    final double buyNowPrice = double.tryParse((item['buyNowPrice'] ?? 0).toString()) ?? 0.0;
+    final double estValue = double.tryParse(
+            (item['estValue'] ?? item['price'] ?? buyNowPrice).toString()) ??
+        0.0;
+    final bool allowTrade =
+        item['allowTrade'] == true || item['allowTrade'] == 'true';
+    final bool allowOffers =
+        item['allowOffers'] == true || item['allowOffers'] == 'true';
+
+    final String offeredValue = buyNowPrice > 0
+        ? _formatMoney(buyNowPrice)
+        : (estValue > 0 ? "Est. ${_formatMoney(estValue)}" : "");
+
+    final String condition = (item['condition'] ?? '').toString().trim();
+    final String categoryName = _resolveCategoryName(item['category']);
+
+    // Show only real lookingFor info (never fake "$0 - $0" ranges)
+    final String lookingForName = (item['lookingFor'] ?? '').toString().trim();
+    final double minV = double.tryParse((item['minValue'] ?? 0).toString()) ?? 0.0;
+    final double maxV = double.tryParse((item['maxValue'] ?? 0).toString()) ?? 0.0;
+
+    String lookingForValue = '';
+    final rawLookingVal = (item['lookingForValue'] ?? '').toString().trim();
+    if (rawLookingVal.isNotEmpty && !rawLookingVal.contains('\$0 - \$0')) {
+      lookingForValue = rawLookingVal;
+    } else if (minV > 0 && maxV > 0) {
+      lookingForValue = "${_formatMoney(minV)} – ${_formatMoney(maxV)}";
+    } else if (minV > 0) {
+      lookingForValue = "${_formatMoney(minV)}+";
+    } else if (maxV > 0) {
+      lookingForValue = "Up to ${_formatMoney(maxV)}";
+    }
+
+    return TradeModel(
+      userName: name.startsWith('@') ? name : "@$name",
+      userAvatar: avatarUrl,
+      userRating: rating,
+      tradesCount: tradesCountStr,
+      isVerified: isVerified,
+      offeredItemName: (item['title'] ?? "Untitled Item").toString().trim(),
+      offeredItemValue: offeredValue,
+      offeredItemImage: imageUrl,
+      lookingForItemName: lookingForName,
+      lookingForItemValue: lookingForValue,
+      buyNowPrice: buyNowPrice,
+      estValue: estValue,
+      allowTrade: allowTrade,
+      allowOffers: allowOffers,
+      condition: condition,
+      categoryName: categoryName,
+      rawProduct: item,
+    );
+  }
+
   Future<void> fetchTrades() async {
     isLoading.value = true;
     if (filters.length <= 1) {
-      fetchCategories();
+      await fetchCategories();
     }
     try {
-      // Only items still available for trade (sold/reserved hidden)
+      // Only items still available for marketplace (sold/reserved/private hidden)
       final response = await _apiClient.getData("${ApiUrl.products}?allowTrade=true&status=active&limit=100");
       if (response.statusCode == 200) {
         final List data = extractApiList(jsonDecode(response.body));
-        
-        // Sort by newest first so newly created trades appear at the top
+
+        // Sort by newest first so newly created listings appear at the top
         data.sort((a, b) {
           final aTime = DateTime.tryParse(a['createdAt']?.toString() ?? '') ?? DateTime(0);
           final bTime = DateTime.tryParse(b['createdAt']?.toString() ?? '') ?? DateTime(0);
           return bTime.compareTo(aTime);
         });
 
-        final parsed = data.map((item) {
-          final seller = item['sellerId'];
-          final Map<String, dynamic>? sellerMap = seller is Map ? Map<String, dynamic>.from(seller) : null;
-          
-          final String name = sellerMap?['username'] ?? sellerMap?['fullName'] ?? sellerMap?['name'] ?? "Collector";
-          final String rating = (sellerMap?['rating'] ?? sellerMap?['averageRating'] ?? "New").toString();
-          
-          String avatarUrl = "";
-          final sellerImage = (sellerMap?['profile'] ?? sellerMap?['image'] ?? sellerMap?['profileImageUrl'] ?? sellerMap?['avatar'])?.toString();
-          if (sellerImage != null && sellerImage.isNotEmpty) {
-            avatarUrl = (sellerImage.startsWith('http') || sellerImage.startsWith('data:image/'))
-                ? sellerImage
-                : "${ApiUrl.imageBaseUrl}${sellerImage.startsWith('/') ? sellerImage : '/$sellerImage'}";
-          }
-          if (avatarUrl.isEmpty) {
-            avatarUrl = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1974&auto=format&fit=crop";
-          }
-
-          String imageUrl = "";
-          final imagesList = item['images'];
-          if (imagesList != null && imagesList is List && imagesList.isNotEmpty) {
-            final imagePath = imagesList[0].toString();
-            imageUrl = (imagePath.startsWith('http') || imagePath.startsWith('data:image/'))
-                ? imagePath
-                : "${ApiUrl.imageBaseUrl}${imagePath.startsWith('/') ? imagePath : '/$imagePath'}";
-          }
-          if (imageUrl.isEmpty) {
-            imageUrl = "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=500";
-          }
-
-          final offeredValue = "\$${(item['estValue'] ?? item['price'] ?? 0).toString()} Est.";
-          
-          // Show only what the trader actually entered (no made-up examples)
-          final lookingForName = (item['lookingFor']?.toString().trim().isNotEmpty ?? false)
-              ? item['lookingFor']
-              : 'Open to offers';
-          final minV = item['minValue'];
-          final maxV = item['maxValue'];
-          final lookingForValue = item['lookingForValue'] ??
-              ((minV != null || maxV != null)
-                  ? 'Value Range: \$${minV ?? 0} - \$${maxV ?? 'any'}'
-                  : 'Any value');
-
-          return TradeModel(
-            userName: name.startsWith('@') ? name : "@$name",
-            userAvatar: avatarUrl,
-            userRating: rating,
-            tradesCount: sellerMap?['tradesCount'] != null ? "${sellerMap!['tradesCount']} trades" : "",
-            offeredItemName: item['title'] ?? "Unknown Item",
-            offeredItemValue: offeredValue,
-            offeredItemImage: imageUrl,
-            lookingForItemName: lookingForName.toString(),
-            lookingForItemValue: lookingForValue.toString(),
-            rawProduct: item,
-          );
-        }).toList();
+        final parsed = data
+            .whereType<Map>()
+            .map((item) => _parseProductToTradeModel(Map<String, dynamic>.from(item)))
+            .toList();
 
         allTrades.clear();
         allTrades.addAll(parsed);
@@ -240,38 +330,10 @@ class BidShwapController extends GetxController {
   void _updateTradeUser(int index, Map<String, dynamic> userData) {
     if (index >= allTrades.length) return;
     final current = allTrades[index];
-
-    final fn = userData['fullName'] ?? userData['name'] ?? "Julian_D";
-    final un = userData['username'] ?? fn.replaceAll(' ', '').toLowerCase();
-    final rating = (userData['rating'] ?? "4.9").toString();
-
-    String avatarUrl = "";
-    final profilePath = userData['profile'] ?? userData['profileImageUrl'] ?? userData['avatar'] ?? "";
-    if (profilePath.isNotEmpty) {
-      avatarUrl = profilePath.startsWith('http')
-          ? profilePath
-          : "${ApiUrl.imageBaseUrl}${profilePath.startsWith('/') ? profilePath : '/$profilePath'}";
-    }
-    if (avatarUrl.isEmpty) {
-      avatarUrl = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1974&auto=format&fit=crop";
-    }
-
     final updatedProduct = Map<String, dynamic>.from(current.rawProduct ?? {});
     updatedProduct['sellerId'] = userData;
 
-    allTrades[index] = TradeModel(
-      userName: un.startsWith('@') ? un : "@$un",
-      userAvatar: avatarUrl,
-      userRating: rating,
-      tradesCount: current.tradesCount,
-      offeredItemName: current.offeredItemName,
-      offeredItemValue: current.offeredItemValue,
-      offeredItemImage: current.offeredItemImage,
-      lookingForItemName: current.lookingForItemName,
-      lookingForItemValue: current.lookingForItemValue,
-      rawProduct: updatedProduct,
-    );
-
+    allTrades[index] = _parseProductToTradeModel(updatedProduct);
     applyFilterAndSearch();
   }
 

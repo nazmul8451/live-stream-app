@@ -12,6 +12,7 @@ import '../../../../data/services/push_notification_service.dart';
 import '../../../../data/helpers/api_list.dart';
 import '../../../../data/services/socket_service.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/widgets/user_avatar.dart';
 
 class ProfileController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -112,13 +113,8 @@ class ProfileController extends GetxController {
         email.value = data['email'] ?? "";
         description.value = data['description'] ?? "No bio added yet.";
 
-        // Handle profile image
-        final profilePath = data['profile'] ?? "";
-        if (profilePath.isNotEmpty) {
-          profileImageUrl.value = (profilePath.startsWith('http') || profilePath.startsWith('data:image/'))
-              ? profilePath
-              : "${ApiUrl.imageBaseUrl}${profilePath.startsWith('/') ? profilePath : '/$profilePath'}";
-        }
+        // Handle profile image (ignore legacy default stock photo)
+        profileImageUrl.value = UserAvatar.sanitizeUrl(data['profile']?.toString());
 
         // Handle cover photo
         final coverPath = data['coverPhoto'] ?? "";

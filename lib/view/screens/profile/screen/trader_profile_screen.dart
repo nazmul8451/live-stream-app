@@ -11,6 +11,7 @@ import '../../../../global/widgets/custom_shimmer.dart';
 import '../../../../global/controllers/safety_controller.dart';
 import '../../../../global/helper/share_helper.dart';
 import 'package:live_stream_app/global/widgets/button_loader.dart';
+import 'package:live_stream_app/global/widgets/user_avatar.dart';
 
 class TraderProfileScreen extends GetView<TraderProfileController> {
   const TraderProfileScreen({super.key});
@@ -169,10 +170,7 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
       );
     }
 
-    final avatar = controller.displayAvatar;
-    final String resolvedAvatarUrl = (avatar.isNotEmpty && !avatar.startsWith('http') && !avatar.startsWith('data:image/'))
-        ? "${ApiUrl.imageBaseUrl}${avatar.startsWith('/') ? avatar : '/$avatar'}"
-        : avatar;
+    final avatar = UserAvatar.sanitizeUrl(controller.displayAvatar);
 
     return Column(
       children: [
@@ -180,44 +178,15 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
           alignment: Alignment.center,
           children: [
             // Avatar
-            Container(
-              width: 120.r,
-              height: 120.r,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: const Color(0xFF8B9BFF).withOpacity(0.4), width: 3),
-              ),
-              child: ClipOval(
-                child: Container(
-                  color: const Color(0xFF1E1E2C),
-                  width: 120.r,
-                  height: 120.r,
-                  child: Builder(
-                    builder: (context) {
-                      if (resolvedAvatarUrl.isEmpty) {
-                        return Icon(Icons.person, color: Colors.white38, size: 48.sp);
-                      }
-                      if (resolvedAvatarUrl.startsWith('data:image/') && resolvedAvatarUrl.contains('base64,')) {
-                        try {
-                          final bytes = base64Decode(resolvedAvatarUrl.split('base64,').last);
-                          return Image.memory(
-                            bytes,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Icon(Icons.person, color: Colors.white38, size: 48.sp),
-                          );
-                        } catch (_) {
-                          return Icon(Icons.person, color: Colors.white38, size: 48.sp);
-                        }
-                      }
-                      return Image.network(
-                        resolvedAvatarUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Icon(Icons.person, color: Colors.white38, size: 48.sp),
-                      );
-                    },
-                  ),
-                ),
+            UserAvatar(
+              imageUrl: avatar,
+              radius: 60.r,
+              backgroundColor: const Color(0xFF1E1E2C),
+              iconColor: const Color(0xFF8B9BFF),
+              iconSize: 48.sp,
+              border: Border.all(
+                color: const Color(0xFF8B9BFF).withOpacity(0.4),
+                width: 3,
               ),
             ),
             if (controller.isVerified.value)
