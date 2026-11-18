@@ -44,6 +44,7 @@ class MakeOfferController extends GetxController {
   // Custom Offer Form Fields
   final RxList<String> categories = <String>[].obs;
   final RxMap<String, String> categoryNameToId = <String, String>{}.obs;
+  final RxMap<String, String> categoryIdToName = <String, String>{}.obs;
   final customTitleController = TextEditingController();
   final customValueController = TextEditingController();
   final RxDouble customValue = 0.0.obs;
@@ -476,6 +477,7 @@ class MakeOfferController extends GetxController {
         }
 
         categoryNameToId.clear();
+        categoryIdToName.clear();
         final List<String> parsed = [];
         for (var item in dataList) {
           if (item is Map) {
@@ -484,6 +486,7 @@ class MakeOfferController extends GetxController {
             if (name.isNotEmpty && id.isNotEmpty) {
               parsed.add(name);
               categoryNameToId[name] = id;
+              categoryIdToName[id] = name;
             }
           }
         }
@@ -498,6 +501,29 @@ class MakeOfferController extends GetxController {
     } catch (e) {
       Get.log("Error fetching categories in MakeOfferController: $e");
     }
+  }
+
+  /// Resolves a product's category field (Map, name, or 24-char MongoDB ObjectId)
+  /// to a clean human-readable category label.
+  String resolveCategoryName(dynamic rawCat, {String fallback = 'COLLECTIBLE'}) {
+    if (rawCat == null) return fallback;
+    if (rawCat is Map) {
+      final name = (rawCat['name'] ?? rawCat['title'] ?? '').toString().trim();
+      final id = (rawCat['_id'] ?? rawCat['id'] ?? '').toString().trim();
+      if (name.isNotEmpty && !(name.length == 24 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(name))) {
+        return name;
+      }
+      if (id.isNotEmpty && categoryIdToName.containsKey(id)) {
+        return categoryIdToName[id]!;
+      }
+      return fallback;
+    }
+    final str = rawCat.toString().trim();
+    if (str.isEmpty) return fallback;
+    if (str.length == 24 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(str)) {
+      return categoryIdToName[str] ?? fallback;
+    }
+    return str;
   }
 
   @override

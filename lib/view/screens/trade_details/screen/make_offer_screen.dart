@@ -131,13 +131,13 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
     final imgUrl = item['images'] != null && (item['images'] as List).isNotEmpty
         ? item['images'][0].toString()
         : '';
-    final category = (item['category'] is Map ? item['category']['name'] : item['category'] ?? 'COLLECTIBLE').toString();
-    final condition = (item['condition'] ?? 'Near Mint').toString();
+    final condition = (item['condition'] ?? 'Near Mint').toString().trim();
     final basePrice = controller.sellerProductValue;
     final minOffer = controller.minOfferAmount;
 
     final seller = item['sellerId'];
-    final sellerName = (seller is Map ? (seller['fullName'] ?? seller['name'] ?? seller['username'] ?? 'Seller') : 'Seller').toString();
+    final rawSellerName = (seller is Map ? (seller['username'] ?? seller['fullName'] ?? seller['name'] ?? 'Seller') : 'Seller').toString().trim();
+    final sellerName = rawSellerName.startsWith('@') ? rawSellerName.substring(1) : rawSellerName;
 
     return Container(
       padding: EdgeInsets.all(16.r),
@@ -157,6 +157,7 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Image
               Container(
@@ -170,55 +171,66 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
                 ),
                 child: _buildProductImage(imgUrl),
               ),
-              SizedBox(width: 14.w),
+              SizedBox(width: 12.w),
 
               // Details
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6.r),
-                          ),
-                          child: Text(
-                            category.toUpperCase(),
-                            style: TextStyle(
-                              color: const Color(0xFF8B9BFF),
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
+                    Obx(() {
+                      // Access categoryIdToName.length so Obx reacts when categories finish loading
+                      final _ = controller.categoryIdToName.length;
+                      final category = controller.resolveCategoryName(item['category']);
+                      return Wrap(
+                        spacing: 6.w,
+                        runSpacing: 4.h,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(6.r),
+                            ),
+                            child: Text(
+                              category.toUpperCase(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: const Color(0xFF8B9BFF),
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.4,
+                              ),
                             ),
                           ),
-                        ),
-                        SizedBox(width: 6.w),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.06),
-                            borderRadius: BorderRadius.circular(6.r),
-                          ),
-                          child: Text(
-                            condition,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.w700,
+                          if (condition.isNotEmpty)
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.06),
+                                borderRadius: BorderRadius.circular(6.r),
+                              ),
+                              child: Text(
+                                condition,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 9.sp,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      );
+                    }),
                     SizedBox(height: 6.h),
                     Text(
                       title,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16.sp,
+                        fontSize: 15.sp,
                         fontWeight: FontWeight.w900,
                       ),
                       maxLines: 1,
@@ -229,9 +241,13 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
                       children: [
                         Icon(Icons.person_pin_circle_outlined, color: Colors.white38, size: 13.sp),
                         SizedBox(width: 4.w),
-                        Text(
-                          "Seller: @$sellerName",
-                          style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w600),
+                        Expanded(
+                          child: Text(
+                            "Seller: @$sellerName",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w600),
+                          ),
                         ),
                       ],
                     ),
@@ -239,9 +255,12 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
                 ),
               ),
 
+              SizedBox(width: 10.w),
+
               // Price
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text("VALUE", style: TextStyle(color: Colors.white38, fontSize: 10.sp, fontWeight: FontWeight.w900, letterSpacing: 0.8)),
                   SizedBox(height: 2.h),
@@ -249,7 +268,7 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
                     basePrice > 0 ? "\$${basePrice.toInt()}" : "Open",
                     style: TextStyle(
                       color: const Color(0xFF8B9BFF),
-                      fontSize: 22.sp,
+                      fontSize: 20.sp,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -402,13 +421,22 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "YOUR CASH OFFER",
-                style: TextStyle(color: Colors.white70, fontSize: 12.sp, fontWeight: FontWeight.w900, letterSpacing: 1),
+              Flexible(
+                child: Text(
+                  "YOUR CASH OFFER",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white70, fontSize: 12.sp, fontWeight: FontWeight.w900, letterSpacing: 1),
+                ),
               ),
-              Text(
-                "Instant Payout to Seller",
-                style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 11.sp, fontWeight: FontWeight.w600),
+              SizedBox(width: 8.w),
+              Flexible(
+                child: Text(
+                  "Escrow Protected",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 11.sp, fontWeight: FontWeight.w600),
+                ),
               ),
             ],
           ),
@@ -597,26 +625,37 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
                 color: isSelected ? const Color(0xFF8B9BFF) : Colors.white.withValues(alpha: 0.08),
               ),
             ),
-            child: Column(
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: isSelected ? Colors.black : Colors.white70,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w900,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4.w),
+              child: Column(
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: isSelected ? Colors.black : Colors.white70,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  amount,
-                  style: TextStyle(
-                    color: isSelected ? Colors.black : const Color(0xFF8B9BFF),
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w800,
+                  SizedBox(height: 2.h),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      amount,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: isSelected ? Colors.black : const Color(0xFF8B9BFF),
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -815,7 +854,9 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        "${selectedProduct['category'] ?? 'COLLECTIBLE'} • ${selectedProduct['condition'] ?? 'Near Mint'}",
+                        "${controller.resolveCategoryName(selectedProduct['category'])} • ${selectedProduct['condition'] ?? 'Near Mint'}",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w700),
                       ),
                       SizedBox(height: 8.h),
@@ -932,41 +973,48 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("OFFER VALUE COMPARISON", style: TextStyle(color: Colors.white38, fontSize: 10.sp, fontWeight: FontWeight.w900, letterSpacing: 0.8)),
-                  SizedBox(height: 6.h),
-                  Obx(() {
-                    final delta = controller.valueDelta;
-                    final absVal = delta.abs().toInt();
-                    final sign = delta < 0 ? "-" : "+";
-                    final isAdvantage = delta >= 0;
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("OFFER VALUE COMPARISON", style: TextStyle(color: Colors.white38, fontSize: 10.sp, fontWeight: FontWeight.w900, letterSpacing: 0.8)),
+                    SizedBox(height: 6.h),
+                    Obx(() {
+                      final delta = controller.valueDelta;
+                      final absVal = delta.abs().toInt();
+                      final sign = delta < 0 ? "-" : "+";
+                      final isAdvantage = delta >= 0;
 
-                    return Row(
-                      children: [
-                        Text(
-                          "$sign\$$absVal",
-                          style: TextStyle(
-                            color: isAdvantage ? const Color(0xFF22C55E) : const Color(0xFFFF5252),
-                            fontSize: 26.sp,
-                            fontWeight: FontWeight.w900,
+                      return Row(
+                        children: [
+                          Text(
+                            "$sign\$$absVal",
+                            style: TextStyle(
+                              color: isAdvantage ? const Color(0xFF22C55E) : const Color(0xFFFF5252),
+                              fontSize: 24.sp,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 8.w),
-                        Text(
-                          isAdvantage ? "in seller favor" : "value gap",
-                          style: TextStyle(
-                            color: isAdvantage ? const Color(0xFF22C55E) : const Color(0xFFFF5252),
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w700,
+                          SizedBox(width: 8.w),
+                          Flexible(
+                            child: Text(
+                              isAdvantage ? "in seller favor" : "value gap",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: isAdvantage ? const Color(0xFF22C55E) : const Color(0xFFFF5252),
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
-                    );
-                  }),
-                ],
+                        ],
+                      );
+                    }),
+                  ],
+                ),
               ),
+              SizedBox(width: 10.w),
               Obx(() {
                 final delta = controller.valueDelta;
                 final isAdvantage = delta >= 0;
@@ -997,18 +1045,18 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
           Obx(() {
             return Row(
               children: [
-                _buildCashSupplementChip(controller, 0, "+ \$0"),
-                SizedBox(width: 8.w),
-                _buildCashSupplementChip(controller, 15, "+ \$15"),
-                SizedBox(width: 8.w),
-                _buildCashSupplementChip(controller, 30, "+ \$30"),
-                SizedBox(width: 8.w),
-                _buildCashSupplementChip(controller, 50, "+ \$50"),
-                SizedBox(width: 8.w),
+                _buildCashSupplementChip(controller, 0, "+\$0"),
+                SizedBox(width: 6.w),
+                _buildCashSupplementChip(controller, 15, "+\$15"),
+                SizedBox(width: 6.w),
+                _buildCashSupplementChip(controller, 30, "+\$30"),
+                SizedBox(width: 6.w),
+                _buildCashSupplementChip(controller, 50, "+\$50"),
+                SizedBox(width: 6.w),
                 GestureDetector(
                   onTap: () => _showAddCashDialog(context),
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 10.h),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0B0A16),
                       borderRadius: BorderRadius.circular(12.r),
@@ -1032,7 +1080,7 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
         onTap: () => controller.updateCashSupplement(amount),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: EdgeInsets.symmetric(vertical: 10.h),
+          padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 4.w),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected ? const Color(0xFF8B9BFF) : const Color(0xFF0B0A16),
@@ -1041,12 +1089,16 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
               color: isSelected ? const Color(0xFF8B9BFF) : Colors.white.withValues(alpha: 0.08),
             ),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isSelected ? Colors.black : Colors.white70,
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w900,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: TextStyle(
+                color: isSelected ? Colors.black : Colors.white70,
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ),
@@ -1057,7 +1109,6 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
   // ─── STICKY BOTTOM ACTION BAR ──────────────────────────────────────────────
   Widget _buildStickyBottomBar(MakeOfferController controller) {
     return Container(
-      padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
       decoration: BoxDecoration(
         color: const Color(0xFF0B0A16),
         border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
@@ -1069,83 +1120,95 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
           ),
         ],
       ),
-      child: Obx(() {
-        final isCash = controller.offerMode.value == "cash";
-        final isSubmitting = controller.isSubmitting.value;
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 16.h),
+          child: Obx(() {
+            final isCash = controller.offerMode.value == "cash";
+            final isSubmitting = controller.isSubmitting.value;
 
-        bool canSubmit = true;
-        String buttonText = "SEND OFFER";
+            bool canSubmit = true;
+            String buttonText = "SEND OFFER";
 
-        if (isCash) {
-          canSubmit = controller.isCashOfferValid;
-          buttonText = "Send \$${controller.cashOfferAmount.value.toInt()} Cash Offer";
-        } else {
-          if (controller.isCustomOffer.value) {
-            canSubmit = true;
-            buttonText = "Send Custom Trade Offer";
-          } else {
-            canSubmit = controller.selectedUserProduct.value != null;
-            buttonText = canSubmit ? "Send Trade Proposal" : "Select Card to Continue";
-          }
-        }
+            if (isCash) {
+              canSubmit = controller.isCashOfferValid;
+              buttonText = "Send \$${controller.cashOfferAmount.value.toInt()} Cash Offer";
+            } else {
+              if (controller.isCustomOffer.value) {
+                canSubmit = true;
+                buttonText = "Send Custom Trade Offer";
+              } else {
+                canSubmit = controller.selectedUserProduct.value != null;
+                buttonText = canSubmit ? "Send Trade Proposal" : "Select Card to Continue";
+              }
+            }
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onTap: (canSubmit && !isSubmitting) ? () => controller.sendOffer() : null,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                height: 56.h,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28.r),
-                  gradient: canSubmit
-                      ? const LinearGradient(
-                          colors: [Color(0xFF8B9BFF), Color(0xFFBD8BFF)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: canSubmit ? null : Colors.white.withValues(alpha: 0.08),
-                  boxShadow: canSubmit
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF8B9BFF).withValues(alpha: 0.35),
-                            blurRadius: 16.r,
-                            offset: const Offset(0, 4),
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: (canSubmit && !isSubmitting) ? () => controller.sendOffer() : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: 54.h,
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28.r),
+                      gradient: canSubmit
+                          ? const LinearGradient(
+                              colors: [Color(0xFF8B9BFF), Color(0xFFBD8BFF)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : null,
+                      color: canSubmit ? null : Colors.white.withValues(alpha: 0.08),
+                      boxShadow: canSubmit
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFF8B9BFF).withValues(alpha: 0.35),
+                                blurRadius: 16.r,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: isSubmitting
+                        ? ButtonLoader()
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  buttonText,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: canSubmit ? Colors.black : Colors.white24,
+                                    fontSize: 15.sp,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 8.w),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                color: canSubmit ? Colors.black : Colors.white24,
+                                size: 18.sp,
+                              ),
+                            ],
                           ),
-                        ]
-                      : null,
+                  ),
                 ),
-                alignment: Alignment.center,
-                child: isSubmitting
-                    ? ButtonLoader()
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            buttonText,
-                            style: TextStyle(
-                              color: canSubmit ? Colors.black : Colors.white24,
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            color: canSubmit ? Colors.black : Colors.white24,
-                            size: 18.sp,
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-          ],
-        );
-      }),
+              ],
+            );
+          }),
+        ),
+      ),
     );
   }
 
@@ -1207,105 +1270,110 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
   void _showProductSelectionBottomSheet(BuildContext context) {
     Get.bottomSheet(
       Container(
-        padding: EdgeInsets.all(24.r),
         decoration: BoxDecoration(
           color: const Color(0xFF151424),
           borderRadius: BorderRadius.vertical(top: Radius.circular(32.r)),
           border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40.w,
-                height: 4.h,
-                margin: EdgeInsets.only(bottom: 20.h),
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2.r)),
-              ),
-            ),
-            Text("Select Card from Collection", style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900)),
-            SizedBox(height: 6.h),
-            Text("Choose an item from your collection to propose for trade.", style: TextStyle(color: Colors.white54, fontSize: 12.sp)),
-            SizedBox(height: 20.h),
-            ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: 360.h),
-              child: Obx(() {
-                if (controller.userProducts.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 30.h),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.inventory_2_outlined, color: Colors.white24, size: 40.sp),
-                          SizedBox(height: 12.h),
-                          Text("No listed cards found.", style: TextStyle(color: Colors.white70, fontSize: 14.sp, fontWeight: FontWeight.bold)),
-                          SizedBox(height: 4.h),
-                          Text("Use 'New Card Offer' tab to create a trade proposal directly.", textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 12.sp)),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: controller.userProducts.length,
-                  itemBuilder: (context, index) {
-                    final p = Map<String, dynamic>.from(controller.userProducts[index]);
-                    final title = p['title'] ?? 'Item';
-                    final valStr = p['estValue'] ?? p['buyNowPrice'] ?? '0';
-                    final value = "\$$valStr";
-                    final img = p['images'] != null && (p['images'] as List).isNotEmpty ? p['images'][0].toString() : "";
-                    final isSelected = controller.selectedUserProduct.value != null &&
-                        (controller.selectedUserProduct.value!['_id'] ?? controller.selectedUserProduct.value!['id']) == (p['_id'] ?? p['id']);
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.all(24.r),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40.w,
+                    height: 4.h,
+                    margin: EdgeInsets.only(bottom: 20.h),
+                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2.r)),
+                  ),
+                ),
+                Text("Select Card from Collection", style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900)),
+                SizedBox(height: 6.h),
+                Text("Choose an item from your collection to propose for trade.", style: TextStyle(color: Colors.white54, fontSize: 12.sp)),
+                SizedBox(height: 20.h),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: 360.h),
+                  child: Obx(() {
+                    if (controller.userProducts.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 30.h),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.inventory_2_outlined, color: Colors.white24, size: 40.sp),
+                              SizedBox(height: 12.h),
+                              Text("No listed cards found.", style: TextStyle(color: Colors.white70, fontSize: 14.sp, fontWeight: FontWeight.bold)),
+                              SizedBox(height: 4.h),
+                              Text("Use 'New Card Offer' tab to create a trade proposal directly.", textAlign: TextAlign.center, style: TextStyle(color: Colors.white38, fontSize: 12.sp)),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: controller.userProducts.length,
+                      itemBuilder: (context, index) {
+                        final p = Map<String, dynamic>.from(controller.userProducts[index]);
+                        final title = p['title'] ?? 'Item';
+                        final valStr = p['estValue'] ?? p['buyNowPrice'] ?? '0';
+                        final value = "\$$valStr";
+                        final img = p['images'] != null && (p['images'] as List).isNotEmpty ? p['images'][0].toString() : "";
+                        final isSelected = controller.selectedUserProduct.value != null &&
+                            (controller.selectedUserProduct.value!['_id'] ?? controller.selectedUserProduct.value!['id']) == (p['_id'] ?? p['id']);
 
-                    return GestureDetector(
-                      onTap: () {
-                        controller.selectProduct(p);
-                        Get.back();
+                        return GestureDetector(
+                          onTap: () {
+                            controller.selectProduct(p);
+                            Get.back();
+                          },
+                          child: Container(
+                            margin: EdgeInsets.only(bottom: 12.h),
+                            padding: EdgeInsets.all(12.r),
+                            decoration: BoxDecoration(
+                              color: isSelected ? const Color(0xFF282C36) : const Color(0xFF0B0A16),
+                              borderRadius: BorderRadius.circular(16.r),
+                              border: Border.all(color: isSelected ? const Color(0xFF8B9BFF) : Colors.white.withValues(alpha: 0.05)),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 56.r,
+                                  height: 56.r,
+                                  clipBehavior: Clip.antiAlias,
+                                  decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(12.r)),
+                                  child: _buildProductImage(img),
+                                ),
+                                SizedBox(width: 14.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(title, style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w900), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      SizedBox(height: 4.h),
+                                      Text("Value: $value", style: TextStyle(color: const Color(0xFFBD8BFF), fontSize: 12.sp, fontWeight: FontWeight.w800)),
+                                    ],
+                                  ),
+                                ),
+                                if (isSelected)
+                                  Icon(Icons.check_circle_rounded, color: const Color(0xFF8B9BFF), size: 22.sp),
+                              ],
+                            ),
+                          ),
+                        );
                       },
-                      child: Container(
-                        margin: EdgeInsets.only(bottom: 12.h),
-                        padding: EdgeInsets.all(12.r),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF282C36) : const Color(0xFF0B0A16),
-                          borderRadius: BorderRadius.circular(16.r),
-                          border: Border.all(color: isSelected ? const Color(0xFF8B9BFF) : Colors.white.withValues(alpha: 0.05)),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 56.r,
-                              height: 56.r,
-                              clipBehavior: Clip.antiAlias,
-                              decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(12.r)),
-                              child: _buildProductImage(img),
-                            ),
-                            SizedBox(width: 14.w),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(title, style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w900), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                  SizedBox(height: 4.h),
-                                  Text("Value: $value", style: TextStyle(color: const Color(0xFFBD8BFF), fontSize: 12.sp, fontWeight: FontWeight.w800)),
-                                ],
-                              ),
-                            ),
-                            if (isSelected)
-                              Icon(Icons.check_circle_rounded, color: const Color(0xFF8B9BFF), size: 22.sp),
-                          ],
-                        ),
-                      ),
                     );
-                  },
-                );
-              }),
+                  }),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
       isScrollControlled: true,
@@ -1313,11 +1381,15 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
   }
 
   Widget _buildProductImage(String imgStr, {BoxFit fit = BoxFit.cover}) {
+    final Widget placeholder = Container(
+      color: const Color(0xFF1F1C36),
+      child: Center(
+        child: Icon(Icons.inventory_2_outlined, color: Colors.white24, size: 26.sp),
+      ),
+    );
+
     if (imgStr.isEmpty) {
-      return Image.network(
-        "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=500",
-        fit: fit,
-      );
+      return placeholder;
     }
 
     if (imgStr.startsWith('data:image/') && imgStr.contains('base64,')) {
@@ -1327,16 +1399,10 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
         return Image.memory(
           bytes,
           fit: fit,
-          errorBuilder: (context, error, stackTrace) => Image.network(
-            "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=500",
-            fit: fit,
-          ),
+          errorBuilder: (_, _, _) => placeholder,
         );
       } catch (_) {
-        return Image.network(
-          "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=500",
-          fit: fit,
-        );
+        return placeholder;
       }
     }
 
@@ -1347,10 +1413,7 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
     return Image.network(
       cleanUrl,
       fit: fit,
-      errorBuilder: (context, error, stackTrace) => Image.network(
-        "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&w=500",
-        fit: fit,
-      ),
+      errorBuilder: (_, _, _) => placeholder,
     );
   }
 
@@ -1401,7 +1464,8 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButtonFormField<String>(
-          initialValue: value.value,
+          initialValue: items.contains(value.value) ? value.value : (items.isNotEmpty ? items.first : null),
+          isExpanded: true,
           dropdownColor: const Color(0xFF151424),
           decoration: InputDecoration(
             labelText: label,
@@ -1412,7 +1476,12 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
           items: items.map((String item) {
             return DropdownMenuItem<String>(
               value: item,
-              child: Text(item, style: TextStyle(fontSize: 13.sp)),
+              child: Text(
+                item,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 13.sp),
+              ),
             );
           }).toList(),
           onChanged: (val) {
