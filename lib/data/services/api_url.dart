@@ -38,6 +38,12 @@ class ApiUrl {
       "/seller/stripe/onboarding-link";
   static const String sellerStripeDashboardLink =
       "/seller/stripe/dashboard-link";
+  static const String sellerEarnings = "/seller/earnings";
+
+  // Refunds (buyer requests, ARIES decides)
+  static const String refundRequest = "/refunds/request";
+  static const String myRefundRequests = "/refunds/my-requests";
+  static const String sellerRefundRequests = "/refunds/seller-requests";
   static String blockUser(String userId) => "/users/block/$userId";
   static String unblockUser(String userId) => "/users/unblock/$userId";
   static const String blockedList = "/users/blocked-list";

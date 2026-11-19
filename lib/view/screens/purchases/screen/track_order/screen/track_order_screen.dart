@@ -1174,6 +1174,71 @@ class TrackOrderScreen extends StatelessWidget {
           ),
         ),
 
+        // BUYER ONLY: refund request. ARIES reviews it; nothing is reversed
+        // until an admin approves.
+        if (controller.isBuyer) ...[
+          SizedBox(height: 10.h),
+          Obx(() {
+            final status = controller.refundStatus.value;
+
+            if (status == 'pending') {
+              return _refundNotice(
+                icon: Icons.hourglass_top_rounded,
+                color: const Color(0xFFFFB800),
+                text: 'Refund request under review by ARIES.',
+              );
+            }
+            if (status == 'approved') {
+              return _refundNotice(
+                icon: Icons.check_circle_rounded,
+                color: const Color(0xFF22C55E),
+                text: 'Refund approved. The money is on its way back to you.',
+              );
+            }
+            if (status == 'failed') {
+              return _refundNotice(
+                icon: Icons.error_outline_rounded,
+                color: const Color(0xFFF43F5E),
+                text: 'Refund could not be processed. ARIES is looking into it.',
+              );
+            }
+
+            if (!controller.canRequestRefund) return const SizedBox.shrink();
+
+            return SizedBox(
+              width: double.infinity,
+              height: 48.h,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      const Color(0xFFF43F5E).withValues(alpha: 0.10),
+                  foregroundColor: const Color(0xFFF43F5E),
+                  side: BorderSide(
+                    color: const Color(0xFFF43F5E).withValues(alpha: 0.28),
+                    width: 1,
+                  ),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15.r)),
+                  elevation: 0,
+                ),
+                onPressed: () => _showRefundSheet(context, controller),
+                icon: Icon(Icons.undo_rounded,
+                    color: const Color(0xFFF43F5E), size: 18.sp),
+                label: Text(
+                  status == 'rejected'
+                      ? "Request a refund again"
+                      : "Request a refund",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13.5.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
+
         // SELLER ONLY: Update Shipping Status
         if (controller.isSeller) ...[
           SizedBox(height: 10.h),
@@ -1851,6 +1916,219 @@ class TrackOrderScreen extends StatelessWidget {
           Icons.shopping_bag_rounded,
           color: const Color(0xFF8B9BFF).withValues(alpha: 0.8),
           size: 28.sp,
+        ),
+      ),
+    );
+  }
+
+  /// Status strip shown in place of the request button once a refund exists.
+  Widget _refundNotice({
+    required IconData icon,
+    required Color color,
+    required String text,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(15.r),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18.sp),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12.5.sp,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Asks why, then files the request. The buyer picks from the same reasons
+  /// the admin screen shows, so the two always line up.
+  void _showRefundSheet(BuildContext context, TrackOrderController controller) {
+    const reasons = <String, String>{
+      'item_not_received': 'I never received the item',
+      'not_as_described': 'Not as described',
+      'damaged': 'Arrived damaged',
+      'wrong_item': 'Wrong item was sent',
+      'other': 'Something else',
+    };
+
+    final selected = 'item_not_received'.obs;
+    final detailsCtrl = TextEditingController();
+
+    Get.bottomSheet(
+      isScrollControlled: true,
+      Container(
+        padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 24.h),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161622),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26.r)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 42.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+              ),
+              SizedBox(height: 18.h),
+              Text(
+                'Request a refund',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 6.h),
+              Text(
+                'ARIES reviews every request. Nothing is charged back to the '
+                'seller until it is approved.',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12.5.sp,
+                  height: 1.5,
+                ),
+              ),
+              SizedBox(height: 18.h),
+              Obx(
+                () => Column(
+                  children: reasons.entries.map((entry) {
+                    final isSelected = selected.value == entry.key;
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: 8.h),
+                      child: InkWell(
+                        onTap: () => selected.value = entry.key,
+                        borderRadius: BorderRadius.circular(13.r),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 14.w, vertical: 12.h),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF11111A),
+                            borderRadius: BorderRadius.circular(13.r),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF8B9BFF)
+                                      .withValues(alpha: 0.45)
+                                  : Colors.white.withValues(alpha: 0.06),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isSelected
+                                    ? Icons.radio_button_checked_rounded
+                                    : Icons.radio_button_unchecked_rounded,
+                                color: isSelected
+                                    ? const Color(0xFF8B9BFF)
+                                    : Colors.white24,
+                                size: 19.sp,
+                              ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: Text(
+                                  entry.value,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              SizedBox(height: 10.h),
+              TextField(
+                controller: detailsCtrl,
+                maxLines: 3,
+                maxLength: 2000,
+                style: TextStyle(color: Colors.white, fontSize: 13.sp),
+                decoration: InputDecoration(
+                  hintText: 'Add any detail that helps us decide (optional)',
+                  counterText: '',
+                  hintStyle:
+                      TextStyle(color: Colors.white30, fontSize: 12.5.sp),
+                  filled: true,
+                  fillColor: const Color(0xFF11111A),
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 14.w, vertical: 13.h),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(13.r),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              SizedBox(height: 16.h),
+              SizedBox(
+                width: double.infinity,
+                height: 48.h,
+                child: Obx(
+                  () => ElevatedButton(
+                    onPressed: controller.isSubmittingRefund.value
+                        ? null
+                        : () async {
+                            final ok = await controller.submitRefundRequest(
+                              reason: selected.value,
+                              details: detailsCtrl.text,
+                            );
+                            if (ok) Get.back();
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B9BFF),
+                      disabledBackgroundColor: const Color(0xFF11111A),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15.r),
+                      ),
+                    ),
+                    child: controller.isSubmittingRefund.value
+                        ? SizedBox(
+                            width: 20.h,
+                            height: 20.h,
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Submit request',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

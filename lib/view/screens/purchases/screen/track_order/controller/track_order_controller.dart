@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../../../data/services/api_client.dart';
+import '../../../../../../data/services/api_url.dart';
 import '../../../../../../data/helpers/shared_prefe.dart';
 import '../../../model/purchase_model.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
@@ -29,7 +30,11 @@ class TrackOrderController extends GetxController {
     }
 
     if (orderId.isNotEmpty) {
-      fetchOrderDetails();
+      fetchOrderDetails().then((_) {
+        // So the screen can show "refund pending" instead of offering the
+        // buyer a second request.
+        if (isBuyer) fetchRefundStatus();
+      });
     }
   }
 
@@ -481,6 +486,101 @@ class TrackOrderController extends GetxController {
       return false;
     } finally {
       isUpdatingStatus.value = false;
+    }
+  }
+
+  // ── Refunds ───────────────────────────────────────────────────────────────
+  //
+  // A buyer asks ARIES for a refund; ARIES decides and only then does Stripe
+  // reverse the charge. Nothing here moves money.
+
+  final RxBool isSubmittingRefund = false.obs;
+  /// '' when none, else pending / approved / rejected / failed.
+  final RxString refundStatus = ''.obs;
+
+  bool get canRequestRefund {
+    if (!isBuyer) return false;
+    if (refundStatus.value.isNotEmpty && refundStatus.value != 'rejected') {
+      return false;
+    }
+    final paid = (orderData['paymentStatus'] ?? '').toString().toLowerCase();
+    return paid == 'paid';
+  }
+
+  Future<void> fetchRefundStatus() async {
+    try {
+      final response = await _apiClient.getData(ApiUrl.myRefundRequests);
+      if (response.statusCode != 200) return;
+      final decoded = jsonDecode(response.body);
+      final list = decoded['data'];
+      if (list is! List) return;
+
+      final target = (orderData['_id'] ?? orderId).toString();
+      for (final item in list) {
+        if (item is! Map) continue;
+        final raw = item['orderId'];
+        final itemOrderId =
+            (raw is Map ? (raw['_id'] ?? raw['id']) : raw)?.toString() ?? '';
+        if (itemOrderId == target) {
+          refundStatus.value = (item['status'] ?? '').toString();
+          return;
+        }
+      }
+      refundStatus.value = '';
+    } catch (e) {
+      Get.log("Refund status fetch error: $e");
+    }
+  }
+
+  Future<bool> submitRefundRequest({
+    required String reason,
+    String? details,
+  }) async {
+    isSubmittingRefund.value = true;
+    try {
+      final response = await _apiClient.postData(ApiUrl.refundRequest, {
+        "orderId": (orderData['_id'] ?? orderId).toString(),
+        "reason": reason,
+        if (details != null && details.trim().isNotEmpty)
+          "details": details.trim(),
+      });
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        refundStatus.value = 'pending';
+        showAppSnackbar(
+          "Refund Requested",
+          "ARIES will review your request and let you know the outcome.",
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color(0xFF22C55E),
+          colorText: Colors.white,
+        );
+        return true;
+      }
+
+      String message = "Could not submit your refund request.";
+      try {
+        message = jsonDecode(response.body)['message']?.toString() ?? message;
+      } catch (_) {}
+      showAppSnackbar(
+        "Refund Request Failed",
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF2A0A10),
+        colorText: Colors.white,
+      );
+      return false;
+    } catch (e) {
+      Get.log("Refund request error: $e");
+      showAppSnackbar(
+        "Refund Request Failed",
+        "Please check your connection and try again.",
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: const Color(0xFF2A0A10),
+        colorText: Colors.white,
+      );
+      return false;
+    } finally {
+      isSubmittingRefund.value = false;
     }
   }
 }
