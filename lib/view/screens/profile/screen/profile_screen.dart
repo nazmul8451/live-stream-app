@@ -335,30 +335,51 @@ class ProfileScreen extends GetView<ProfileController> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.star_rounded, color: const Color(0xFFFFB800), size: 16.sp),
-                      SizedBox(width: 5.w),
-                      Text(
+                      // A user nobody has rated used to be shown "5.0"
+                      // sitting next to "0 Reviews" — a score the platform
+                      // invented. With no reviews there is no number to show.
+                      Icon(
                         controller.rating.value > 0
-                            ? controller.rating.value.toStringAsFixed(1)
-                            : "5.0",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w900,
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
+                        color: controller.rating.value > 0
+                            ? const Color(0xFFFFB800)
+                            : Colors.white30,
+                        size: 16.sp,
+                      ),
+                      SizedBox(width: 5.w),
+                      if (controller.rating.value > 0) ...[
+                        Text(
+                          controller.rating.value.toStringAsFixed(1),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13.sp,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w),
-                        child: Text("•", style: TextStyle(color: Colors.white24, fontSize: 12.sp)),
-                      ),
-                      Text(
-                        "${controller.reviewsCount.value} Reviews",
-                        style: TextStyle(
-                          color: Colors.white60,
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w700,
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8.w),
+                          child: Text("•",
+                              style: TextStyle(
+                                  color: Colors.white24, fontSize: 12.sp)),
                         ),
-                      ),
+                        Text(
+                          "${controller.reviewsCount.value} ${controller.reviewsCount.value == 1 ? 'Review' : 'Reviews'}",
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 11.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ] else
+                        Text(
+                          "No reviews yet",
+                          style: TextStyle(
+                            color: Colors.white60,
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                     ],
                   ),
                 ),

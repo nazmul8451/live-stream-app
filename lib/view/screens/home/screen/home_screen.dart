@@ -1146,7 +1146,9 @@ class HomeScreen extends StatelessWidget {
           'profile': sellerAvatar,
           'image': sellerAvatar,
           'bio': seller is Map ? (seller['bio'] ?? seller['description'] ?? '') : '',
-          'rating': seller is Map ? (seller['rating'] ?? '4.8').toString() : '4.8',
+          // No invented rating: an unrated seller carries no number.
+          if (seller is Map && seller['rating'] != null)
+            'rating': seller['rating'].toString(),
         };
         Get.toNamed(AppRoute.tradeDetails, arguments: argMap);
       },

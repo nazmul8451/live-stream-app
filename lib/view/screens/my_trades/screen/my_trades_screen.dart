@@ -364,11 +364,13 @@ class MyTradesScreen extends GetView<MyTradesController> {
                         "condition": "Negotiated Deal",
                         "estValue": "N/A",
                         "images": [trade.item1Image, trade.item2Image],
+                        // No rating and no "Verified Trader" line here: a
+                        // barter counterparty carries neither, and inventing
+                        // them put a score and a badge on the next screen
+                        // that nothing backed.
                         "sellerId": {
                           "fullName": trade.traderName,
                           "image": trade.traderAvatar,
-                          "rating": "4.8",
-                          "address": "Verified Trader"
                         }
                       };
                       Get.toNamed('/trade_details', arguments: productMap);
