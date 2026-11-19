@@ -205,31 +205,20 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
         ),
         SizedBox(height: 16.h),
 
-        // Name + Verified Badge Row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Flexible(
-              child: Text(
-                controller.displayName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24.sp,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5),
-              ),
-            ),
-            if (controller.isVerified.value) ...[
-              SizedBox(width: 6.w),
-              Icon(
-                Icons.verified_rounded,
-                color: const Color(0xFF22C55E),
-                size: 20.sp,
-              ),
-            ],
-          ],
+        // The avatar already carries the verified badge, so repeating it
+        // beside the name only competed with it for room: a long name pushed
+        // the second badge against the screen edge. Name only here.
+        Text(
+          controller.displayName,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 24.sp,
+              fontWeight: FontWeight.w900,
+              height: 1.2,
+              letterSpacing: -0.5),
         ),
 
         if (controller.displayUsername.isNotEmpty) ...[
@@ -292,30 +281,47 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.star_rounded, color: const Color(0xFFFFB800), size: 16.sp),
-              SizedBox(width: 6.w),
-              Text(
+              Icon(
                 controller.rating.value > 0
-                    ? controller.rating.value.toStringAsFixed(1)
-                    : "5.0",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.w900,
+                    ? Icons.star_rounded
+                    : Icons.star_outline_rounded,
+                color: controller.rating.value > 0
+                    ? const Color(0xFFFFB800)
+                    : Colors.white30,
+                size: 16.sp,
+              ),
+              SizedBox(width: 6.w),
+              if (controller.rating.value > 0) ...[
+                Text(
+                  controller.rating.value.toStringAsFixed(1),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.w),
-                child: Text("•", style: TextStyle(color: Colors.white24, fontSize: 12.sp)),
-              ),
-              Text(
-                "${controller.reviewCount.value} Reviews",
-                style: TextStyle(
-                  color: Colors.white60,
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w700,
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.w),
+                  child: Text("•",
+                      style: TextStyle(color: Colors.white24, fontSize: 12.sp)),
                 ),
-              ),
+                Text(
+                  "${controller.reviewCount.value} ${controller.reviewCount.value == 1 ? 'Review' : 'Reviews'}",
+                  style: TextStyle(
+                    color: Colors.white60,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ] else
+                Text(
+                  "No reviews yet",
+                  style: TextStyle(
+                    color: Colors.white60,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
             ],
           ),
         ),
@@ -361,28 +367,33 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
 
   Widget _buildStatsRow() {
     return Obx(() {
+      // Counts print their real value, zero included — a row of dashes read
+      // as data that failed to load. Rating and positive stay blank until
+      // someone has actually rated, because a number there would be made up.
       final stats = [
         {
-          'value': controller.totalTrades.value > 0
-              ? controller.totalTrades.value.toString()
-              : '—',
+          'value': controller.totalTrades.value.toString(),
           'label': 'TRADES',
-          'icon': Icons.swap_horiz_rounded,
+          'icon': Icons.sync_alt_rounded,
+          'color': const Color(0xFF8B9BFF),
         },
         {
           'value': controller.ratingDisplay,
           'label': 'RATING',
           'icon': Icons.star_rounded,
+          'color': const Color(0xFFFFB800),
         },
         {
           'value': controller.positiveDisplay,
           'label': 'POSITIVE',
-          'icon': Icons.thumb_up_rounded,
+          'icon': Icons.sentiment_satisfied_alt_rounded,
+          'color': const Color(0xFF22C55E),
         },
         {
           'value': controller.followersCount.value.toString(),
           'label': 'FOLLOWERS',
-          'icon': Icons.people_rounded,
+          'icon': Icons.group_rounded,
+          'color': const Color(0xFFE879F9),
         },
       ];
 
@@ -397,6 +408,7 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
                         s['value'] as String,
                         s['label'] as String,
                         s['icon'] as IconData,
+                        s['color'] as Color,
                       ),
                     ),
                   ))
@@ -406,27 +418,46 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
     });
   }
 
-  Widget _buildStatCard(String val, String label, IconData icon) {
+  Widget _buildStatCard(String val, String label, IconData icon, Color accent) {
+    // Every tile used the same blue icon on the same flat card, so the four
+    // read as one block. Each stat now carries its own tint, and an empty
+    // value is dimmed so it does not sit as loud as a real number.
+    final bool isEmpty = val == '—';
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 16.h, horizontal: 8.w),
+      padding: EdgeInsets.symmetric(vertical: 14.h, horizontal: 6.w),
       decoration: BoxDecoration(
         color: const Color(0xFF11111A),
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
       child: Column(
         children: [
-          Icon(icon, color: const Color(0xFF8B9BFF), size: 18.sp),
-          SizedBox(height: 6.h),
+          Container(
+            padding: EdgeInsets.all(7.r),
+            decoration: BoxDecoration(
+              color: accent.withOpacity(isEmpty ? 0.06 : 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: isEmpty ? accent.withOpacity(0.35) : accent,
+              size: 16.sp,
+            ),
+          ),
+          SizedBox(height: 8.h),
           Text(val,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                  color: Colors.white,
+                  color: isEmpty ? Colors.white38 : Colors.white,
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w900)),
-          SizedBox(height: 2.h),
+          SizedBox(height: 3.h),
           Text(label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                  color: Colors.white24,
+                  color: Colors.white38,
                   fontSize: 8.sp,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 0.8),
@@ -437,6 +468,111 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
   }
 
   // ─── ACTION BUTTONS ─────────────────────────────────────────────────────────
+
+  /// Following is one tap; unfollowing asks first.
+  ///
+  /// The button sits right beside "Message", so an accidental tap used to
+  /// drop someone the viewer had deliberately followed, with nothing to undo
+  /// it but following again.
+  void _onFollowTapped() {
+    if (!controller.isFollowing.value) {
+      controller.toggleFollow();
+      return;
+    }
+
+    Get.dialog(
+      Dialog(
+        backgroundColor: const Color(0xFF161622),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24.r),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(24.r),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(12.r),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.06),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.person_remove_rounded,
+                    color: Colors.white54, size: 24.sp),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'Unfollow ${controller.displayName}?',
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17.sp,
+                    fontWeight: FontWeight.w900),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                "You will stop seeing their listings and shows in your feed.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 13.sp,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500),
+              ),
+              SizedBox(height: 24.h),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Get.back(),
+                      child: Container(
+                        height: 48.h,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(24.r),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text('Cancel',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w800)),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Get.back();
+                        controller.toggleFollow();
+                      },
+                      child: Container(
+                        height: 48.h,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444),
+                          borderRadius: BorderRadius.circular(24.r),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text('Unfollow',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w800)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierColor: Colors.black54,
+    );
+  }
 
   Widget _buildActionButtons() {
     final name = controller.displayName;
@@ -500,7 +636,7 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
           // Follow / Unfollow Button
           Obx(() => Expanded(
             child: GestureDetector(
-              onTap: () => controller.toggleFollow(),
+              onTap: () => _onFollowTapped(),
               child: Container(
                 height: 52.h,
                 decoration: BoxDecoration(
@@ -711,7 +847,9 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
           'profile': controller.traderAvatar.value,
           'image': controller.traderAvatar.value,
           'bio': controller.traderBio.value,
-          'rating': controller.rating.value > 0 ? controller.rating.value.toString() : '4.8',
+          // No invented rating: an unrated seller carries no number.
+          if (controller.rating.value > 0)
+            'rating': controller.rating.value.toString(),
         };
         Get.toNamed(AppRoute.tradeDetails, arguments: argMap);
       },

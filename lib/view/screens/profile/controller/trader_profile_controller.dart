@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:get/get.dart';
 import '../../../../data/services/api_client.dart';
@@ -94,6 +95,7 @@ class TraderProfileController extends GetxController {
 
   void _loadAll() {
     fetchTraderProfile();
+    fetchFollowStatus();
     fetchTraderProducts();
     fetchRecentBids();
     fetchReviews();
@@ -319,6 +321,8 @@ class TraderProfileController extends GetxController {
             ? followersCount.value + 1
             : (followersCount.value - 1).clamp(0, 9999999);
         Get.log('✅ [TraderProfile] Follow API success: isFollowing=${isFollowing.value}');
+        // Re-read the real count rather than trusting the local guess.
+        unawaited(fetchFollowStatus());
       } else {
         showAppSnackbar('Error', 'Failed to update follow status (${response.statusCode})');
       }
@@ -330,6 +334,33 @@ class TraderProfileController extends GetxController {
   }
 
   // ─── FETCH FOLLOWERS & FOLLOWING LISTS ────────────────────────────────────
+
+  /// Authoritative follow state for the viewer.
+  ///
+  /// The profile payload carries neither `isFollowing` nor a followers list,
+  /// so after a reload the button used to fall back to "Follow" even when the
+  /// viewer already followed — and the next tap silently unfollowed.
+  Future<void> fetchFollowStatus() async {
+    if (traderId.value.isEmpty) return;
+    try {
+      final response =
+          await _apiClient.getData('/follow/${traderId.value}/status');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'];
+        if (data is Map) {
+          if (data['following'] != null) {
+            isFollowing.value = data['following'] == true;
+          }
+          final count = data['followersCount'];
+          if (count is num) followersCount.value = count.toInt();
+        }
+      }
+    } catch (e) {
+      // Leave whatever the profile gave us rather than flipping the button
+      // on a network hiccup.
+      Get.log('❌ [TraderProfile] fetchFollowStatus error: $e');
+    }
+  }
 
   Future<void> fetchFollowersList() async {
     if (traderId.value.isEmpty) return;
@@ -433,6 +464,7 @@ class TraderProfileController extends GetxController {
   Future<void> refreshAll() async {
     await Future.wait([
       fetchTraderProfile(),
+      fetchFollowStatus(),
       fetchTraderProducts(),
       fetchRecentBids(),
       fetchReviews(),
