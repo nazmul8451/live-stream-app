@@ -10,6 +10,7 @@ import '../../../../data/services/api_url.dart';
 import '../../../../data/services/pending_order_service.dart';
 import '../../../../data/services/socket_service.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
+import 'package:live_stream_app/global/helper/stripe_account_scope.dart';
 import '../../../../data/services/stripe_config.dart';
 
 /// Outcome of saving the order record for a payment that already succeeded.
@@ -271,6 +272,12 @@ class OrderCheckoutController extends GetxController {
       } else {
         Stripe.publishableKey = StripeConfig.publishableKey;
       }
+
+      // A marketplace sale is a direct charge living on the seller's connected
+      // account, so the SDK has to be pointed at that account or the client
+      // secret will not resolve.
+      await StripeAccountScope.apply(data['stripeAccountId']?.toString());
+
       await Stripe.instance.applySettings();
 
       await Stripe.instance.initPaymentSheet(
@@ -329,6 +336,10 @@ class OrderCheckoutController extends GetxController {
       Get.log("❌ Stripe Error: $e");
       showAppSnackbar("Error", "$e", snackPosition: SnackPosition.BOTTOM);
       return false;
+    } finally {
+      // Leave the SDK on the platform account; a connected account left set
+      // here would break the next tip or subscription payment.
+      await StripeAccountScope.clear();
     }
   }
 

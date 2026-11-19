@@ -13,6 +13,7 @@ import '../../purchases/controller/purchases_controller.dart';
 import '../../purchases/model/purchase_model.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 import '../../../../data/services/stripe_config.dart';
+import 'package:live_stream_app/global/helper/stripe_account_scope.dart';
 
 class MyTradesController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -407,6 +408,13 @@ class MyTradesController extends GetxController {
                 } else {
                   Stripe.publishableKey = StripeConfig.publishableKey;
                 }
+
+                // A trade cash difference is a direct charge on the other
+                // trader's connected account; a fee-only payment is not.
+                await StripeAccountScope.apply(
+                  data['stripeAccountId']?.toString(),
+                );
+
                 await Stripe.instance.applySettings();
 
                 await Stripe.instance.initPaymentSheet(
@@ -442,6 +450,9 @@ class MyTradesController extends GetxController {
                 Get.log("❌ Stripe Error: $e");
                 showAppSnackbar("Stripe Error", "$e", snackPosition: SnackPosition.BOTTOM);
                 return;
+              } finally {
+                // Back to the platform account for the next payment.
+                await StripeAccountScope.clear();
               }
             }
           }
