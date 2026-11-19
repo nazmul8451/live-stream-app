@@ -126,6 +126,14 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.dark,
             useMaterial3: true,
             fontFamily: 'Inter',
+            // Material 3 paints a surface tint over the app bar as soon as
+            // content scrolls under it. On these dark gradient screens that
+            // reads as a grey bar appearing out of nowhere, so it is off for
+            // every app bar rather than screen by screen.
+            appBarTheme: const AppBarTheme(
+              surfaceTintColor: Colors.transparent,
+              scrolledUnderElevation: 0,
+            ),
             textSelectionTheme: const TextSelectionThemeData(
               cursorColor: Color(0xFF8B9BFF),
               selectionColor: Color(0x668B9BFF),
