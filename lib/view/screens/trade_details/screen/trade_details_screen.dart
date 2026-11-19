@@ -96,19 +96,12 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
               final createdAt = product['createdAt'] ?? '';
 
               // Parse all extra specification fields dynamically
-              final List<MapEntry<String, String>> extraSpecs = [];
-              const knownKeys = {
-                '_id', 'id', 'title', 'description', 'category', 'condition',
-                'images', 'estValue', 'buyNowPrice', 'allowTrade', 'lookingFor',
-                'minValue', 'maxValue', 'targetCategory', 'sellerId', 'isSold',
-                'status', 'createdAt', 'updatedAt', '__v', 'rating', 'reviewsCount',
-                'isFeatured', 'is_featured', 'featured',
-              };
-              product.forEach((key, value) {
-                if (!knownKeys.contains(key) && value != null && value.toString().trim().isNotEmpty) {
-                  extraSpecs.add(MapEntry(key, value.toString()));
-                }
-              });
+              // "Additional info" used to print every field of the product
+              // document straight onto the screen, which is how a buyer ended
+              // up reading a raw Product Id and a row of zeroes. Only show a
+              // field a buyer can actually act on.
+              final List<MapEntry<String, String>> extraSpecs =
+                  _buildExtraSpecs(product);
 
               return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -228,23 +221,23 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
 
                           SizedBox(height: 28.h),
 
-                          // ── Verification ───────────────────────────
-                          _buildSectionLabel("VERIFICATION"),
+                          // ── How this purchase is protected ─────────
+                          // Two large cards claiming "100% Secure Auth" took
+                          // a third of the screen and said nothing true. One
+                          // compact strip, describing what actually happens.
+                          _buildSectionLabel("BUYER PROTECTION"),
                           SizedBox(height: 14.h),
-                          Row(
-                            children: [
-                              Expanded(child: _buildVerificationCard(null, "Platform Verified", "100% Secure Auth", iconData: Icons.shield_outlined)),
-                              SizedBox(width: 16.w),
-                              Expanded(child: _buildVerificationCard("assets/icons/Direct Trade-icons.svg", "Direct Trade", "Peer-to-peer")),
-                            ],
-                          ),
-
-                          SizedBox(height: 28.h),
+                          _buildBuyerProtection(),
 
                           // ── Similar Trades ─────────────────────────
-                          _buildSectionLabel("SIMILAR TRADES"),
-                          SizedBox(height: 14.h),
-                          _buildSimilarTrades(product),
+                          // The section header and an empty-state line used
+                          // to show even when there was nothing to list.
+                          if (_similarTrades(product).isNotEmpty) ...[
+                            SizedBox(height: 28.h),
+                            _buildSectionLabel("SIMILAR TRADES"),
+                            SizedBox(height: 14.h),
+                            _buildSimilarTrades(product),
+                          ],
 
                           SizedBox(height: 96.h),
                         ],
@@ -271,7 +264,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 12.h),
+                    padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -365,7 +358,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 12.h),
+                  padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
@@ -524,27 +517,8 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
             ),
           ),
 
-          // Fullscreen expand icon button
-          Positioned(
-            top: 16.h,
-            right: 16.w,
-            child: GestureDetector(
-              onTap: () => _openFullScreenImageViewer(
-                Get.context!,
-                imageUrls,
-                controller.currentImageIndex.value,
-              ),
-              child: Container(
-                padding: EdgeInsets.all(8.r),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white24),
-                ),
-                child: Icon(Icons.fullscreen_rounded, color: Colors.white, size: 22.sp),
-              ),
-            ),
-          ),
+          // No expand button: tapping the photo itself opens the
+          // fullscreen viewer (see the PageView's GestureDetector above).
 
           // Page indicator dots
           if (imageUrls.length > 1)
@@ -868,6 +842,62 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
   // ──────────────────────────────────────────────────────────────────────────
   // EXTRA SPECS — any non-standard fields from API
   // ──────────────────────────────────────────────────────────────────────────
+  /// Which of the product's remaining fields are worth showing a buyer.
+  ///
+  /// The rule is "would this mean anything to someone deciding whether to
+  /// buy": no identifiers, no internal bookkeeping, and nothing whose value
+  /// is an empty default. A `0` or a `false` here is the absence of a
+  /// setting, not a fact about the item, so it is left out rather than
+  /// printed as data.
+  static List<MapEntry<String, String>> _buildExtraSpecs(
+    Map<String, dynamic> product,
+  ) {
+    // Shown elsewhere on the screen, or meaningless to a buyer.
+    const handledElsewhere = {
+      '_id', 'id', 'title', 'description', 'category', 'condition',
+      'images', 'estValue', 'buyNowPrice', 'allowTrade', 'lookingFor',
+      'minValue', 'maxValue', 'targetCategory', 'sellerId', 'isSold',
+      'status', 'createdAt', 'updatedAt', '__v', 'rating', 'reviewsCount',
+      'isFeatured', 'is_featured', 'featured',
+      'shippingWeight', 'shippingWeightUnit', 'allowOffers', 'minOfferAmount',
+    };
+    const internal = {
+      'slug', 'stock', 'shareCount', 'viewCount', 'views', 'likes',
+      'boosted', 'boostExpiresAt', 'seller', 'owner', 'streamId',
+      'listingType', 'isGiveaway', 'spinWheelPrize', 'v',
+    };
+
+    final looksLikeId = RegExp(r'(^|[a-z])Id$|^id$|_id$', caseSensitive: true);
+    final objectId = RegExp(r'^[0-9a-f]{24}$');
+
+    final List<MapEntry<String, String>> extras = [];
+
+    product.forEach((key, value) {
+      if (handledElsewhere.contains(key) || internal.contains(key)) return;
+      if (looksLikeId.hasMatch(key)) return;
+      if (value == null) return;
+
+      // Collections and nested objects are not readable as a one-line row.
+      if (value is Map || value is Iterable) return;
+
+      final text = value.toString().trim();
+      if (text.isEmpty) return;
+      if (objectId.hasMatch(text)) return;
+
+      // An unset number or flag is not information.
+      if (value is bool && value == false) return;
+      final asNumber = num.tryParse(text);
+      if (asNumber != null && asNumber == 0) return;
+      if (text.toLowerCase() == 'null' || text.toLowerCase() == 'false') return;
+
+      extras.add(
+        MapEntry(key, value is bool ? (value ? 'Yes' : 'No') : text),
+      );
+    });
+
+    return extras;
+  }
+
   Widget _buildExtraSpecsGrid(List<MapEntry<String, String>> extras) {
     return Container(
       decoration: BoxDecoration(color: const Color(0xFF11111A), borderRadius: BorderRadius.circular(24.r)),
@@ -1007,8 +1037,10 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
             ),
           ],
 
-          if ((minValue != null && minValue.toString().isNotEmpty) ||
-              (maxValue != null && maxValue.toString().isNotEmpty)) ...[
+          // A range is only worth showing when the seller actually set one.
+          // "$0 – $0" told the buyer nothing and read like a bug.
+          if ((num.tryParse(minValue?.toString() ?? '') ?? 0) > 0 ||
+              (num.tryParse(maxValue?.toString() ?? '') ?? 0) > 0) ...[
             SizedBox(height: 14.h),
             Row(
               children: [
@@ -1018,8 +1050,8 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                 SizedBox(width: 8.w),
                 Text(
                   [
-                    if (minValue != null && minValue.toString().isNotEmpty) "\$$minValue",
-                    if (maxValue != null && maxValue.toString().isNotEmpty) "\$$maxValue",
+                    if ((num.tryParse(minValue?.toString() ?? '') ?? 0) > 0) "\$$minValue",
+                    if ((num.tryParse(maxValue?.toString() ?? '') ?? 0) > 0) "\$$maxValue",
                   ].join(" – "),
                   style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w800),
                 ),
@@ -1062,15 +1094,39 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
   Widget _buildDynamicTraderCard(Map<String, dynamic> product) {
     final seller = product['sellerId'];
     final Map<String, dynamic>? sellerMap = seller is Map ? Map<String, dynamic>.from(seller) : null;
-    final name = sellerMap?['fullName'] ?? sellerMap?['name'] ?? "Seller";
-    final rating = (sellerMap?['rating'] ?? "—").toString();
-    final address = sellerMap?['address'] ?? '';
-    final isVerified = sellerMap?['isVerified'] == true;
+    final String name = (sellerMap?['fullName'] ?? sellerMap?['name'] ?? "Seller").toString();
+    final String address = (sellerMap?['address'] ?? '').toString();
+    final bool isVerified = sellerMap?['isVerified'] == true ||
+        sellerMap?['sellerVerified'] == true ||
+        sellerMap?['verified'] == true;
 
-    final sellerImage = (sellerMap?['profile'] ?? sellerMap?['image'] ?? sellerMap?['profileImageUrl'] ?? sellerMap?['avatar'])?.toString();
+    final dynamic rawStats = sellerMap?['stats'];
+    final Map<String, dynamic> stats =
+        rawStats is Map ? Map<String, dynamic>.from(rawStats) : <String, dynamic>{};
+    final double rating =
+        double.tryParse((sellerMap?['rating'] ?? stats['rating'] ?? '').toString()) ?? 0;
+    final int trades = int.tryParse((stats['trades'] ?? '').toString()) ?? 0;
+
+    // The second line used to be built from rating and address alone and
+    // joined with no fallback, so a seller with neither — which is every
+    // seller the list endpoint returns today — got a blank line under
+    // their name and a card that read as half-loaded.
+    final List<String> facts = [];
+    if (rating > 0) facts.add("\u2605 ${rating.toStringAsFixed(1)}");
+    if (trades > 0) facts.add("$trades trade${trades == 1 ? '' : 's'}");
+    if (facts.isEmpty) facts.add("No ratings yet");
+    if (address.isNotEmpty) facts.add(address);
+
+    final String sellerImage = (sellerMap?['profile'] ??
+            sellerMap?['image'] ??
+            sellerMap?['profileImageUrl'] ??
+            sellerMap?['avatar'])
+        ?.toString() ??
+        '';
     final String avatarUrl = UserAvatar.sanitizeUrl(sellerImage);
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => Get.toNamed('/trader_profile', arguments: {
         "id": sellerMap?['_id'] ?? sellerMap?['id'] ?? (seller is String ? seller : ''),
         "name": name,
@@ -1078,46 +1134,106 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
         "bio": sellerMap?['bio'] ?? sellerMap?['description'] ?? '',
       }),
       child: Container(
-        padding: EdgeInsets.all(18.r),
-        decoration: BoxDecoration(color: const Color(0xFF161622), borderRadius: BorderRadius.circular(24.r)),
-        child: Row(
+        padding: EdgeInsets.fromLTRB(18.r, 16.r, 18.r, 6.r),
+        decoration: BoxDecoration(
+          color: const Color(0xFF161622),
+          borderRadius: BorderRadius.circular(24.r),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Avatar
-            UserAvatar(
-              imageUrl: avatarUrl,
-              radius: 24.r,
-              backgroundColor: const Color(0xFF232238),
-              iconColor: const Color(0xFF8B9BFF),
-              iconSize: 26.sp,
+            // Without a label the row read as an unexplained contact.
+            Text(
+              "SOLD BY",
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 10.sp,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.6,
+              ),
             ),
-            SizedBox(width: 14.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            SizedBox(height: 12.h),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                UserAvatar(
+                  imageUrl: avatarUrl,
+                  radius: 24.r,
+                  backgroundColor: const Color(0xFF232238),
+                  iconColor: const Color(0xFF8B9BFF),
+                  iconSize: 26.sp,
+                ),
+                SizedBox(width: 14.w),
+                // The name had to share its line with the chevron and was
+                // clipped to an ellipsis mid-name. It now owns the row and
+                // may wrap to a second line.
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(name, style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w900),
-                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              name,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w900,
+                                height: 1.3,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isVerified) ...[
+                            SizedBox(width: 5.w),
+                            Padding(
+                              padding: EdgeInsets.only(top: 2.h),
+                              child: Icon(Icons.verified, color: const Color(0xFF8B9BFF), size: 15.sp),
+                            ),
+                          ],
+                        ],
                       ),
-                      if (isVerified) ...[
-                        SizedBox(width: 4.w),
-                        Icon(Icons.verified, color: const Color(0xFF8B9BFF), size: 15.sp),
-                      ],
+                      SizedBox(height: 5.h),
+                      Text(
+                        facts.join('  \u2022  '),
+                        style: TextStyle(
+                          color: Colors.white38,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ],
                   ),
-                  SizedBox(height: 4.h),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Divider(color: Colors.white.withOpacity(0.06), height: 1),
+            // A faint chevron did not say what tapping the card would do.
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
                   Text(
-                    [if (rating != '—') "⭐ $rating", if (address.isNotEmpty) address].join('  •  '),
-                    style: TextStyle(color: Colors.white38, fontSize: 12.sp, fontWeight: FontWeight.w600),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    "View seller profile",
+                    style: TextStyle(
+                      color: const Color(0xFF8B9BFF),
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
+                  SizedBox(width: 4.w),
+                  Icon(Icons.arrow_forward_rounded, color: const Color(0xFF8B9BFF), size: 16.sp),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right_rounded, color: Colors.white24, size: 26.sp),
           ],
         ),
       ),
@@ -1182,56 +1298,126 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
     );
   }
 
-  Widget _buildVerificationCard(String? svgPath, String title, String subtitle, {IconData? iconData}) {
+  static List<Map<String, dynamic>> _similarTrades(
+    Map<String, dynamic> product,
+  ) {
+    try {
+      final discoverCtrl = Get.find<DiscoverController>();
+      final String currentCategory = (product['category'] ?? '').toString();
+      final String currentTitle = (product['title'] ?? '').toString();
+
+      final matched = discoverCtrl.tradeMarketItems.where((item) {
+        final raw = item['raw'];
+        if (raw == null) return false;
+        return raw['category']?.toString() == currentCategory &&
+            item['title'] != currentTitle;
+      }).toList();
+
+      if (matched.isNotEmpty) {
+        return matched.take(4).cast<Map<String, dynamic>>().toList();
+      }
+      return discoverCtrl.tradeMarketItems
+          .where((item) => item['title'] != currentTitle)
+          .take(4)
+          .cast<Map<String, dynamic>>()
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// What a buyer actually gets, in one compact block.
+  ///
+  /// Each line describes something the platform really does, so it stays
+  /// true as the product changes — unlike the "100% Secure Auth" badge it
+  /// replaces.
+  Widget _buildBuyerProtection() {
+    const items = [
+      (
+        Icons.lock_outline_rounded,
+        'Payment held securely',
+        'Your card details never reach the seller.',
+      ),
+      (
+        Icons.local_shipping_outlined,
+        'Tracked delivery',
+        'Follow the parcel from dispatch to your door.',
+      ),
+      (
+        Icons.undo_rounded,
+        'Refunds reviewed by ARIES',
+        "If something's wrong, request a refund from your order.",
+      ),
+    ];
+
     return Container(
-      padding: EdgeInsets.all(20.r),
+      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 6.h),
       decoration: BoxDecoration(
-        color: const Color(0xFF161622),
+        color: const Color(0xFF11111A),
         borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (svgPath != null)
-            SvgPicture.asset(svgPath, width: 30.sp, height: 30.sp, colorFilter: const ColorFilter.mode(Color(0xFF8B9BFF), BlendMode.srcIn))
-          else if (iconData != null)
-            Icon(iconData, color: const Color(0xFF8B9BFF), size: 30.sp),
-          SizedBox(height: 14.h),
-          Text(title, style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w900)),
-          SizedBox(height: 4.h),
-          Text(subtitle, style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w700)),
-        ],
+        children: List.generate(items.length, (i) {
+          final (icon, title, subtitle) = items[i];
+          return Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 13.h),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(7.r),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(9.r),
+                      ),
+                      child: Icon(icon,
+                          color: const Color(0xFF8B9BFF), size: 15.sp),
+                    ),
+                    SizedBox(width: 13.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 11.5.sp,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (i != items.length - 1)
+                Divider(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  height: 1,
+                ),
+            ],
+          );
+        }),
       ),
     );
   }
 
   Widget _buildSimilarTrades(Map<String, dynamic> product) {
-    final List<Map<String, dynamic>> similarItems = [];
-    try {
-      final discoverCtrl = Get.find<DiscoverController>();
-      final String currentCategory = (product['category'] ?? '').toString();
-      final String currentTitle = (product['title'] ?? '').toString();
-      final matched = discoverCtrl.tradeMarketItems.where((item) {
-        final raw = item['raw'];
-        if (raw == null) return false;
-        return raw['category']?.toString() == currentCategory && item['title'] != currentTitle;
-      }).toList();
-      if (matched.isNotEmpty) {
-        similarItems.addAll(matched.take(4).cast<Map<String, dynamic>>());
-      } else {
-        similarItems.addAll(discoverCtrl.tradeMarketItems.where((item) => item['title'] != currentTitle).take(4).cast<Map<String, dynamic>>());
-      }
-    } catch (_) {}
-
-    if (similarItems.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 12.h),
-          child: Text("No similar trades found.", style: TextStyle(color: Colors.white24, fontSize: 13.sp, fontWeight: FontWeight.w700)),
-        ),
-      );
-    }
+    final similarItems = _similarTrades(product);
+    if (similarItems.isEmpty) return const SizedBox.shrink();
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
