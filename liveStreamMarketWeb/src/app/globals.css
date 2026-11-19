@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens lifted from the Flutter app so the web platform reads as the
+ * same product. The colours are the literal values the app uses, not
+ * approximations: the near-black base, the three colour blooms that make up
+ * `CustomBackground`, and the card/accent palette every screen draws from.
+ */
+@theme {
+  /* Base canvas */
+  --color-canvas: #02010a;
+  --color-canvas-raised: #0f0b1e;
+
+  /* Background blooms (CustomBackground) */
+  --color-bloom-magenta: #4a1e4d;
+  --color-bloom-blue: #0a1435;
+  --color-bloom-violet: #1e0b36;
+
+  /* Surfaces, darkest to lightest */
+  --color-surface: #11111a;
+  --color-surface-raised: #161622;
+  --color-surface-high: #1c1c28;
+
+  /* Accents */
+  --color-accent: #8b9bff;
+  --color-accent-deep: #2e1e5d;
+  --color-success: #22c55e;
+  --color-gold: #ffb800;
+  --color-pink: #e879f9;
+  --color-violet: #9155ff;
+  --color-danger: #ef4444;
+
+  /* Text, matching the app's white-opacity ladder */
+  --color-ink: #ffffff;
+  --color-ink-muted: rgb(255 255 255 / 0.6);
+  --color-ink-dim: rgb(255 255 255 / 0.38);
+  --color-ink-faint: rgb(255 255 255 / 0.24);
+
+  /* Hairlines */
+  --color-hairline: rgb(255 255 255 / 0.06);
+  --color-hairline-strong: rgb(255 255 255 / 0.12);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* The app rounds cards hard; these are its two common radii. */
+  --radius-card: 1.25rem;
+  --radius-card-lg: 1.75rem;
+  --radius-pill: 9999px;
+}
+
+html,
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The app's scroll areas have no visible track; keep that on desktop without
+   hiding the affordance entirely for mouse users. */
+@media (pointer: fine) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.1);
+    border-radius: 9999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 0.2);
+    background-clip: content-box;
+  }
+}
+
+/* Horizontal rails (categories, show carousels) scroll by touch on phones and
+   by drag on desktop; no bar either way. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
