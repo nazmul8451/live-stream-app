@@ -1392,7 +1392,9 @@ class ProfileScreen extends GetView<ProfileController> {
               Text('Become a Seller?', style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
               SizedBox(height: 10.h),
               Text(
-                'Submit your seller application for admin review. Once approved, you can list products and host live auction streams.',
+                'Tell us what you plan to sell and accept the marketplace policies. '
+                'Stripe then verifies your identity and payout details. Once ARIES '
+                'approves you, you can list products and host live auction streams.',
                 style: TextStyle(color: Colors.white60, fontSize: 13.sp, height: 1.5),
                 textAlign: TextAlign.center,
               ),
@@ -1404,7 +1406,7 @@ class ProfileScreen extends GetView<ProfileController> {
                   children: [
                     Icon(Icons.hourglass_top_rounded, color: const Color(0xFFFFB800), size: 14.sp),
                     SizedBox(width: 8.w),
-                    Expanded(child: Text('Approval is not instant. Admin reviews may take some time.', style: TextStyle(color: const Color(0xFFFFB800).withOpacity(0.85), fontSize: 11.sp, fontWeight: FontWeight.w600))),
+                    Expanded(child: Text('Stripe will ask for your ID, bank account and tax details. ARIES never sees them.', style: TextStyle(color: const Color(0xFFFFB800).withOpacity(0.85), fontSize: 11.sp, fontWeight: FontWeight.w600))),
                   ],
                 ),
               ),
@@ -1422,7 +1424,9 @@ class ProfileScreen extends GetView<ProfileController> {
                     child: ElevatedButton(
                       onPressed: () {
                         Get.back();
-                        controller.switchRole('seller');
+                        // Step 1 of the seller flow: the application form,
+                        // which hands over to Stripe Connect on submit.
+                        Get.toNamed(AppRoute.sellerApplication);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF8B9BFF),

@@ -37,6 +37,8 @@ import '../view/screens/my_inventory/my_inventory_screen.dart';
 import '../view/screens/spin_wheel/screen/spin_wheel_screen.dart';
 import '../view/screens/checkout/screen/order_checkout_screen.dart';
 import '../view/screens/trade_voting/screen/trade_voting_feed_screen.dart';
+import '../view/screens/seller_onboarding/screen/seller_application_screen.dart';
+import '../view/screens/seller_onboarding/screen/seller_onboarding_status_screen.dart';
 import '../view/screens/trade_voting/controller/trade_voting_controller.dart';
 import '../view/screens/home/screen/all_shows_screen.dart';
 
@@ -83,6 +85,8 @@ class AppRoute {
   static const String spinWheel = "/spin_wheel";
   static const String inAppWebView = "/in_app_web_view";
   static const String tradeVotingFeed = "/trade_voting_feed";
+  static const String sellerApplication = "/seller_application";
+  static const String sellerOnboardingStatus = "/seller_onboarding_status";
 
   static List<GetPage> routes = [
     GetPage(name: forgotPassword, page: () => const ForgotPasswordScreen()),
@@ -146,5 +150,13 @@ class AppRoute {
       }),
     ),
     GetPage(name: allShows, page: () => const AllShowsScreen()),
+    GetPage(
+      name: sellerApplication,
+      page: () => const SellerApplicationScreen(),
+    ),
+    GetPage(
+      name: sellerOnboardingStatus,
+      page: () => const SellerOnboardingStatusScreen(),
+    ),
   ];
 }

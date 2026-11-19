@@ -30,6 +30,14 @@ class ApiUrl {
   static const String profile = "/users/profile";
   static const String users = "/users";
   static const String switchRole = "/users/switch-role";
+
+  // Seller onboarding (application + Stripe Connect)
+  static const String sellerApply = "/seller/apply";
+  static const String sellerApplication = "/seller/application";
+  static const String sellerStripeOnboardingLink =
+      "/seller/stripe/onboarding-link";
+  static const String sellerStripeDashboardLink =
+      "/seller/stripe/dashboard-link";
   static String blockUser(String userId) => "/users/block/$userId";
   static String unblockUser(String userId) => "/users/unblock/$userId";
   static const String blockedList = "/users/blocked-list";
@@ -121,6 +129,8 @@ class ApiUrl {
   // Legal & Compliance
   static const String termsAndConditionsUrl = "https://api.areisco.com/terms-and-conditions";
   static const String privacyPolicyUrl = "https://api.areisco.com/privacy-policy";
+  static const String sellerPolicyUrl = "https://api.areisco.com/seller-policy";
+  static const String marketplaceRulesUrl = "https://api.areisco.com/marketplace-rules";
 
   // Giveaway
   static const String giveawayConfig = "/giveaway/config";
