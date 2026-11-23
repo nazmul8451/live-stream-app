@@ -162,7 +162,7 @@ class OnboardingScreen extends GetView<OnboardingController> {
                     Icon(Icons.gavel_rounded, color: const Color(0xFF8B9BFF), size: 28.sp),
                     SizedBox(width: 8.w),
                     Text(
-                      "AuctionLive",
+                      "AREIS",
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 24.sp,
@@ -182,7 +182,7 @@ class OnboardingScreen extends GetView<OnboardingController> {
                     ),
                     children: const [
                       TextSpan(text: "Welcome to\n", style: TextStyle(color: Colors.white)),
-                      TextSpan(text: "AuctionLive", style: TextStyle(color: Color(0xFF5D5FEF))),
+                      TextSpan(text: "AREIS", style: TextStyle(color: Color(0xFF5D5FEF))),
                     ],
                   ),
                 ),

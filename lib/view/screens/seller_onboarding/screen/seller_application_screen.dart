@@ -31,13 +31,18 @@ class _SellerApplicationScreenState extends State<SellerApplicationScreen> {
   void initState() {
     super.initState();
     controller = Get.put(SellerOnboardingController());
+    controller = Get.isRegistered<SellerOnboardingController>()
+        ? Get.find<SellerOnboardingController>()
+        : Get.put(SellerOnboardingController());
+    controller.ensureControllers();
     // Someone who already applied belongs on the status screen, not back at
     // the form — otherwise they have no way to resume Stripe onboarding.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await controller.fetchStatus(showSpinner: false);
       final s = controller.state.value;
       if (!mounted) return;
-      if (s.hasApplied && s.status != 'rejected') {
+      final bool isExplicitEdit = Get.arguments is Map && Get.arguments['edit'] == true;
+      if (!isExplicitEdit && s.hasApplied && s.status != 'rejected') {
         Get.offNamed(AppRoute.sellerOnboardingStatus);
       }
     });
@@ -381,6 +386,7 @@ class _StepTrail extends StatelessWidget {
         final step = i ~/ 2;
         final active = step <= activeStep;
         return Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 22.r,

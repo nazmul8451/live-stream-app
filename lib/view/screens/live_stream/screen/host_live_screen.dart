@@ -843,14 +843,69 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
     );
   }
 
+  /// A category a person can actually read.
+  ///
+  /// The products API sometimes returns the raw category ObjectId, and a badge
+  /// reading `6afaf13a…` is worse than no badge at all.
+  String _displayCategory(Map<String, dynamic> prod) {
+    for (final raw in [prod['categoryName'], prod['category'], prod['type']]) {
+      final value =
+          (raw is Map ? (raw['name'] ?? raw['title']) : raw)?.toString().trim() ??
+              '';
+      if (value.isEmpty) continue;
+      if (RegExp(r'^[0-9a-fA-F]{24}$').hasMatch(value)) continue;
+      return value;
+    }
+    return '';
+  }
+
+  /// "Topps • PSA 9", built only from what the item really has.
+  ///
+  /// The old fallbacks invented a sport ("Sports Cards") and, worse, a grade
+  /// ("PSA 9.5") for items that carried neither — bidders were reading a
+  /// grade nobody had given the card.
+  String _itemSubtitle(Map<String, dynamic> prod) {
+    final parts = <String>[];
+    for (final raw in [
+      prod['sport'] ?? prod['brand'],
+      prod['condition'] ?? prod['grade'],
+    ]) {
+      final value = raw?.toString().trim() ?? '';
+      if (value.isNotEmpty) parts.add(value);
+    }
+    return parts.join(' • ');
+  }
+
+  /// What a new auction should open at, read off the item being sold.
+  ///
+  /// Falls back to $1 instead of a flat figure: a host who never touches the
+  /// field should not end up asking $100 for a $12 card.
+  double _suggestedStartingBid(Map<String, dynamic>? product) {
+    if (product == null) return 1;
+    final raw = product['startingBid'] ??
+        product['buyNowPrice'] ??
+        product['estValue'] ??
+        product['price'];
+    final value =
+        raw is num ? raw.toDouble() : double.tryParse('${raw ?? ''}') ?? 0;
+    return value > 0 ? value : 1;
+  }
+
   void _showStartNewAuctionSheet({Map<String, dynamic>? preselect}) {
     final productsList = <Map<String, dynamic>>[].obs;
     final loadingProducts = true.obs;
     // Opened from an inventory row: that item is pre-selected
     final selectedProduct = Rxn<Map<String, dynamic>>(preselect);
 
-    final startingBid = 100.0.obs;
+    // Open at the item's own price rather than a flat $100 — a $12 card and a
+    // $4,000 card should not both start at the same number.
+    final startingBid = _suggestedStartingBid(preselect).obs;
     final bidIncrement = 5.0.obs;
+
+    // And follow the host if they switch to a different item.
+    ever<Map<String, dynamic>?>(selectedProduct, (prod) {
+      startingBid.value = _suggestedStartingBid(prod);
+    });
     final selectedDuration = 15.obs; // 15s default matching client mockup
     final suddenDeath = false.obs;
     final autoExtend = true.obs;
@@ -1000,10 +1055,8 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                 }
 
                 final String title = prod['title'] ?? prod['name'] ?? 'Product';
-                final String category = prod['category'] ?? prod['categoryName'] ?? prod['type'] ?? 'Trading Card';
-                final String sport = prod['sport'] ?? prod['brand'] ?? 'Sports Cards';
-                final String condition = prod['condition'] ?? prod['grade'] ?? 'PSA 9.5';
-                final String subtitle = "$sport • $condition";
+                final String category = _displayCategory(prod);
+                final String subtitle = _itemSubtitle(prod);
                 final String image = (prod['images'] is List && (prod['images'] as List).isNotEmpty)
                     ? prod['images'][0].toString()
                     : (prod['image'] ?? "");
@@ -1043,23 +1096,25 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.5.h),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF16203D),
-                                  borderRadius: BorderRadius.circular(6.r),
-                                  border: Border.all(color: const Color(0xFF263560)),
-                                ),
-                                child: Text(
-                                  category,
-                                  style: TextStyle(
-                                    color: const Color(0xFF8B9BFF),
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w700,
+                              if (category.isNotEmpty) ...[
+                                Container(
+                                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.5.h),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF16203D),
+                                    borderRadius: BorderRadius.circular(6.r),
+                                    border: Border.all(color: const Color(0xFF263560)),
+                                  ),
+                                  child: Text(
+                                    category,
+                                    style: TextStyle(
+                                      color: const Color(0xFF8B9BFF),
+                                      fontSize: 10.sp,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              SizedBox(height: 5.h),
+                                SizedBox(height: 5.h),
+                              ],
                               Text(
                                 title,
                                 style: TextStyle(
@@ -1070,7 +1125,8 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              SizedBox(height: 3.h),
+                              if (subtitle.isNotEmpty) SizedBox(height: 3.h),
+                              if (subtitle.isNotEmpty)
                               Text(
                                 subtitle,
                                 style: TextStyle(

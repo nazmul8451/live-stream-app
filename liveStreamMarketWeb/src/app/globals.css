@@ -36,6 +36,12 @@
   --color-ink-dim: rgb(255 255 255 / 0.38);
   --color-ink-faint: rgb(255 255 255 / 0.24);
 
+  /* The app's bottom bar: its own surface, edge and button gradient. */
+  --color-nav-edge: #261e42;
+  --color-nav-accent-from: #a5b4ff;
+  --color-nav-accent-to: #6e80ff;
+  --color-nav-badge: #ff4b67;
+
   /* Hairlines */
   --color-hairline: rgb(255 255 255 / 0.06);
   --color-hairline-strong: rgb(255 255 255 / 0.12);
@@ -98,5 +104,21 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* The heart that rises off the reaction button during a live show. */
+@keyframes float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.7);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-80px) scale(1.1);
   }
 }

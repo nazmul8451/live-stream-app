@@ -2,8 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 import { AuthHeader } from "@/components/auth/AuthHeader";
+import { Alert, errorMessage } from "@/components/ui/Alert";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { auth } from "@/lib/auth";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -11,7 +13,7 @@ export default function ForgotPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       setError("Enter the email address on your account.");
@@ -19,11 +21,14 @@ export default function ForgotPasswordPage() {
     }
     setError(undefined);
     setSubmitting(true);
-    // TODO(integration): POST /auth/forget-password.
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      await auth.forgotPassword(email);
       setSent(true);
-    }, 900);
+      setSubmitting(false);
+    } catch (requestError) {
+      setError(errorMessage(requestError));
+      setSubmitting(false);
+    }
   }
 
   if (sent) {
@@ -65,6 +70,8 @@ export default function ForgotPasswordPage() {
       </AuthHeader>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        {error && !email ? <Alert>{error}</Alert> : null}
+
         <Field
           label="Email"
           type="email"

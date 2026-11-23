@@ -484,9 +484,11 @@ class ProfileController extends GetxController {
         await fetchProfileData();
 
         showAppSnackbar(
-          targetRole == 'seller' ? "Application Submitted ✅" : "Switched to Buyer ✅",
+          // Switching to seller only succeeds for an approved seller now;
+          // applying goes through the seller application screen.
+          targetRole == 'seller' ? "Switched to Seller ✅" : "Switched to Buyer ✅",
           targetRole == 'seller'
-              ? "Your seller application is under review. You'll be notified once approved."
+              ? "You're now in seller mode."
               : "You have successfully switched back to a Buyer account.",
           backgroundColor: const Color(0xFF161622),
           colorText: Colors.white,

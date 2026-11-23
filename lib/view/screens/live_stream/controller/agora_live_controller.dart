@@ -1420,20 +1420,19 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         debugPrint("❌ [AgoraLiveController] startStream error (${streamRes.statusCode}): ${streamRes.body}");
 
         if (streamRes.statusCode == 403 || errMsg.toLowerCase().contains("permission") || errMsg.toLowerCase().contains("seller")) {
+          // The backend says exactly what is missing (ARIES review pending,
+          // Stripe still needs a bank account, ...). Switching role cannot fix
+          // any of that, so send the seller to their onboarding status.
           showAppSnackbar(
             "Seller Activation Required 🔒",
-            "Please tap 'SWITCH TO SELLER' in Profile to refresh your active seller session.",
+            errMsg,
             backgroundColor: const Color(0xFF2A0A10),
             colorText: Colors.white,
             snackPosition: SnackPosition.TOP,
             duration: const Duration(seconds: 6),
             mainButton: TextButton(
-              onPressed: () {
-                if (Get.isRegistered<ProfileController>()) {
-                  Get.find<ProfileController>().switchRole('seller');
-                }
-              },
-              child: const Text("SWITCH ROLE", style: TextStyle(color: Color(0xFF8B9BFF), fontWeight: FontWeight.bold)),
+              onPressed: () => Get.toNamed(AppRoute.sellerOnboardingStatus),
+              child: const Text("VIEW STATUS", style: TextStyle(color: Color(0xFF8B9BFF), fontWeight: FontWeight.bold)),
             ),
           );
         } else {

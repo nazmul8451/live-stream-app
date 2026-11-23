@@ -16,6 +16,10 @@ class HomeController extends GetxController {
 
   var selectedCategoryIndex = 0.obs;
   final RxString fullName = "User".obs;
+
+  /// Browsing without an account. A guest has never been here before, so the
+  /// header must not greet them back by a name they never gave.
+  final RxBool isGuestUser = false.obs;
   final RxString userAvatarUrl = "".obs;
   final RxString myUserId = "".obs;
   final RxBool isLoading = false.obs;
@@ -385,6 +389,8 @@ class HomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    isGuestUser.value = SharePrefsHelper.isGuest ||
+        SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isEmpty;
     final cachedName = SharePrefsHelper.getString('userName');
     if (cachedName.isNotEmpty) {
       fullName.value = cachedName.split(" ").first;
@@ -665,6 +671,7 @@ class HomeController extends GetxController {
         final String full = data['fullName'] ?? "User";
         // Extract only the first name
         fullName.value = full.split(" ").first;
+        isGuestUser.value = false;
 
         final rawAv = (data['avatar'] ?? data['profileImage'] ?? data['image'] ?? data['profile'] ?? '').toString();
         if (rawAv.isNotEmpty) {
@@ -692,10 +699,10 @@ class HomeController extends GetxController {
 
   Future<void> fetchLiveStreams() async {
     try {
-      var response = await _apiClient.getData("${ApiUrl.liveStreams}?status=live");
-      if (response.statusCode != 200) {
-        response = await _apiClient.getData("${ApiUrl.liveStreams}?status=active");
-      }
+      // `live` is the only status the backend knows for a running show
+      // (scheduled / live / ended), so there is no second status to fall back
+      // on — a retry with `active` only ever came back empty.
+      final response = await _apiClient.getData("${ApiUrl.liveStreams}?status=live");
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);

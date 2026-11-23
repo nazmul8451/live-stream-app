@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState, type FormEvent } from "react";
 import { AuthHeader } from "@/components/auth/AuthHeader";
+import { Alert, errorMessage } from "@/components/ui/Alert";
+import { auth, pending } from "@/lib/auth";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
 import { legalPageUrls } from "@/lib/endpoints";
@@ -11,16 +14,27 @@ import { MEDIA_BASE_URL } from "@/lib/api";
 type Errors = Partial<Record<"fullName" | "email" | "password" | "terms", string>>;
 
 export default function SignUpPage() {
+  return (
+    <Suspense fallback={<FormSkeleton />}>
+      <SignUpForm />
+    </Suspense>
+  );
+}
+
+function SignUpForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
+  const [formError, setFormError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
 
   const strength = useMemo(() => passwordStrength(password), [password]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const next: Errors = {};
@@ -36,9 +50,17 @@ export default function SignUpPage() {
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
+    setFormError(undefined);
     setSubmitting(true);
-    // TODO(integration): POST /auth/signup, then route to /otp with the email.
-    setTimeout(() => setSubmitting(false), 900);
+    try {
+      await auth.signUp({ name: fullName, email, password });
+      const next = searchParams?.get("next");
+      if (next) pending.setNext(next);
+      router.push("/verify");
+    } catch (error) {
+      setFormError(errorMessage(error));
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -49,6 +71,8 @@ export default function SignUpPage() {
       </AuthHeader>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        {formError ? <Alert>{formError}</Alert> : null}
+
         <Field
           label="Full name"
           name="name"
@@ -119,6 +143,20 @@ export default function SignUpPage() {
         </Link>
       </p>
     </>
+  );
+}
+
+/** The form's shape while the URL-dependent part streams in. */
+function FormSkeleton() {
+  return (
+    <div aria-hidden className="space-y-5">
+      <div className="h-10 w-56 animate-pulse rounded-lg bg-white/[0.06]" />
+      <div className="h-5 w-64 animate-pulse rounded-lg bg-white/[0.04]" />
+      <div className="h-[70px] animate-pulse rounded-card bg-white/[0.04]" />
+      <div className="h-[70px] animate-pulse rounded-card bg-white/[0.04]" />
+      <div className="h-[70px] animate-pulse rounded-card bg-white/[0.04]" />
+      <div className="h-14 animate-pulse rounded-pill bg-white/[0.06]" />
+    </div>
   );
 }
 

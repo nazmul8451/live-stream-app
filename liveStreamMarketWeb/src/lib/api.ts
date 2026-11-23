@@ -44,6 +44,11 @@ interface RequestOptions {
   body?: Json | unknown[] | FormData;
   /** Skip the Authorization header — for login, signup and the like. */
   anonymous?: boolean;
+  /**
+   * Extra headers. Used by password reset, which authenticates with a
+   * short-lived reset token rather than the session's access token.
+   */
+  headers?: Record<string, string>;
   signal?: AbortSignal;
   /** Internal: prevents a refresh loop. */
   _retried?: boolean;
@@ -125,12 +130,15 @@ async function refreshAccessToken(): Promise<boolean> {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, anonymous = false, signal } = options;
 
-  const headers: Record<string, string> = { Accept: "application/json" };
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...options.headers,
+  };
   const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
   if (body !== undefined && !isFormData) headers["Content-Type"] = "application/json";
 
   const token = anonymous ? "" : session.accessToken;
-  if (token) headers.Authorization = `Bearer ${token}`;
+  if (token && !headers.Authorization) headers.Authorization = `Bearer ${token}`;
 
   let response: Response;
   try {

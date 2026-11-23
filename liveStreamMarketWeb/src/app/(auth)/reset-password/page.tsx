@@ -1,21 +1,38 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
 import { AuthHeader } from "@/components/auth/AuthHeader";
 import { OtpInput } from "@/components/auth/OtpInput";
+import { Alert, errorMessage } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { auth, pending } from "@/lib/auth";
 
 type Errors = Partial<Record<"code" | "password" | "confirm", string>>;
 
 export default function ResetPasswordPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [errors, setErrors] = useState<Errors>({});
+  const [formError, setFormError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    const address = pending.email;
+    // Same as the verify step: sessionStorage is not readable during render.
+    if (!address) {
+      router.replace("/forgot-password");
+      return;
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setEmail(address);
+  }, [router]);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const next: Errors = {};
@@ -28,9 +45,19 @@ export default function ResetPasswordPage() {
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
+    setFormError(undefined);
     setSubmitting(true);
-    // TODO(integration): POST /auth/reset-password, then route to /login.
-    setTimeout(() => setSubmitting(false), 900);
+    try {
+      // Two calls, one screen: the code buys a single-use reset token, and
+      // only that token is allowed to set the new password.
+      await auth.verifyOtp(email, code, "resetPassword");
+      await auth.resetPassword(password, confirm);
+      router.replace("/login?reset=1");
+    } catch (resetError) {
+      setFormError(errorMessage(resetError));
+      setSubmitting(false);
+      setCode("");
+    }
   }
 
   return (
@@ -39,10 +66,14 @@ export default function ResetPasswordPage() {
         title="Set a new password"
         back={{ href: "/forgot-password", label: "Back" }}
       >
-        Enter the code we emailed you, then choose a new password.
+        Enter the code we emailed to{" "}
+        <span className="font-bold text-ink">{email || "your address"}</span>,
+        then choose a new password.
       </AuthHeader>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
+        {formError ? <Alert>{formError}</Alert> : null}
+
         <div className="space-y-2">
           <p className="text-[11px] font-black uppercase tracking-[0.12em] text-ink-dim">
             Reset code

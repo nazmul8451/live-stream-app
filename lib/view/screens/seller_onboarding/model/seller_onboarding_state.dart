@@ -32,6 +32,7 @@ class SellerOnboardingState {
   /// not_started · stripe_pending · pending_approval · approved · rejected
   final String status;
   final String? whatTheySell;
+  final String? businessName;
   final bool applicationComplete;
   final bool stripeOnboardingComplete;
   final bool stripePayoutReady;
@@ -45,6 +46,7 @@ class SellerOnboardingState {
     this.hasApplied = false,
     this.status = 'not_started',
     this.whatTheySell,
+    this.businessName,
     this.applicationComplete = false,
     this.stripeOnboardingComplete = false,
     this.stripePayoutReady = false,
@@ -60,6 +62,7 @@ class SellerOnboardingState {
       hasApplied: json['hasApplied'] == true,
       status: (json['status'] ?? 'not_started').toString(),
       whatTheySell: json['whatTheySell']?.toString(),
+      businessName: json['businessName']?.toString(),
       applicationComplete: json['applicationComplete'] == true,
       stripeOnboardingComplete: json['stripeOnboardingComplete'] == true,
       stripePayoutReady: json['stripePayoutReady'] == true,

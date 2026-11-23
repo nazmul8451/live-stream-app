@@ -88,6 +88,8 @@ export const endpoints = {
     quickStart: "/auctions/item/quick-start",
     bookmark: (streamId: string) => `/auctions/stream/${streamId}/bookmark`,
     inventory: (streamId: string) => `/auctions/stream/${streamId}/inventory`,
+    items: (streamId: string) => `/auctions/stream/${streamId}/items`,
+    status: (streamId: string) => `/auctions/stream/${streamId}/status`,
     sales: (streamId: string) => `/auctions/stream/${streamId}/sales`,
     summary: (streamId: string) => `/auctions/stream/${streamId}/summary`,
   },
@@ -132,7 +134,7 @@ export const endpoints = {
   },
 
   support: "/support",
-  upload: { presign: "/upload/presign" },
+  upload: { presign: "/upload/presign", image: "/upload/image" },
 
   public: {
     safetyDisclaimer: "/public/safety-disclaimer",

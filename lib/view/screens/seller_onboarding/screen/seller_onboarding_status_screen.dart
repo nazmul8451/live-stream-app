@@ -33,6 +33,10 @@ class _SellerOnboardingStatusScreenState
   void initState() {
     super.initState();
     controller = Get.put(SellerOnboardingController());
+    controller = Get.isRegistered<SellerOnboardingController>()
+        ? Get.find<SellerOnboardingController>()
+        : Get.put(SellerOnboardingController());
+    controller.ensureControllers();
     WidgetsBinding.instance.addObserver(this);
     controller.fetchStatus();
   }
@@ -98,6 +102,10 @@ class _SellerOnboardingStatusScreenState
               padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 32.h),
               children: [
                 _header(s),
+                if (s.status == 'stripe_pending') ...[
+                  SizedBox(height: 16.h),
+                  _pendingStripeBanner(),
+                ],
                 SizedBox(height: 24.h),
                 _checklist(s),
                 if (s.outstandingRequirements.isNotEmpty) ...[
@@ -308,6 +316,48 @@ class _SellerOnboardingStatusScreenState
     );
   }
 
+  Widget _pendingStripeBanner() {
+    return Container(
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: _amber.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: _amber.withOpacity(0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.assignment_late_rounded, color: _amber, size: 22.sp),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Action Required: Complete Stripe Setup',
+                  style: TextStyle(
+                    color: _amber,
+                    fontSize: 13.5.sp,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'Your application has been initiated. Tap "Continue Stripe setup" below to complete identity verification and payout bank details on Stripe. Once completed, your application will be automatically sent for admin review.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12.sp,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _warning(String text) {
     return Container(
       padding: EdgeInsets.all(14.r),
@@ -387,6 +437,36 @@ class _SellerOnboardingStatusScreenState
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16.r),
                 ),
+              ),
+            ),
+          ),
+        ),
+      );
+      widgets.add(SizedBox(height: 12.h));
+    }
+
+    if (s.status == 'stripe_pending') {
+      widgets.add(
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton(
+            onPressed: () => Get.toNamed(
+              AppRoute.sellerApplication,
+              arguments: {'edit': true},
+            ),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: Colors.white.withOpacity(0.12)),
+              padding: EdgeInsets.symmetric(vertical: 14.h),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+            ),
+            child: Text(
+              'Edit Application Details',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 13.sp,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

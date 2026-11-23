@@ -1,34 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState, type FormEvent } from "react";
 import { AuthHeader } from "@/components/auth/AuthHeader";
+import { Alert, errorMessage } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Field";
+import { auth, googleSignInUrl } from "@/lib/auth";
 
 export default function LoginPage() {
+  // `useSearchParams` reads from the request, so the part of the page that
+  // uses it has to be able to stream in on its own.
+  return (
+    <Suspense fallback={<FormSkeleton />}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Where the person was heading before the guard sent them here.
+  const next = searchParams?.get("next") || "/marketplace";
+  // Set by the reset flow, so the person knows the new password took before
+  // they try it.
+  const justReset = searchParams?.get("reset") === "1";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [formError, setFormError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     // Validation runs here rather than on the server round trip so a typo in
     // the email does not cost a request and a wait.
-    const next: typeof errors = {};
-    if (!email.trim()) next.email = "Enter your email address.";
+    const fieldErrors: typeof errors = {};
+    if (!email.trim()) fieldErrors.email = "Enter your email address.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-      next.email = "That does not look like an email address.";
-    if (!password) next.password = "Enter your password.";
+      fieldErrors.email = "That does not look like an email address.";
+    if (!password) fieldErrors.password = "Enter your password.";
 
-    setErrors(next);
-    if (Object.keys(next).length > 0) return;
+    setErrors(fieldErrors);
+    if (Object.keys(fieldErrors).length > 0) return;
 
+    setFormError(undefined);
     setSubmitting(true);
-    // TODO(integration): POST /auth/login, store the token pair, then route.
-    setTimeout(() => setSubmitting(false), 900);
+    try {
+      await auth.login(email, password);
+      router.replace(next);
+    } catch (error) {
+      setFormError(errorMessage(error));
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -38,6 +66,13 @@ export default function LoginPage() {
       </AuthHeader>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        {justReset ? (
+          <Alert tone="success">
+            Your password is set. Sign in with the new one.
+          </Alert>
+        ) : null}
+        {formError ? <Alert>{formError}</Alert> : null}
+
         <Field
           label="Email"
           type="email"
@@ -78,7 +113,16 @@ export default function LoginPage() {
 
       <Divider>or</Divider>
 
-      <Button variant="secondary" size="lg" block leading={<GoogleMark />}>
+      <Button
+        type="button"
+        variant="secondary"
+        size="lg"
+        block
+        leading={<GoogleMark />}
+        onClick={() => {
+          window.location.href = googleSignInUrl;
+        }}
+      >
         Continue with Google
       </Button>
 
@@ -101,6 +145,19 @@ export default function LoginPage() {
         </Link>
       </p>
     </>
+  );
+}
+
+/** The form's shape while the URL-dependent part streams in. */
+function FormSkeleton() {
+  return (
+    <div aria-hidden className="space-y-5">
+      <div className="h-10 w-48 animate-pulse rounded-lg bg-white/[0.06]" />
+      <div className="h-5 w-64 animate-pulse rounded-lg bg-white/[0.04]" />
+      <div className="h-[70px] animate-pulse rounded-card bg-white/[0.04]" />
+      <div className="h-[70px] animate-pulse rounded-card bg-white/[0.04]" />
+      <div className="h-14 animate-pulse rounded-pill bg-white/[0.06]" />
+    </div>
   );
 }
 

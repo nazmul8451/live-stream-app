@@ -49,13 +49,15 @@ class HomeScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
               // Welcome Header
-              Text(
-                "WELCOME BACK",
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.5,
+              Obx(
+                () => Text(
+                  controller.isGuestUser.value ? "WELCOME" : "WELCOME BACK",
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 10.sp,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.5,
+                  ),
                 ),
               ),
               SizedBox(height: 6.h),
@@ -68,7 +70,9 @@ class HomeScreen extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          "Hello, ${controller.fullName.value}",
+                          controller.isGuestUser.value
+                              ? "Browsing as guest"
+                              : "Hello, ${controller.fullName.value}",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 22.sp,
@@ -336,6 +340,57 @@ class HomeScreen extends StatelessWidget {
     });
   }
 
+  /// Shown on the "Live Shows" tab when nobody is broadcasting.
+  Widget _buildNoLiveShowsState() {
+    return Container(
+      margin: EdgeInsets.only(top: 18.h),
+      padding: EdgeInsets.symmetric(vertical: 44.h, horizontal: 24.w),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(28.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 56.w,
+            height: 56.w,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.05),
+            ),
+            child: Icon(
+              Icons.videocam_off_outlined,
+              color: Colors.white38,
+              size: 26.sp,
+            ),
+          ),
+          SizedBox(height: 18.h),
+          Text(
+            "No shows live right now",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 17.sp,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            "When a seller goes live, their show appears here.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white38,
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w500,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDynamicLiveSection(HomeController controller) {
     return Obx(() {
       // If celebrity is already featured in CelebritySpotlightCard, show regular community stream here
@@ -343,7 +398,17 @@ class HomeScreen extends StatelessWidget {
           ? controller.liveItems.where((s) => !s.isCelebrity).toList()
           : controller.liveItems;
 
-      if (availableStreams.isEmpty) return const SizedBox.shrink();
+      if (availableStreams.isEmpty) {
+        // On the "Live Shows" tab a blank screen reads as a broken app, so say
+        // plainly that nobody is on air. Elsewhere the home feed has its own
+        // content, and a scheduled-shows list already answers the question.
+        final bool onLiveTab = controller.selectedHomeFilter.value == 1;
+        final bool nothingElseToShow = controller.scheduledShows.isEmpty;
+        if (onLiveTab && nothingElseToShow && !controller.isLoading.value) {
+          return _buildNoLiveShowsState();
+        }
+        return const SizedBox.shrink();
+      }
 
       final liveShow = availableStreams.first;
       final String image = liveShow.image;

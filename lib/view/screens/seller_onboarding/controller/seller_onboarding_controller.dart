@@ -19,17 +19,32 @@ class SellerOnboardingController extends GetxController {
   final RxBool isOpeningStripe = false.obs;
 
   // Application form
-  final TextEditingController whatTheySellCtrl = TextEditingController();
-  final TextEditingController businessNameCtrl = TextEditingController();
+  TextEditingController whatTheySellCtrl = TextEditingController();
+  TextEditingController businessNameCtrl = TextEditingController();
   final RxBool acceptSellerPolicy = false.obs;
   final RxBool acceptTerms = false.obs;
   final RxBool acceptMarketplaceRules = false.obs;
 
-  bool get formValid =>
-      whatTheySellCtrl.text.trim().length >= 3 &&
-      acceptSellerPolicy.value &&
-      acceptTerms.value &&
-      acceptMarketplaceRules.value;
+  bool get formValid {
+    ensureControllers();
+    return whatTheySellCtrl.text.trim().length >= 3 &&
+        acceptSellerPolicy.value &&
+        acceptTerms.value &&
+        acceptMarketplaceRules.value;
+  }
+
+  void ensureControllers() {
+    try {
+      whatTheySellCtrl.text;
+    } catch (_) {
+      whatTheySellCtrl = TextEditingController(text: state.value.whatTheySell ?? '');
+    }
+    try {
+      businessNameCtrl.text;
+    } catch (_) {
+      businessNameCtrl = TextEditingController(text: state.value.businessName ?? '');
+    }
+  }
 
   @override
   void onClose() {
@@ -69,9 +84,14 @@ class SellerOnboardingController extends GetxController {
         final data = _decodeData(response.body);
         if (data != null) {
           state.value = SellerOnboardingState.fromJson(data);
+          ensureControllers();
           if (state.value.whatTheySell?.isNotEmpty == true &&
               whatTheySellCtrl.text.trim().isEmpty) {
             whatTheySellCtrl.text = state.value.whatTheySell!;
+          }
+          if (state.value.businessName?.isNotEmpty == true &&
+              businessNameCtrl.text.trim().isEmpty) {
+            businessNameCtrl.text = state.value.businessName!;
           }
         }
       }
@@ -84,6 +104,7 @@ class SellerOnboardingController extends GetxController {
 
   /// Step 1 + 2 — submit the application, then hand straight over to Stripe.
   Future<void> submitApplication() async {
+    ensureControllers();
     if (!formValid) {
       showAppSnackbar(
         'Almost there',
