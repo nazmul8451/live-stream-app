@@ -92,10 +92,16 @@ class DeepLinkService extends GetxService {
       if (uri.scheme == 'culturecards' &&
           host == 'seller' &&
           uri.path == '/onboarding') {
-        AuthGuard.check(onAuthorized: () {
-          if (Get.currentRoute != AppRoute.sellerOnboardingStatus) {
-            Get.toNamed(AppRoute.sellerOnboardingStatus);
+        AuthGuard.check(onAuthorized: () async {
+          if (Get.currentRoute == AppRoute.sellerOnboardingStatus) return;
+          // Opened from Stripe while the app was starting up: put Home under
+          // the status screen, or Back lands on onboarding/login.
+          const startupRoutes = {'/', AppRoute.onboarding, AppRoute.login};
+          if (startupRoutes.contains(Get.currentRoute)) {
+            Get.offAllNamed(AppRoute.main);
+            await Future.delayed(const Duration(milliseconds: 300));
           }
+          Get.toNamed(AppRoute.sellerOnboardingStatus);
         });
         return;
       }

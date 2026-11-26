@@ -31,7 +31,21 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
   final _descController = TextEditingController();
   final _promoVideoController = TextEditingController();
   final _thumbnailUrlController = TextEditingController();
-  final _startingBidController = TextEditingController(text: "100");
+  // Filled from the selected item's price; a flat $100 made a $12 card open
+  // at $100 if the host didn't touch the field.
+  final _startingBidController = TextEditingController(text: "1");
+
+  void _syncStartingBid(Map<String, dynamic>? product) {
+    if (product == null) return;
+    final raw = product['startingBid'] ??
+        product['buyNowPrice'] ??
+        product['estValue'] ??
+        product['price'];
+    final value = raw is num ? raw.toDouble() : double.tryParse('${raw ?? ''}') ?? 0;
+    final bid = value > 0 ? value : 1;
+    _startingBidController.text =
+        bid == bid.roundToDouble() ? bid.toInt().toString() : bid.toStringAsFixed(2);
+  }
   final _bidIncrementController = TextEditingController(text: "5");
   int _timerDuration = 60;
 
@@ -358,7 +372,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
       // ─── GO LIVE IMMEDIATELY ───
       final pTitle = _selectedProduct?['title']?.toString() ?? "";
       final pId = _selectedProduct?['_id']?.toString() ?? "";
-      final pStartingBid = double.tryParse(_startingBidController.text) ?? 100;
+      final pStartingBid = double.tryParse(_startingBidController.text) ?? 1;
       final pBidIncrement = double.tryParse(_bidIncrementController.text) ?? 5;
 
       final ctrl = Get.find<AgoraLiveController>();
@@ -659,10 +673,14 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                                         final remaining = _myProducts.where(
                                             (e) => _selectedInventoryIds.contains(e['_id']?.toString()));
                                         _selectedProduct = remaining.isNotEmpty ? remaining.last : null;
+                                        _syncStartingBid(_selectedProduct);
                                       }
                                     } else {
                                       _selectedInventoryIds.add(pId);
-                                      if (!isScheduleMode) _selectedProduct = p;
+                                      if (!isScheduleMode) {
+                                        _selectedProduct = p;
+                                        _syncStartingBid(p);
+                                      }
                                     }
                                   });
                                 },
@@ -760,7 +778,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                           children: [
                             _sectionLabel("Starting Bid (\$)"),
                             SizedBox(height: 10.h),
-                            _inputField(_startingBidController, "100", keyboardType: TextInputType.number),
+                            _inputField(_startingBidController, "0", keyboardType: TextInputType.number),
                           ],
                         ),
                       ),
