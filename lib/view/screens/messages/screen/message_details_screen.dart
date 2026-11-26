@@ -881,8 +881,8 @@ class MessageDetailsScreen extends GetView<MessageDetailsController> {
                   padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 16.h),
                   child: Builder(
                     builder: (context) {
-                      if (isMe) {
-                        // Sender (Buyer) who proposed the offer can complete/pay
+                      // Both traders pay their 4% and shipping, so both
+                      // open the trade from here.
                         return GestureDetector(
                           onTap: () => controller.completeTradeOffer(tradeId),
                           child: Container(
@@ -907,42 +907,19 @@ class MessageDetailsScreen extends GetView<MessageDetailsController> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Icon(
-                                  cash > 0 ? Icons.payment_rounded : Icons.check_circle_rounded,
+                                  Icons.local_shipping_rounded,
                                   color: Colors.black,
                                   size: 16.sp,
                                 ),
                                 SizedBox(width: 8.w),
                                 Text(
-                                  cash > 0 ? "Pay & Complete" : "Complete Swap",
+                                  "Pay & Track Trade",
                                   style: TextStyle(color: Colors.black, fontSize: 12.sp, fontWeight: FontWeight.w900),
                                 ),
                               ],
                             ),
                           ),
                         );
-                      } else {
-                        // Receiver (Seller) who accepted the offer sees "Accepted" status
-                        return Container(
-                          height: 44.h,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF22C55E).withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(22.r),
-                            border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.3), width: 1),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.check_circle_outline_rounded, color: const Color(0xFF22C55E), size: 16.sp),
-                              SizedBox(width: 8.w),
-                              Text(
-                                "Accepted",
-                                style: TextStyle(color: const Color(0xFF22C55E), fontSize: 12.sp, fontWeight: FontWeight.w900),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
                     },
                   ),
                 ),
@@ -954,7 +931,11 @@ class MessageDetailsScreen extends GetView<MessageDetailsController> {
                     child: Text(
                       status == "completed"
                           ? "Trade Completed Successfully! ✅"
-                          : "Trade Proposal Declined",
+                          : status == "cancelled"
+                              ? "Trade Cancelled"
+                              : status == "expired"
+                                  ? "Offer Expired"
+                                  : "Trade Proposal Declined",
                       style: TextStyle(
                         color: status == "completed" ? const Color(0xFF22C55E) : const Color(0xFFFF4B4B),
                         fontSize: 11.sp,

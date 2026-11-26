@@ -13,6 +13,8 @@ class MyTradeModel {
   final bool? isUserSender;
   final String? traderId;
   final String? chatId;
+  /// Where an accepted trade is (awaiting_payment, awaiting_shipment, …).
+  final String? stage;
 
   MyTradeModel({
     required this.tradeId,
@@ -27,5 +29,6 @@ class MyTradeModel {
     this.isUserSender,
     this.traderId,
     this.chatId,
+    this.stage,
   });
 }

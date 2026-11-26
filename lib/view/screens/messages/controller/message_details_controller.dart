@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+import '../../../../core/app_route.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/helpers/shared_prefe.dart';
@@ -12,7 +11,6 @@ import '../../main/controller/main_controller.dart';
 import 'messages_controller.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 import 'package:live_stream_app/data/helpers/api_list.dart';
-import '../../../../data/services/stripe_config.dart';
 
 class MessageDetailsController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -564,118 +562,10 @@ class MessageDetailsController extends GetxController {
     }
   }
 
+  /// Paying, labels and tracking all live on the trade's own screen.
   Future<void> completeTradeOffer(String tradeId) async {
-    isLoading.value = true;
-    try {
-      final response = await _apiClient.postData("/trades/complete/$tradeId", {});
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-        final success = body['success'] ?? false;
-        final data = body['data'];
-        
-        if (success) {
-          // 1. Native Stripe PaymentSheet Handler
-          if (data is Map && data.containsKey('clientSecret')) {
-            final clientSecret = data['clientSecret']?.toString() ?? '';
-            final ephemeralKey = data['ephemeralKey']?.toString() ?? '';
-            final customerId = data['customer']?.toString() ?? '';
-
-            if (clientSecret.isNotEmpty) {
-              try {
-                final pubKey = data['publishableKey'] ?? data['stripePublishableKey'] ?? data['pk'];
-                if (pubKey != null && pubKey.toString().isNotEmpty) {
-                  Stripe.publishableKey = pubKey.toString();
-                } else {
-                  Stripe.publishableKey = StripeConfig.publishableKey;
-                }
-                await Stripe.instance.applySettings();
-
-                await Stripe.instance.initPaymentSheet(
-                  paymentSheetParameters: SetupPaymentSheetParameters(
-                    paymentIntentClientSecret: clientSecret,
-                    customerEphemeralKeySecret: ephemeralKey.isNotEmpty ? ephemeralKey : null,
-                    customerId: customerId.isNotEmpty ? customerId : null,
-                    merchantDisplayName: 'AREIS LLC',
-                    style: ThemeMode.dark,
-                    appearance: const PaymentSheetAppearance(
-                      colors: PaymentSheetAppearanceColors(
-                        primary: Color(0xFF8B9BFF),
-                        background: Color(0xFF161622),
-                        componentBackground: Color(0xFF1E1E2C),
-                        componentText: Colors.white,
-                        primaryText: Colors.white,
-                        secondaryText: Colors.white70,
-                      ),
-                    ),
-                  ),
-                );
-
-                await Stripe.instance.presentPaymentSheet();
-                showAppSnackbar("Success", "Payment completed & trade finalized! ✅", snackPosition: SnackPosition.BOTTOM);
-                await fetchAssociatedTrades();
-                await fetchMessages();
-                return;
-              } on StripeException catch (e) {
-                Get.log("⚠️ Stripe Exception: ${e.error.localizedMessage}");
-                showAppSnackbar("Stripe Payment", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
-                return;
-              } catch (e) {
-                Get.log("❌ Stripe Error: $e");
-                showAppSnackbar("Stripe Error", "$e", snackPosition: SnackPosition.BOTTOM);
-                return;
-              }
-            }
-          }
-
-          // 2. Fallback Checkout URL Handler
-          String? checkoutUrl;
-          if (data is Map) {
-            checkoutUrl = (data['url'] ?? data['checkoutUrl'] ?? data['paymentUrl'] ?? data['redirectUrl'] ?? data['sessionUrl'])?.toString();
-          } else if (data is String && data.startsWith('http')) {
-            checkoutUrl = data;
-          } else if (body['url'] != null) {
-            checkoutUrl = body['url'].toString();
-          }
-
-          if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
-            final uri = Uri.parse(checkoutUrl);
-            bool launched = false;
-            try {
-              launched = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-            } catch (_) {}
-            if (!launched) {
-              try {
-                launched = await launchUrl(uri, mode: LaunchMode.inAppWebView);
-              } catch (_) {}
-            }
-            if (!launched) {
-              try {
-                launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-              } catch (_) {}
-            }
-
-            if (launched) {
-              showAppSnackbar("Success", "Redirecting to Stripe checkout...", snackPosition: SnackPosition.BOTTOM);
-            } else {
-              showAppSnackbar("Error", "Could not open Stripe checkout page.", snackPosition: SnackPosition.BOTTOM);
-            }
-          } else {
-            showAppSnackbar("Success", "Trade completed successfully!", snackPosition: SnackPosition.BOTTOM);
-          }
-          await fetchAssociatedTrades();
-          await fetchMessages();
-          await fetchAssociatedTrades();
-          await fetchMessages();
-        } else {
-          showAppSnackbar("Error", body['message'] ?? "Failed to complete trade", snackPosition: SnackPosition.BOTTOM);
-        }
-      } else {
-        showAppSnackbar("Error", "Failed to complete trade offer. Status: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
-      }
-    } catch (e) {
-      showAppSnackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
-    } finally {
-      isLoading.value = false;
-    }
+    await Get.toNamed(AppRoute.tradeStatus, arguments: {'id': tradeId});
+    await fetchAssociatedTrades();
+    await fetchMessages();
   }
 }

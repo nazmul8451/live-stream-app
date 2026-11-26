@@ -20,7 +20,11 @@ class MakeOfferController extends GetxController {
 
   final RxMap<String, dynamic> sellerProduct = <String, dynamic>{}.obs;
   final RxList<dynamic> userProducts = <dynamic>[].obs;
+  /// The first chosen item, for the summary card.
   final Rxn<Map<String, dynamic>> selectedUserProduct = Rxn<Map<String, dynamic>>();
+  /// Every item offered: a trade can include several per side (client #11).
+  final RxList<Map<String, dynamic>> selectedUserProducts = <Map<String, dynamic>>[].obs;
+  static const int maxItemsPerSide = 10;
 
   // Mode: "cash" (Price Counter-Offer) or "trade" (Card-for-Card Swap)
   final RxString offerMode = "cash".obs;
@@ -99,9 +103,10 @@ class MakeOfferController extends GetxController {
     if (isCustomOffer.value) {
       return customValue.value;
     }
-    if (selectedUserProduct.value == null) return 0.0;
-    final val = selectedUserProduct.value!['estValue'] ?? selectedUserProduct.value!['buyNowPrice'] ?? '0';
-    return double.tryParse(val.toString()) ?? 0.0;
+    return selectedUserProducts.fold<double>(0.0, (sum, p) {
+      final val = p['estValue'] ?? p['buyNowPrice'] ?? '0';
+      return sum + (double.tryParse(val.toString()) ?? 0.0);
+    });
   }
 
   double get valueDelta {
@@ -135,8 +140,18 @@ class MakeOfferController extends GetxController {
     cashSupplement.value = val;
   }
 
+  String _idOf(Map p) => (p['_id'] ?? p['id'] ?? '').toString();
+
+  bool isSelected(Map p) => selectedUserProducts.any((s) => _idOf(s) == _idOf(p));
+
+  /// Adds or removes an item from the offer.
   void selectProduct(Map<String, dynamic> product) {
-    selectedUserProduct.value = product;
+    if (isSelected(product)) {
+      selectedUserProducts.removeWhere((s) => _idOf(s) == _idOf(product));
+    } else if (selectedUserProducts.length < maxItemsPerSide) {
+      selectedUserProducts.add(product);
+    }
+    selectedUserProduct.value = selectedUserProducts.isEmpty ? null : selectedUserProducts.first;
   }
 
   Future<void> fetchUserProducts() async {
@@ -155,8 +170,8 @@ class MakeOfferController extends GetxController {
             .toList();
         {
           userProducts.assignAll(list);
-          if (list.isNotEmpty) {
-            selectedUserProduct.value = Map<String, dynamic>.from(list[0]);
+          if (list.isNotEmpty && selectedUserProducts.isEmpty) {
+            selectProduct(Map<String, dynamic>.from(list[0]));
           }
         }
       }
@@ -235,6 +250,7 @@ class MakeOfferController extends GetxController {
       } else {
         // Card-for-Card Trade Swap
         String senderProductId = "";
+        List<String> senderProductIds = [];
 
         if (isCustomOffer.value) {
           final title = customTitleController.text.trim();
@@ -292,12 +308,14 @@ class MakeOfferController extends GetxController {
             return;
           }
           senderProductId = selectedUserProduct.value!['_id'] ?? selectedUserProduct.value!['id'] ?? "";
+          senderProductIds = selectedUserProducts.map(_idOf).where((id) => id.isNotEmpty).toList();
         }
 
         payload = {
           "senderId": senderId,
           "receiverId": receiverId,
           "senderProductId": senderProductId,
+          if (senderProductIds.length > 1) "senderProductIds": senderProductIds,
           "receiverProductId": receiverProductId,
           "cashSupplement": cashSupplement.value,
           "offerType": "trade_swap",

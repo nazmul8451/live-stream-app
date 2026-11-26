@@ -29,6 +29,7 @@ import '../view/screens/trade_market/screen/create_trade_screen.dart';
 import '../view/screens/profile/screen/trader_profile_screen.dart';
 import '../view/screens/purchases/screen/purchases_screen.dart';
 import '../view/screens/my_trades/screen/my_trades_screen.dart';
+import '../view/screens/trade_status/screen/trade_status_screen.dart';
 import '../view/screens/trade_details/screen/make_offer_screen.dart';
 import '../view/screens/discover/screen/all_live_shows_screen.dart';
 import '../view/screens/purchases/screen/shipping_label_viewer_screen.dart';
@@ -70,6 +71,7 @@ class AppRoute {
   static const String traderProfile = "/trader_profile";
   static const String purchases = "/purchases";
   static const String myTrades = "/my_trades";
+  static const String tradeStatus = "/trade_status";
   static const String makeOffer = "/make_offer";
   static const String accountSettings = "/account_settings";
   static const String profileInformation = "/profile_information";
@@ -124,6 +126,7 @@ class AppRoute {
     GetPage(name: traderProfile, page: () => const TraderProfileScreen()),
     GetPage(name: purchases, page: () => const PurchasesScreen()),
     GetPage(name: myTrades, page: () => const MyTradesScreen()),
+    GetPage(name: tradeStatus, page: () => const TradeStatusScreen()),
     GetPage(name: makeOffer, page: () => const MakeOfferScreen()),
     GetPage(name: accountSettings, page: () => const AccountSettingsScreen()),
     GetPage(

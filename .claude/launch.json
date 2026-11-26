@@ -4,7 +4,7 @@
     {
       "name": "backend-local",
       "runtimeExecutable": "env",
-      "runtimeArgs": ["PORT=5010", "SERVER_URL=http://localhost:5010", "STRIPE_CONNECT_RETURN_URL=http://localhost:5010/api/v1/seller/stripe/return", "STRIPE_CONNECT_REFRESH_URL=http://localhost:5010/api/v1/seller/stripe/refresh", "sh", "-c", "cd backend && exec npx ts-node --transpile-only src/server.ts"],
+      "runtimeArgs": ["PORT=5010", "SERVER_URL=http://localhost:5010", "STRIPE_CONNECT_RETURN_URL=http://localhost:5010/api/v1/seller/stripe/return", "STRIPE_CONNECT_REFRESH_URL=http://localhost:5010/api/v1/seller/stripe/refresh", "CORS_ORIGINS=http://localhost:3000,http://localhost:3002,http://localhost:3010", "sh", "-c", "cd backend && exec npx ts-node --transpile-only src/server.ts"],
       "port": 5010
     },
     {
@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "dashboard", "run", "dev", "--", "-p", "3000"],
       "port": 3000
+    },
+    {
+      "name": "admin-local",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["NEXT_PUBLIC_API_URL=http://localhost:5010/api/v1", "npm", "--prefix", "dashboard", "run", "dev", "--", "-p", "3010"],
+      "port": 3010
     },
     {
       "name": "web",

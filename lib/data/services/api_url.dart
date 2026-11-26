@@ -77,6 +77,8 @@ class ApiUrl {
   static const String tradeOffers = "/trades/offers";
   static const String acceptTrade = "/trades/accept";
   static const String declineTrade = "/trades/decline";
+  /// GET $tradeDetail/:id — one trade with this user's labels and tracking.
+  static const String tradeDetail = "/trades";
   static const String tradeVotesFeed = "/trades/votes/feed";
   static String castTradeVote(String id) => "/trades/votes/$id/cast";
 

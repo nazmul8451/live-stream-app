@@ -138,7 +138,13 @@ class MyTradesScreen extends GetView<MyTradesController> {
     switch (trade.status) {
       case MyTradeStatus.shipped:
         statusBgColor = const Color(0xFF2E1E5D);
-        statusText = "SHIPPED";
+        statusText = switch (trade.stage) {
+          'awaiting_payment' => "PAYMENT DUE",
+          'awaiting_shipment' => "SHIP TO ARIES",
+          'in_authentication' => "AUTHENTICATING",
+          'shipping_back' => "ON ITS WAY",
+          _ => "IN PROGRESS",
+        };
         break;
       case MyTradeStatus.pending:
         statusBgColor = Colors.white.withOpacity(0.05);
@@ -146,7 +152,11 @@ class MyTradesScreen extends GetView<MyTradesController> {
         break;
       case MyTradeStatus.completed:
         statusBgColor = Colors.white.withOpacity(0.05);
-        statusText = "COMPLETED";
+        statusText = switch (trade.stage) {
+          'cancelled' => "CANCELLED",
+          'completed' => "COMPLETED",
+          _ => "CLOSED",
+        };
         break;
     }
 
@@ -166,7 +176,9 @@ class MyTradesScreen extends GetView<MyTradesController> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "TRADE ID: ${trade.tradeId.startsWith('#') ? trade.tradeId : '#${trade.tradeId}'}",
+                trade.tradeId.startsWith('OFFER')
+                    ? trade.tradeId.replaceFirst('OFFER-', 'OFFER #')
+                    : "TRADE ${trade.tradeId}",
                 style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 11.sp, fontWeight: FontWeight.w900, letterSpacing: 1),
               ),
               Container(
@@ -230,11 +242,15 @@ class MyTradesScreen extends GetView<MyTradesController> {
             ),
             SizedBox(height: 24.h),
             _buildActionButton(
-              "View Receipt",
+              trade.stage != null ? "View Trade" : "View Receipt",
               const Color(0xFF8B9BFF),
               Colors.black,
               fullWidth: true,
-              onTap: () => _showTradeReceiptModal(trade),
+              // Trades that went through ARIES have a real record (payments,
+              // labels, refunds); older closed offers keep the simple receipt.
+              onTap: () => trade.stage != null && trade.rawObjectId != null
+                  ? controller.completeTradeOffer(trade.rawObjectId!)
+                  : _showTradeReceiptModal(trade),
             ),
             SizedBox(height: 24.h),
             Container(
@@ -335,7 +351,7 @@ class MyTradesScreen extends GetView<MyTradesController> {
                 children: [
                   Expanded(
                     child: _buildActionButton(
-                      "Complete Trade",
+                      trade.stage == 'awaiting_payment' ? "Pay & Continue" : "Track Trade",
                       const Color(0xFF22C55E),
                       Colors.white,
                       onTap: () {
@@ -357,6 +373,10 @@ class MyTradesScreen extends GetView<MyTradesController> {
                     const Color(0xFF1E1E2C),
                     Colors.white,
                     onTap: () {
+                      if (trade.status == MyTradeStatus.shipped && trade.rawObjectId != null) {
+                        controller.completeTradeOffer(trade.rawObjectId!);
+                        return;
+                      }
                       final productMap = {
                         "title": trade.title,
                         "description": "Barter Trade Offer. Status: ${trade.status.name.toUpperCase()}",

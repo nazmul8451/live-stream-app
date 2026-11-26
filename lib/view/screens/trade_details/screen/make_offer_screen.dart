@@ -847,7 +847,7 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        selectedProduct['title'] ?? 'Selected Item',
+                        "${selectedProduct['title'] ?? 'Selected Item'}${controller.selectedUserProducts.length > 1 ? ' +${controller.selectedUserProducts.length - 1} more' : ''}",
                         style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1291,9 +1291,17 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
                     decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2.r)),
                   ),
                 ),
-                Text("Select Card from Collection", style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900)),
+                Row(
+                  children: [
+                    Expanded(child: Text("Select Cards from Collection", style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900))),
+                    GestureDetector(
+                      onTap: () => Get.back(),
+                      child: Text("Done", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 15.sp, fontWeight: FontWeight.w900)),
+                    ),
+                  ],
+                ),
                 SizedBox(height: 6.h),
-                Text("Choose an item from your collection to propose for trade.", style: TextStyle(color: Colors.white54, fontSize: 12.sp)),
+                Text("Choose one or more items (up to ${MakeOfferController.maxItemsPerSide}) to put into this trade.", style: TextStyle(color: Colors.white54, fontSize: 12.sp)),
                 SizedBox(height: 20.h),
                 ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: 360.h),
@@ -1325,14 +1333,10 @@ class MakeOfferScreen extends GetView<MakeOfferController> {
                         final valStr = p['estValue'] ?? p['buyNowPrice'] ?? '0';
                         final value = "\$$valStr";
                         final img = p['images'] != null && (p['images'] as List).isNotEmpty ? p['images'][0].toString() : "";
-                        final isSelected = controller.selectedUserProduct.value != null &&
-                            (controller.selectedUserProduct.value!['_id'] ?? controller.selectedUserProduct.value!['id']) == (p['_id'] ?? p['id']);
+                        final isSelected = controller.isSelected(p);
 
                         return GestureDetector(
-                          onTap: () {
-                            controller.selectProduct(p);
-                            Get.back();
-                          },
+                          onTap: () => controller.selectProduct(p),
                           child: Container(
                             margin: EdgeInsets.only(bottom: 12.h),
                             padding: EdgeInsets.all(12.r),

@@ -1,19 +1,13 @@
 import 'package:get/get.dart';
 import 'dart:convert';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../core/app_route.dart';
 import '../model/my_trade_model.dart';
 import '../../../../data/services/socket_service.dart';
-import '../../purchases/controller/purchases_controller.dart';
-import '../../purchases/model/purchase_model.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
-import '../../../../data/services/stripe_config.dart';
-import 'package:live_stream_app/global/helper/stripe_account_scope.dart';
 
 class MyTradesController extends GetxController {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -69,15 +63,15 @@ class MyTradesController extends GetxController {
         return [];
       }
 
-      // 1. Primary query for user trades
-      var response = await _apiClient.getData(ApiUrl.tradeOffers);
-      var list = extractListFromResponse(response);
-
-      // 2. Fallback only if primary returns empty
-      if (list.isEmpty) {
-        response = await _apiClient.getData("/trades/my");
-        list = extractListFromResponse(response);
-      }
+      // Offers this user received and offers they sent.
+      final responses = await Future.wait([
+        _apiClient.getData("${ApiUrl.tradeOffers}?type=received"),
+        _apiClient.getData("${ApiUrl.tradeOffers}?type=sent"),
+      ]);
+      final list = [
+        ...extractListFromResponse(responses[0]),
+        ...extractListFromResponse(responses[1]),
+      ];
 
       final Map<String, dynamic> uniqueTradeItems = {};
       for (var item in list) {
@@ -91,7 +85,11 @@ class MyTradesController extends GetxController {
         }
       }
 
-      final List allData = uniqueTradeItems.values.toList();
+      // Newest first, across sent and received.
+      final List allData = uniqueTradeItems.values.toList()
+        ..sort((a, b) => (b['updatedAt'] ?? b['createdAt'] ?? '')
+            .toString()
+            .compareTo((a['updatedAt'] ?? a['createdAt'] ?? '').toString()));
 
       final parsed = allData.map((item) {
         final sender = (item['senderId'] is Map)
@@ -143,18 +141,27 @@ class MyTradesController extends GetxController {
         final item1Url = extractImg(senderProduct);
         final item2Url = extractImg(receiverProduct);
 
+        // pending offer → pending; accepted (in progress) → shipped;
+        // completed, declined, expired or cancelled → completed (closed).
         final rawStatus = item['status']?.toString().toLowerCase() ?? "pending";
+        final stage = item['stage']?.toString();
         MyTradeStatus status = MyTradeStatus.pending;
-        if (rawStatus.contains('completed') || rawStatus.contains('accept') || rawStatus.contains('decline') || rawStatus.contains('cancel')) {
-          status = MyTradeStatus.completed;
-        } else if (rawStatus.contains('shipped') || rawStatus.contains('ship') || rawStatus.contains('active')) {
+        if (rawStatus == 'accepted') {
           status = MyTradeStatus.shipped;
-        } else {
-          status = MyTradeStatus.pending;
+        } else if (rawStatus != 'pending') {
+          status = MyTradeStatus.completed;
         }
 
-        final p1Title = senderProduct['title'] ?? senderProduct['name'] ?? item['productTitle'] ?? 'Item';
-        final p2Title = receiverProduct['title'] ?? receiverProduct['name'] ?? (item['offerAmount'] != null ? "\$${item['offerAmount']}" : 'Item');
+        // Several items per side: "Card A +1 for Card B +2".
+        String sideTitle(dynamic list, Map single, String fallback) {
+          final count = list is List ? list.length : 0;
+          final first = single['title'] ?? single['name'];
+          if (first == null) return fallback;
+          return count > 1 ? "$first +${count - 1}" : first.toString();
+        }
+        final cash = (item['cashSupplement'] as num?)?.toDouble() ?? 0;
+        final p1Title = sideTitle(item['senderProductIds'], senderProduct, cash > 0 ? "\$${cash.toStringAsFixed(0)} cash" : 'Item');
+        final p2Title = sideTitle(item['receiverProductIds'], receiverProduct, item['offerAmount'] != null ? "\$${item['offerAmount']}" : 'Item');
         final title = "$p1Title for $p2Title";
 
         String avatarUrl = "";
@@ -176,9 +183,10 @@ class MyTradesController extends GetxController {
         final cleanTraderName = rawName.replaceAll('@', '').trim();
 
         final String rawIdStr = (item['_id'] ?? item['id'] ?? '').toString();
-        final String tradeIdDisplay = rawIdStr.length >= 5
-            ? "#TR-${rawIdStr.substring(rawIdStr.length - 5).toUpperCase()}"
-            : "#TR-OFFER";
+        final String tradeCode = item['tradeCode']?.toString() ?? '';
+        final String tradeIdDisplay = tradeCode.isNotEmpty
+            ? tradeCode
+            : (rawIdStr.length >= 5 ? "OFFER-${rawIdStr.substring(rawIdStr.length - 5).toUpperCase()}" : "OFFER");
 
         final String otherId = (otherUser is Map ? (otherUser['_id'] ?? otherUser['id']) : otherUser)?.toString() ?? "";
         final String chatId = (item['chatId'] ?? item['chat'] ?? item['chatRoomId'])?.toString() ?? "";
@@ -196,18 +204,11 @@ class MyTradesController extends GetxController {
           isUserSender: isUserSender,
           traderId: otherId,
           chatId: chatId,
+          stage: stage,
         );
       }).toList();
 
-      final List<MyTradeModel> serverTrades = parsed;
-      final Map<String, MyTradeModel> mergedMap = {};
-      for (var localT in myTrades) {
-        mergedMap[localT.tradeId] = localT;
-      }
-      for (var serverT in serverTrades) {
-        mergedMap[serverT.tradeId] = serverT;
-      }
-      myTrades.assignAll(mergedMap.values.toList());
+      myTrades.assignAll(parsed);
       Get.log("✅ [MyTrades] Successfully loaded ${myTrades.length} trade offers");
     } catch (e) {
       Get.log("Error fetching trade offers: $e");
@@ -256,11 +257,12 @@ class MyTradesController extends GetxController {
         traderName: cur.traderName,
         traderAvatar: cur.traderAvatar,
         date: cur.date,
-        status: MyTradeStatus.completed,
+        status: MyTradeStatus.shipped,
         rawObjectId: cur.rawObjectId,
         isUserSender: cur.isUserSender,
         traderId: cur.traderId,
         chatId: cur.chatId,
+        stage: 'awaiting_payment',
       );
       myTrades.refresh();
     }
@@ -272,7 +274,7 @@ class MyTradesController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201 || body['success'] == true) {
         showAppSnackbar(
           "Trade Accepted 🎉",
-          "You accepted this trade offer! Real-time notification sent to trader.",
+          "Next: both of you pay the 4% fee and shipping.",
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: const Color(0xFF8B9BFF),
           colorText: Colors.black,
@@ -286,7 +288,7 @@ class MyTradesController extends GetxController {
           socketService.emit('acceptTrade', {
             'tradeId': rawId,
             'status': 'accepted',
-            'message': 'Seller accepted this trade swap offer! Escrow service is now Active & Secured.',
+            'message': 'Trade accepted. Both traders now pay their fee and shipping.',
           });
         } catch (_) {}
       } else {
@@ -357,152 +359,9 @@ class MyTradesController extends GetxController {
     }
   }
 
+  /// Paying, labels and tracking all live on the trade's own screen.
   Future<void> completeTradeOffer(String rawId) async {
-    isLoading.value = true;
-    try {
-      final response = await _apiClient.postData("/trades/complete/$rawId", {});
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final body = jsonDecode(response.body);
-        final success = body['success'] ?? false;
-        final data = body['data'];
-        
-        if (success) {
-          final tradeItem = myTrades.firstWhereOrNull((t) => t.rawObjectId == rawId);
-          final newPurchase = PurchaseModel(
-            id: "#ORD-${rawId.length >= 5 ? rawId.substring(rawId.length - 5).toUpperCase() : 'TRD12'}",
-            title: tradeItem?.title ?? "Trade Swap Item",
-            curator: "@${tradeItem?.traderName ?? 'trader'}",
-            date: "Purchased just now",
-            price: "\$250.00",
-            carrier: "USPS Ground Express",
-            image: tradeItem?.item1Image ?? "",
-            trackingId: "TRK-${rawId.length >= 6 ? rawId.substring(0, 6).toUpperCase() : '84912B'}",
-            status: OrderStatus.inTransit,
-            trackingStep: 3,
-            estimatedDelivery: "3-5 Business Days",
-            location: "Secured Distribution Facility",
-            itemPrice: 250.00,
-            shippingPrice: 15.00,
-            taxes: 0.0,
-            processingFee: 0.0,
-            buyerContribution: 0.05,
-            totalPaid: 265.05,
-          );
-
-          try {
-            final pc = Get.isRegistered<PurchasesController>() ? Get.find<PurchasesController>() : Get.put(PurchasesController());
-            pc.addLocalPurchase(newPurchase);
-          } catch (_) {}
-
-          // 1. Native Stripe PaymentSheet Handler
-          if (data is Map && data.containsKey('clientSecret')) {
-            final clientSecret = data['clientSecret']?.toString() ?? '';
-            final ephemeralKey = data['ephemeralKey']?.toString() ?? '';
-            final customerId = data['customer']?.toString() ?? '';
-
-            if (clientSecret.isNotEmpty) {
-              try {
-                final pubKey = data['publishableKey'] ?? data['stripePublishableKey'] ?? data['pk'];
-                if (pubKey != null && pubKey.toString().isNotEmpty) {
-                  Stripe.publishableKey = pubKey.toString();
-                } else {
-                  Stripe.publishableKey = StripeConfig.publishableKey;
-                }
-
-                // A trade cash difference is a direct charge on the other
-                // trader's connected account; a fee-only payment is not.
-                await StripeAccountScope.apply(
-                  data['stripeAccountId']?.toString(),
-                );
-
-                await Stripe.instance.applySettings();
-
-                await Stripe.instance.initPaymentSheet(
-                  paymentSheetParameters: SetupPaymentSheetParameters(
-                    paymentIntentClientSecret: clientSecret,
-                    customerEphemeralKeySecret: ephemeralKey.isNotEmpty ? ephemeralKey : null,
-                    customerId: customerId.isNotEmpty ? customerId : null,
-                    merchantDisplayName: 'AREIS LLC',
-                    style: ThemeMode.dark,
-                    appearance: const PaymentSheetAppearance(
-                      colors: PaymentSheetAppearanceColors(
-                        primary: Color(0xFF8B9BFF),
-                        background: Color(0xFF161622),
-                        componentBackground: Color(0xFF1E1E2C),
-                        componentText: Colors.white,
-                        primaryText: Colors.white,
-                        secondaryText: Colors.white70,
-                      ),
-                    ),
-                  ),
-                );
-
-                await Stripe.instance.presentPaymentSheet();
-                showAppSnackbar("Payment Successful! 🎉", "Trade completed & order placed! Redirecting to Purchases & Order Tracking...", snackPosition: SnackPosition.BOTTOM, backgroundColor: const Color(0xFF22C55E), colorText: Colors.white);
-                await fetchTrades();
-                Get.toNamed(AppRoute.purchases);
-                return;
-              } on StripeException catch (e) {
-                Get.log("⚠️ Stripe Exception: ${e.error.localizedMessage}");
-                showAppSnackbar("Stripe Payment", e.error.localizedMessage ?? "Payment was cancelled.", snackPosition: SnackPosition.BOTTOM);
-                return;
-              } catch (e) {
-                Get.log("❌ Stripe Error: $e");
-                showAppSnackbar("Stripe Error", "$e", snackPosition: SnackPosition.BOTTOM);
-                return;
-              } finally {
-                // Back to the platform account for the next payment.
-                await StripeAccountScope.clear();
-              }
-            }
-          }
-
-          // 2. Fallback Checkout URL Handler
-          String? checkoutUrl;
-          if (data is Map) {
-            checkoutUrl = (data['url'] ?? data['checkoutUrl'] ?? data['paymentUrl'] ?? data['redirectUrl'] ?? data['sessionUrl'])?.toString();
-          } else if (data is String && data.startsWith('http')) {
-            checkoutUrl = data;
-          } else if (body['url'] != null) {
-            checkoutUrl = body['url'].toString();
-          }
-
-          if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
-            final uri = Uri.parse(checkoutUrl);
-            bool launched = false;
-            try {
-              launched = await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-            } catch (_) {}
-            if (!launched) {
-              try {
-                launched = await launchUrl(uri, mode: LaunchMode.inAppWebView);
-              } catch (_) {}
-            }
-            if (!launched) {
-              try {
-                launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-              } catch (_) {}
-            }
-
-            if (launched) {
-              showAppSnackbar("Success", "Redirecting to Stripe checkout...", snackPosition: SnackPosition.BOTTOM);
-            } else {
-              showAppSnackbar("Error", "Could not open Stripe checkout page.", snackPosition: SnackPosition.BOTTOM);
-            }
-          } else {
-            showAppSnackbar("Success", "Trade completed successfully!", snackPosition: SnackPosition.BOTTOM);
-          }
-          await fetchTrades();
-        } else {
-          showAppSnackbar("Error", body['message'] ?? "Failed to complete trade", snackPosition: SnackPosition.BOTTOM);
-        }
-      } else {
-        showAppSnackbar("Error", "Failed to complete trade offer. Status: ${response.statusCode}", snackPosition: SnackPosition.BOTTOM);
-      }
-    } catch (e) {
-      showAppSnackbar("Error", "An unexpected error occurred: $e", snackPosition: SnackPosition.BOTTOM);
-    } finally {
-      isLoading.value = false;
-    }
+    await Get.toNamed(AppRoute.tradeStatus, arguments: {'id': rawId});
+    await fetchTrades();
   }
 }
