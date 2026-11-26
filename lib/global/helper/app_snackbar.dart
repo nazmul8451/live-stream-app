@@ -5,7 +5,7 @@ enum _Tone { success, error, warning, info }
 
 /// App-wide toast. Drop-in replacement for `Get.snackbar(...)` with the same
 /// named parameters, so every message in the app looks and behaves the same:
-/// - one consistent dark card with a coloured accent + icon
+/// - one quiet dark card; colour only in the small status icon
 /// - tone (success / error / warning / info) inferred from the old colour
 /// - always at the top, never stacked (a new toast replaces the previous one)
 /// - raw technical errors are turned into a friendly sentence
@@ -45,34 +45,78 @@ void showAppSnackbar(
     Get.closeCurrentSnackbar();
   }
 
-  Get.snackbar(
-    cleanTitle,
-    cleanMessage,
-    snackPosition: SnackPosition.TOP,
-    backgroundColor: const Color(0xFF151A2E),
-    colorText: Colors.white,
-    borderColor: accent.withValues(alpha: 0.55),
-    borderWidth: 1,
-    leftBarIndicatorColor: accent,
-    margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-    borderRadius: 14,
-    icon: Icon(iconData, color: accent, size: 26),
-    shouldIconPulse: false,
-    mainButton: mainButton is TextButton ? mainButton : null,
-    duration: duration ??
-        (tone == _Tone.error
-            ? const Duration(seconds: 4)
-            : const Duration(milliseconds: 2600)),
-    isDismissible: true,
-    dismissDirection: DismissDirection.up,
-    animationDuration: const Duration(milliseconds: 280),
-    boxShadows: [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.35),
-        blurRadius: 16,
-        offset: const Offset(0, 6),
+  // A quiet card: colour lives only in the small icon, not in bars or borders.
+  final showMessage = cleanMessage.isNotEmpty && cleanMessage != cleanTitle;
+  Get.showSnackbar(
+    GetSnackBar(
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: const Color(0xFF1B1B27),
+      borderColor: Colors.white.withValues(alpha: 0.08),
+      borderWidth: 1,
+      borderRadius: 14,
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 12, 14, 12),
+      boxShadows: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.4),
+          blurRadius: 24,
+          offset: const Offset(0, 8),
+        ),
+      ],
+      messageText: Row(
+        crossAxisAlignment: showMessage ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(iconData, color: accent, size: 17),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  cleanTitle,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+                if (showMessage) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    cleanMessage,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.68),
+                      fontSize: 13,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
-    ],
+      mainButton: mainButton is TextButton ? mainButton : null,
+      duration: duration ??
+          (tone == _Tone.error
+              ? const Duration(seconds: 4)
+              : const Duration(milliseconds: 2600)),
+      isDismissible: true,
+      dismissDirection: DismissDirection.up,
+      animationDuration: const Duration(milliseconds: 240),
+      forwardAnimationCurve: Curves.easeOutCubic,
+      reverseAnimationCurve: Curves.easeInCubic,
+    ),
   );
 }
 
@@ -123,5 +167,5 @@ String _friendlyMessage(String message, _Tone tone) {
 
 bool _isValidationHint(String message) {
   final m = message.trim().toLowerCase();
-  return RegExp(r'^(please (enter|select|add|choose|fill|provide|pick|upload)|.* (is|are) required)').hasMatch(m);
+  return RegExp(r"^(please (enter|select|add|choose|fill|provide|pick|upload)|.* (is|are) required|.* (cannot|can't|can not) be empty)").hasMatch(m);
 }

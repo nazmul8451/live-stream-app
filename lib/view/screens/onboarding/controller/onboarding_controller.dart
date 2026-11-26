@@ -8,44 +8,46 @@ class OnboardingController extends GetxController {
   final pageController = PageController();
   var currentPage = 0.obs;
 
-  List<OnboardingModel> onboardingPages = [
-    OnboardingModel(
-      image: AppImages.onboarding1,
-      title: "Discover live auctions, explore unique items, and bid instantly — all in one place.",
-      subtitle: "Join real-time events, connect with sellers, and never miss your next winning bid.",
-      description: "",
-    ),
-    OnboardingModel(
-      image: AppImages.onboarding2,
-      title: "Bid Instantly",
-      subtitle: "Join auctions, chat live, and win exciting deals.",
-      description: "",
-    ),
+  /// Three things the app actually does, in the order a new user meets them.
+  /// A page with no image draws its own illustration (see the screen).
+  final List<OnboardingModel> onboardingPages = [
     OnboardingModel(
       image: AppImages.onboarding3,
-      title: "Sell & Stream",
-      subtitle: "Host live auctions and sell to a global audience.",
-      description: "",
+      title: "Bid live, as it happens",
+      subtitle: "Join live auctions, ask the seller anything in chat, and place your bid with one tap.",
+    ),
+    OnboardingModel(
+      image: null,
+      title: "Trade with confidence",
+      subtitle: "Every trade goes through ARIES. We check both items before they reach the other trader.",
+    ),
+    OnboardingModel(
+      image: AppImages.onboarding1,
+      title: "Sell to collectors, live",
+      subtitle: "Go live, auction your items, and ship each sale with a prepaid label.",
     ),
   ];
+
+  bool get isLastPage => currentPage.value == onboardingPages.length - 1;
 
   void onPageChanged(int index) {
     currentPage.value = index;
   }
 
   Future<void> onGetStarted() async {
-    if (currentPage.value < onboardingPages.length - 1) {
+    if (!isLastPage) {
       pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeIn,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
       );
     } else {
-      await SharePrefsHelper.setBool("hasSeenOnboarding", true);
-      Get.offNamed(AppRoute.login);
+      await _finish();
     }
   }
 
-  Future<void> onSkip() async {
+  Future<void> onSkip() => _finish();
+
+  Future<void> _finish() async {
     await SharePrefsHelper.setBool("hasSeenOnboarding", true);
     Get.offNamed(AppRoute.login);
   }
@@ -58,15 +60,13 @@ class OnboardingController extends GetxController {
 }
 
 class OnboardingModel {
-  final String image;
+  final String? image;
   final String title;
   final String subtitle;
-  final String description;
 
   OnboardingModel({
     required this.image,
     required this.title,
     required this.subtitle,
-    required this.description,
   });
 }
