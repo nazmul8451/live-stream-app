@@ -1390,29 +1390,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         }
       }
 
-      // Auto Role Switch & Retry if 403 Forbidden encountered
-      if (streamRes.statusCode == 403) {
-        debugPrint("🔄 [AgoraLiveController] 403 Forbidden received. Auto-activating activeRole: seller via PATCH /users/switch-role...");
-        try {
-          final roleRes = await _apiClient.patchData(ApiUrl.switchRole, {"role": "seller"});
-          if (roleRes.statusCode == 200 || roleRes.statusCode == 201) {
-            final resData = jsonDecode(roleRes.body);
-            final dataMap = resData['data'] is Map ? resData['data'] : resData;
-            final newAccessToken = (dataMap['accessToken'] ?? dataMap['token'] ?? resData['accessToken'] ?? '').toString();
-            if (newAccessToken.isNotEmpty) {
-              await SharePrefsHelper.setString(SharePrefsHelper.accessTokenKey, newAccessToken);
-              debugPrint("🔑 [AgoraLiveController] Saved fresh seller accessToken: $newAccessToken");
-            }
-            debugPrint("🚀 [AgoraLiveController] Retrying startStream after role switch...");
-            final retryStreamRes = await _apiClient.postData(ApiUrl.startStream, streamPayload);
-            if (retryStreamRes.statusCode == 200 || retryStreamRes.statusCode == 201) {
-              streamRes = retryStreamRes;
-            }
-          }
-        } catch (e) {
-          debugPrint("⚠️ [AgoraLiveController] Role switch attempt error: $e");
-        }
-      }
+      // A 403 means ARIES approval or Stripe verification is missing; the
+      // message below says which. Switching role can't fix that.
 
       if (streamRes.statusCode != 200 && streamRes.statusCode != 201) {
         String errMsg = "Failed to create stream (${streamRes.statusCode})";

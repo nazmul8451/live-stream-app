@@ -1,3 +1,4 @@
+import '../../../../global/helper/seller_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -2144,7 +2145,10 @@ class HomeScreen extends StatelessWidget {
                           }
                         }
                       } catch (_) {}
-                      Get.toNamed(AppRoute.goLiveSetup);
+                      SellerGate.check(
+                        action: 'go live',
+                        onAllowed: () => Get.toNamed(AppRoute.goLiveSetup),
+                      );
                     },
                   );
                 },

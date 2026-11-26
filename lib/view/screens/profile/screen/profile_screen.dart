@@ -1,3 +1,4 @@
+import '../../../../global/helper/seller_gate.dart';
 import '../../live_stream/screen/show_shipping_orders_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -2257,7 +2258,7 @@ class ProfileScreen extends GetView<ProfileController> {
                   ),
                   SizedBox(width: 8.w),
                   GestureDetector(
-                    onTap: () => Get.toNamed(AppRoute.goLiveSetup),
+                    onTap: () => SellerGate.check(action: 'go live', onAllowed: () => Get.toNamed(AppRoute.goLiveSetup)),
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
                       decoration: BoxDecoration(
@@ -2373,7 +2374,7 @@ class ProfileScreen extends GetView<ProfileController> {
                       ),
                       SizedBox(width: 8.w),
                       ElevatedButton(
-                        onPressed: () => Get.toNamed(AppRoute.goLiveSetup),
+                        onPressed: () => SellerGate.check(action: 'go live', onAllowed: () => Get.toNamed(AppRoute.goLiveSetup)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF8B9BFF),
                           foregroundColor: const Color(0xFF0F0B1E),

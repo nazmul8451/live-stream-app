@@ -1,3 +1,4 @@
+import '../helper/seller_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -319,9 +320,12 @@ class CustomBottomNavbar extends StatelessWidget {
                   color: const Color(0xFF10B981),
                   title: "Add to Inventory",
                   subtitle: "Upload and save products to your personal inventory for future giveaways and auctions in your live shows.",
-                  onSelected: () => Get.toNamed(
-                    AppRoute.createTrade,
-                    arguments: {'mode': 1},
+                  onSelected: () => SellerGate.check(
+                    action: 'add items to your inventory',
+                    onAllowed: () => Get.toNamed(
+                      AppRoute.createTrade,
+                      arguments: {'mode': 1},
+                    ),
                   ),
                 ),
                 SizedBox(height: 12.h),
