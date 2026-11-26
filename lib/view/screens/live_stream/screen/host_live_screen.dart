@@ -2079,12 +2079,14 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
               backgroundImage: avatarImg,
             ),
             SizedBox(width: 6.w),
-            Text(
-              "$user joined this stream",
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w700,
+            Flexible(
+              child: Text(
+                "$user joined this stream",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
@@ -2110,7 +2112,8 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
             SizedBox(width: 8.w),
             Icon(Icons.gavel_rounded, color: const Color(0xFF8B9BFF), size: 14.sp),
             SizedBox(width: 6.w),
-            RichText(
+            Flexible(
+              child: RichText(
               text: TextSpan(
                 children: [
                   TextSpan(
@@ -2131,6 +2134,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   ),
                 ],
               ),
+            ),
             ),
           ],
         ),
@@ -2329,7 +2333,8 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
             backgroundImage: avatarImg,
           ),
           SizedBox(width: 8.w),
-          Column(
+          Flexible(
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -2350,6 +2355,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                 ),
               ),
             ],
+          ),
           ),
         ],
       ),
