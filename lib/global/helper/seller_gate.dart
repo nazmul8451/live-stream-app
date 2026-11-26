@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../core/app_route.dart';
 import '../../data/services/api_client.dart';
+import '../../data/helpers/shared_prefe.dart';
 import '../../data/services/api_url.dart';
 import '../../view/screens/profile/controller/profile_controller.dart';
 import '../../view/screens/seller_onboarding/model/seller_onboarding_state.dart';
@@ -42,14 +43,10 @@ class SellerGate {
           : Map<String, dynamic>.from(decoded as Map);
       final state = SellerOnboardingState.fromJson(data);
 
-      if (state.canSell) {
-        onAllowed();
-        return;
-      }
-
       // Sellers approved before Stripe Connect existed have no application
       // and are still allowed by the server.
-      if (!state.hasApplied && _isLegacyApprovedSeller()) {
+      if (state.canSell || (!state.hasApplied && _isLegacyApprovedSeller())) {
+        await _ensureSellerMode();
         onAllowed();
         return;
       }
@@ -78,6 +75,28 @@ class SellerGate {
     } finally {
       _checking = false;
     }
+  }
+
+  /// Seller-only routes check the role inside the access token. A seller who
+  /// was approved while logged in still carries a buyer token, so swap it for
+  /// a seller one before going in. Failure is harmless: the server decides.
+  static Future<void> _ensureSellerMode() async {
+    try {
+      final response = await Get.find<ApiClient>()
+          .patchData(ApiUrl.switchRole, {'role': 'seller'});
+      if (response.statusCode != 200 && response.statusCode != 201) return;
+      final decoded = jsonDecode(response.body);
+      final data = decoded is Map && decoded['data'] is Map
+          ? decoded['data'] as Map
+          : decoded as Map;
+      final token = (data['accessToken'] ?? data['token'] ?? '').toString();
+      if (token.isNotEmpty) {
+        await SharePrefsHelper.setString(SharePrefsHelper.accessTokenKey, token);
+      }
+      if (Get.isRegistered<ProfileController>()) {
+        Get.find<ProfileController>().role.value = 'seller';
+      }
+    } catch (_) {}
   }
 
   static bool _isLegacyApprovedSeller() {

@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "backend-local",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["PORT=5010", "SERVER_URL=http://localhost:5010", "STRIPE_CONNECT_RETURN_URL=http://localhost:5010/api/v1/seller/stripe/return", "STRIPE_CONNECT_REFRESH_URL=http://localhost:5010/api/v1/seller/stripe/refresh", "npm", "--prefix", "backend", "start"],
+      "port": 5010
+    },
+    {
       "name": "admin",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "dashboard", "run", "dev", "--", "-p", "3000"],

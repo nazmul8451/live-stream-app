@@ -1312,6 +1312,22 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
             winningCheckoutUrl.value = url.toString();
           }
           debugPrint("✅ Auction item completed automatically via timeout. Checkout URL: ${winningCheckoutUrl.value}");
+        } else if (!isUnsold.value && lastBidderName.value.isNotEmpty) {
+          // A sale that the server refused to check out (e.g. the host's
+          // Stripe account can't take payments yet) must not fail silently:
+          // the winner would never get a checkout link.
+          String msg = "The winner's checkout could not be created.";
+          try {
+            final b = jsonDecode(res.body);
+            msg = (b['message'] ?? msg).toString();
+          } catch (_) {}
+          showAppSnackbar(
+            "Checkout not created",
+            msg,
+            backgroundColor: const Color(0xFF2A0A10),
+            colorText: Colors.white,
+            duration: const Duration(seconds: 6),
+          );
         }
       } catch (e) {
         debugPrint("❌ Error completing auction item on timeout: $e");
