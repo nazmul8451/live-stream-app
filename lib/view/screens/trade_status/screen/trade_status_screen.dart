@@ -7,7 +7,7 @@ import '../../../../global/widgets/custom_background.dart';
 import '../controller/trade_status_controller.dart';
 
 const _accent = Color(0xFF8B9BFF);
-const _card = Color(0xFF11111A);
+const _card = Color(0xFF13131D);
 const _green = Color(0xFF22C55E);
 
 class TradeStatusScreen extends StatelessWidget {
@@ -90,33 +90,35 @@ String _fmtDate(DateTime? d) {
 
 String _money(dynamic v) => '\$${((v as num?)?.toDouble() ?? 0).toStringAsFixed(2)}';
 
+/// Only warnings get a coloured edge; everything else is a quiet card.
 Widget _box({required Widget child, Color? border}) => Container(
       width: double.infinity,
-      padding: EdgeInsets.all(18.r),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
         color: _card,
-        borderRadius: BorderRadius.circular(20.r),
-        border: border != null ? Border.all(color: border.withOpacity(0.35)) : null,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: border?.withOpacity(0.4) ?? Colors.white.withOpacity(0.06)),
       ),
       child: child,
     );
 
 Widget _label(String text) => Text(text,
-    style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w900, letterSpacing: 1));
+    style: TextStyle(color: Colors.white54, fontSize: 13.sp, fontWeight: FontWeight.w600));
 
 Widget _button(String text, VoidCallback? onTap, {bool busy = false, Color color = _accent}) => SizedBox(
       width: double.infinity,
-      height: 50.h,
+      height: 46.h,
       child: ElevatedButton(
         onPressed: busy ? null : onTap,
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           disabledBackgroundColor: color.withOpacity(0.4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25.r)),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
         ),
         child: busy
             ? SizedBox(width: 20.r, height: 20.r, child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-            : Text(text, style: TextStyle(color: Colors.black, fontSize: 15.sp, fontWeight: FontWeight.w900)),
+            : Text(text, style: TextStyle(color: const Color(0xFF0F0B1E), fontSize: 15.sp, fontWeight: FontWeight.w700)),
       ),
     );
 
@@ -141,16 +143,15 @@ class _StageHeader extends StatelessWidget {
       'expired' => ('Offer expired', ''),
       _ => ('Trade', ''),
     };
-    final color = c.stage == 'cancelled' ? Colors.redAccent : (c.stage == 'completed' ? _green : _accent);
-    return _box(
-      border: color,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 4.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(color: color, fontSize: 20.sp, fontWeight: FontWeight.w900)),
+          Text(title, style: TextStyle(color: Colors.white, fontSize: 22.sp, fontWeight: FontWeight.w800)),
           if (subtitle.isNotEmpty) ...[
             SizedBox(height: 6.h),
-            Text(subtitle, style: TextStyle(color: Colors.white70, fontSize: 13.sp, height: 1.4)),
+            Text(subtitle, style: TextStyle(color: Colors.white60, fontSize: 14.sp, height: 1.4)),
           ],
         ],
       ),
@@ -174,15 +175,15 @@ class _Steps extends StatelessWidget {
         children: [
           for (var i = 0; i < _names.length; i++)
             Padding(
-              padding: EdgeInsets.symmetric(vertical: 5.h),
+              padding: EdgeInsets.symmetric(vertical: 4.h),
               child: Row(
                 children: [
                   Icon(
                     i < current || c.stage == 'completed' ? Icons.check_circle : (i == current ? Icons.radio_button_checked : Icons.radio_button_unchecked),
                     color: i < current || c.stage == 'completed' ? _green : (i == current ? _accent : Colors.white24),
-                    size: 20.sp,
+                    size: 18.sp,
                   ),
-                  SizedBox(width: 12.w),
+                  SizedBox(width: 10.w),
                   Text(_names[i],
                       style: TextStyle(
                         color: i <= current ? Colors.white : Colors.white38,
@@ -213,7 +214,7 @@ class _ActionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Shipping adjustment', style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800)),
+            Text('Shipping adjustment', style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700)),
             SizedBox(height: 6.h),
             Text('Your return label cost ${_money(c.extraDue)} more than estimated.',
                 style: TextStyle(color: Colors.white70, fontSize: 13.sp)),
@@ -230,7 +231,7 @@ class _ActionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Pay your side', style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800)),
+            Text('Pay your side', style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700)),
             SizedBox(height: 6.h),
             Text(
               '4% of what you put in${c.myCash > 0 ? ' (items + cash)' : ''}, a \$2 packing fee, and your shipping to ARIES and back.'
@@ -249,12 +250,12 @@ class _ActionCard extends StatelessWidget {
       final shipBy = c.dateOf('shipBy');
       final delivered = inbound['status'] == 'delivered';
       children.add(_box(
-        border: delivered ? _green : _accent,
+        border: delivered ? _green : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(delivered ? 'ARIES received your item' : 'Your shipping label',
-                style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800)),
+                style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700)),
             SizedBox(height: 6.h),
             if (!delivered && shipBy != null)
               Text('Ship by ${_fmtDate(shipBy)} — after that the trade is cancelled and you lose your 4% fee.',
@@ -279,7 +280,7 @@ class _ActionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(incoming['leg'] == 'return' ? 'Your item is coming back' : 'Your new items',
-                style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800)),
+                style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700)),
             SizedBox(height: 6.h),
             Text('${incoming['carrier'] ?? 'USPS'} · ${incoming['trackingCode']}',
                 style: TextStyle(color: Colors.white60, fontSize: 12.sp)),
@@ -358,9 +359,9 @@ class _Items extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _side('YOU GIVE', c.myItems, c.myCash),
+          _side('You give', c.myItems, c.myCash),
           Divider(color: Colors.white10, height: 28.h),
-          _side('YOU GET FROM ${name.toString().toUpperCase()}', c.theirItems, -c.myCash),
+          _side('You get from $name', c.theirItems, -c.myCash),
         ],
       ),
     );
@@ -389,7 +390,7 @@ class _Receipt extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _label('YOUR PAYMENT'),
+          _label('Your payment'),
           SizedBox(height: 8.h),
           row(p['feeForfeited'] == true ? 'Trade fee (4%, kept)' : 'Trade fee (4%)', p['feeNet']),
           if (((p['cashNet'] as num?) ?? 0) > 0) row('Cash added', p['cashNet']),

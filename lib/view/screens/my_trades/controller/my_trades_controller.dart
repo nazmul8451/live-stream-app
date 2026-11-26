@@ -14,7 +14,7 @@ class MyTradesController extends GetxController {
   final RxBool isLoading = false.obs;
 
   var selectedFilter = 0.obs;
-  final filters = ["All", "Pending", "Completed"];
+  final filters = ["All", "Active", "Closed"];
   final myTrades = <MyTradeModel>[].obs;
 
   @override
@@ -205,6 +205,7 @@ class MyTradesController extends GetxController {
           traderId: otherId,
           chatId: chatId,
           stage: stage,
+          rawStatus: rawStatus,
         );
       }).toList();
 

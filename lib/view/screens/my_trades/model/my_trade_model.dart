@@ -15,6 +15,8 @@ class MyTradeModel {
   final String? chatId;
   /// Where an accepted trade is (awaiting_payment, awaiting_shipment, …).
   final String? stage;
+  /// pending, accepted, completed, declined, expired, cancelled.
+  final String? rawStatus;
 
   MyTradeModel({
     required this.tradeId,
@@ -30,5 +32,6 @@ class MyTradeModel {
     this.traderId,
     this.chatId,
     this.stage,
+    this.rawStatus,
   });
 }
