@@ -1699,7 +1699,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       itemBuilder: (context, index) {
                         final prod = productsList[index];
                         final String title = prod['title'] ?? prod['name'] ?? 'Product';
-                        final String category = prod['category'] ?? prod['categoryName'] ?? 'Trading Card';
+                        final String category = _displayCategory(prod);
                         final String image = (prod['images'] is List && (prod['images'] as List).isNotEmpty)
                             ? prod['images'][0].toString()
                             : (prod['image'] ?? "");
@@ -1751,7 +1751,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                       ),
                                       SizedBox(height: 3.h),
                                       Text(
-                                        "$category • \$$priceVal",
+                                        [if (category.isNotEmpty) category, '\$$priceVal'].join(' • '),
                                         style: TextStyle(color: const Color(0xFF707B9E), fontSize: 11.sp),
                                       ),
                                     ],
@@ -2776,7 +2776,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                     style: TextStyle(color: Colors.white, fontSize: 13.sp),
                                     decoration: InputDecoration(
-                                      hintText: "100.0",
+                                      hintText: "0.00",
                                       hintStyle: TextStyle(color: Colors.white30, fontSize: 12.sp),
                                       prefixText: "\$ ",
                                       prefixStyle: TextStyle(color: const Color(0xFF10B981), fontSize: 13.sp, fontWeight: FontWeight.bold),
@@ -3030,7 +3030,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                           itemBuilder: (context, i) {
                             final item = inventoryList[i];
                             final title = item['title'] ?? item['name'] ?? 'Product';
-                            final category = item['category'] ?? 'Item';
+                            final category = _displayCategory(item);
                             final price = item['buyNowPrice'] ?? item['price'] ?? item['startingBid'] ?? 0;
                             final image = (item['images'] is List && (item['images'] as List).isNotEmpty)
                                 ? item['images'][0].toString()
@@ -3106,7 +3106,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                             Row(
                                               children: [
                                                 Text(
-                                                  "$category • \$$price",
+                                                  [if (category.isNotEmpty) category, '\$$price'].join(' • '),
                                                   style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w600),
                                                 ),
                                                 if (isGiveawayItem) ...[
@@ -3392,8 +3392,8 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   itemBuilder: (context, idx) {
                     final item = giveaways[idx];
                     final title = item['title'] ?? item['name'] ?? 'Giveaway Item';
-                    final category = item['category'] ?? 'Item';
-                    final condition = item['condition'] ?? 'Near Mint';
+                    final category = _displayCategory(item);
+                    final condition = (item['condition'] ?? item['grade'] ?? '').toString().trim();
                     final pid = (item['_id'] ?? item['id'] ?? '').toString();
                     final image = (item['images'] is List && (item['images'] as List).isNotEmpty)
                         ? item['images'][0].toString()
@@ -3451,7 +3451,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                     ),
                                     SizedBox(height: 2.h),
                                     Text(
-                                      "$category • $condition • FREE",
+                                      [if (category.isNotEmpty) category, if (condition.isNotEmpty) condition, 'FREE'].join(' • '),
                                       style: TextStyle(color: Colors.white54, fontSize: 11.sp),
                                     ),
                                   ],

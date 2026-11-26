@@ -84,7 +84,7 @@ class HomeController extends GetxController {
   String get giveawayTitle {
     final t = giveawayConfig['title']?.toString();
     if (t != null && t.trim().isNotEmpty) return t;
-    return "Giannis Antetokounmpo Jersey Giveaway";
+    return "Exclusive Giveaway";
   }
 
   String get giveawayPrizeTitle {
@@ -92,13 +92,13 @@ class HomeController extends GetxController {
     if (pt != null && pt.trim().isNotEmpty) return pt;
     final t = giveawayConfig['title']?.toString();
     if (t != null && t.trim().isNotEmpty) return t;
-    return "Official Signed Giannis Antetokounmpo Jersey";
+    return giveawayTitle;
   }
 
   String get giveawayDescription {
     final d = giveawayConfig['description']?.toString();
     if (d != null && d.trim().isNotEmpty) return d;
-    return "Enter for a chance to win! Winner will be drawn on December 5th.";
+    return "Enter for a chance to win!";
   }
 
   String get giveawayPrizeImage {
@@ -107,7 +107,7 @@ class HomeController extends GetxController {
 
   String get giveawayDrawDateFormatted {
     final raw = giveawayConfig['drawDate']?.toString();
-    if (raw == null || raw.isEmpty) return "December 5th, 2026";
+    if (raw == null || raw.isEmpty) return "To be announced";
     try {
       final dt = DateTime.parse(raw).toLocal();
       final months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -128,7 +128,8 @@ class HomeController extends GetxController {
   }
 
   bool get isGiveawayActive {
-    if (giveawayConfig.isEmpty) return true;
+    // No giveaway from the server means none is running: never show a placeholder prize.
+    if (giveawayConfig.isEmpty) return false;
     return giveawayConfig['isActive'] == true || giveawayConfig['isActive'] == 'true';
   }
 
@@ -156,54 +157,7 @@ class HomeController extends GetxController {
   // Recent Trades (Who Won The Trade?) Voting Feature
   final RxInt currentTradeIndex = 0.obs;
   final RxBool isRecentTradesLoading = false.obs;
-  final RxList<TradeVoteModel> recentTrades = <TradeVoteModel>[
-    TradeVoteModel(
-      id: "65f123abc456789012345678",
-      tradeId: "65ee99887766554433221100",
-      category: "Trading Cards",
-      timeAgo: "Completed 2h ago",
-      itemA: TradeVoteItemModel(
-        name: "1986 Michael Jordan Fleer #57 PSA 8",
-        value: "\$1,800",
-        image: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=800",
-        traderName: "CollectorKing",
-      ),
-      itemB: TradeVoteItemModel(
-        name: "2003 LeBron James Topps Chrome PSA 9",
-        value: "\$2,100",
-        image: "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
-        traderName: "HoopsLegacy",
-      ),
-      initialVotesA: 14,
-      initialVotesB: 36,
-      initialTotalVotes: 50,
-      initialPercentageA: 28,
-      initialPercentageB: 72,
-    ),
-    TradeVoteModel(
-      id: "trade_2",
-      tradeId: "trade_id_2",
-      category: "Sneakers",
-      timeAgo: "Completed 5h ago",
-      itemA: TradeVoteItemModel(
-        name: "Nike Dunk Low 'Panda' (DS)",
-        value: "\$180",
-        image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=800",
-        traderName: "KicksGuru",
-      ),
-      itemB: TradeVoteItemModel(
-        name: "Air Jordan 1 High 'Shadow 2.0'",
-        value: "\$210",
-        image: "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?q=80&w=800",
-        traderName: "SneakerVault",
-      ),
-      initialVotesA: 42,
-      initialVotesB: 58,
-      initialTotalVotes: 100,
-      initialPercentageA: 42,
-      initialPercentageB: 58,
-    ),
-  ].obs;
+  final RxList<TradeVoteModel> recentTrades = <TradeVoteModel>[].obs;
 
   Future<void> fetchRecentTrades() async {
     isRecentTradesLoading.value = true;
@@ -214,13 +168,12 @@ class HomeController extends GetxController {
         final data = jsonDecode(response.body);
         if (data['success'] == true && data['data'] is List) {
           final List rawList = data['data'];
-          if (rawList.isNotEmpty) {
-            final List<TradeVoteModel> items = rawList
-                .map((item) => TradeVoteModel.fromJson(item as Map<String, dynamic>))
-                .toList();
-            recentTrades.assignAll(items);
-            currentTradeIndex.value = 0;
-          }
+          final List<TradeVoteModel> items = rawList
+              .map((item) => TradeVoteModel.fromJson(item as Map<String, dynamic>))
+              .toList();
+          // An empty feed hides the section; it must not fall back to sample trades.
+          recentTrades.assignAll(items);
+          currentTradeIndex.value = 0;
         }
       }
     } catch (e) {

@@ -4,34 +4,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../core/app_route.dart';
 import '../../../../global/widgets/custom_background.dart';
-import '../../purchases/model/purchase_model.dart';
 import '../controller/message_details_controller.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../global/controllers/safety_controller.dart';
 
 class MessageDetailsScreen extends GetView<MessageDetailsController> {
   const MessageDetailsScreen({super.key});
-
-  PurchaseModel _getMockOrder() {
-    return PurchaseModel(
-      id: "ORD-24891",
-      title: "Vintage Pokémon Card Pack",
-      curator: "CardMaster",
-      date: "Oct 21, 2023",
-      price: "\$1,250",
-      carrier: "USPS",
-      image: "",
-      trackingId: "9400 1112 3456 7890 1234 56",
-      status: OrderStatus.inTransit,
-      estimatedDelivery: "October 24",
-      itemPrice: 1250,
-      shippingPrice: 15.50,
-      taxes: 42.00,
-      processingFee: 12.00,
-      buyerContribution: 0,
-      totalPaid: 1319.50,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,39 +89,6 @@ class MessageDetailsScreen extends GetView<MessageDetailsController> {
                       // Date separator
                       if (msg['isDate'] == true) {
                         return _buildDateSeparator(msg['message'] ?? '');
-                      }
-
-                      // Order shipped card — special message type
-                      if (msg['isOrderCard'] == true) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            SizedBox(height: 8.h),
-                            _buildTrackingCard(),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildActionChip(
-                                    Icons.location_on_outlined,
-                                    "TRACK ORDER",
-                                    onTap: () => Get.toNamed(
-                                      AppRoute.trackOrder,
-                                      arguments: _getMockOrder(),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 12.w),
-                                Expanded(
-                                  child: _buildActionChip(
-                                    Icons.check_circle_outline,
-                                    "CONFIRM DELIVERY",
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 16.h),
-                          ],
-                        );
                       }
 
                       final bool isMe = msg['isMe'] == true;
@@ -1103,158 +1048,6 @@ class MessageDetailsScreen extends GetView<MessageDetailsController> {
     );
   }
 
-  Widget _buildTrackingCard() {
-    return Container(
-      margin: EdgeInsets.only(bottom: 24.h),
-      padding: EdgeInsets.all(24.r),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161622),
-        borderRadius: BorderRadius.circular(28.r),
-        border: Border.all(color: Colors.white.withOpacity(0.04)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Text("ORDER SHIPPED 🚚", style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w900)),
-                  SizedBox(width: 8.w),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                    decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8.r)),
-                    child: Text("IN TRANSIT", style: TextStyle(color: Colors.white38, fontSize: 9.sp, fontWeight: FontWeight.w900)),
-                  ),
-                ],
-              ),
-              Icon(Icons.local_shipping_outlined, color: Colors.white24, size: 24.sp),
-            ],
-          ),
-          SizedBox(height: 4.h),
-          Text("Your order is on the way!", style: TextStyle(color: Colors.white38, fontSize: 12.sp, fontWeight: FontWeight.w700)),
-          
-          SizedBox(height: 40.h),
-          
-          // Map Placeholder / Timeline
-          Center(
-            child: Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 250.w,
-                  height: 2.h,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.white10, const Color(0xFF8B9BFF).withOpacity(0.5), Colors.white10],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  child: Container(
-                    padding: EdgeInsets.all(8.r),
-                    decoration: const BoxDecoration(color: Color(0xFF161622), shape: BoxShape.circle),
-                    child: Icon(Icons.location_on, color: const Color(0xFF8B9BFF), size: 28.sp),
-                  ),
-                ),
-                Positioned(
-                  top: -40.h,
-                  right: -20.w,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                    decoration: BoxDecoration(color: const Color(0xFFFF8BFF).withOpacity(0.2), borderRadius: BorderRadius.circular(10.r)),
-                    child: Text("ETA: 2 Days", style: TextStyle(color: const Color(0xFFFF8BFF), fontSize: 10.sp, fontWeight: FontWeight.w900)),
-                  ),
-                ),
-                Positioned(
-                  bottom: -30.h,
-                  child: Column(
-                    children: [
-                      Text("📍 Current Location", style: TextStyle(color: Colors.white38, fontSize: 9.sp, fontWeight: FontWeight.w900)),
-                      Text("Moving towards destination", style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w900)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          SizedBox(height: 60.h),
-          
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildTrackingInfo("CARRIER", "USPS"),
-              _buildTrackingInfo("ESTIMATED DELIVERY", "October 24", isAccent: true),
-            ],
-          ),
-          SizedBox(height: 20.h),
-          _buildTrackingInfo("TRACKING NUMBER", "9400 1112 3456 7890 1234 56", isCopyable: true),
-          
-          SizedBox(height: 24.h),
-          
-          Container(
-            padding: EdgeInsets.all(16.r),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.04), borderRadius: BorderRadius.circular(16.r)),
-            child: Row(
-              children: [
-                Icon(Icons.history, color: Colors.white38, size: 18.sp),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("LAST UPDATE", style: TextStyle(color: Colors.white38, fontSize: 9.sp, fontWeight: FontWeight.w900)),
-                      Text("Departed USPS Facility Chicago, IL — Oct 21, 8:14 AM", style: TextStyle(color: Colors.white70, fontSize: 10.sp, fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          SizedBox(height: 24.h),
-          
-          SizedBox(
-            width: double.infinity,
-            height: 56.h,
-            child: ElevatedButton(
-              onPressed: () => Get.toNamed(AppRoute.trackOrder, arguments: _getMockOrder()),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF8B9BFF),
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.r)),
-                elevation: 0,
-              ),
-              child: Text("TRACK ORDER", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900, letterSpacing: 1)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrackingInfo(String label, String value, {bool isAccent = false, bool isCopyable = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TextStyle(color: Colors.white38, fontSize: 10.sp, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-        SizedBox(height: 4.h),
-        Row(
-          children: [
-            Text(value, style: TextStyle(color: isAccent ? const Color(0xFFFF8BFF) : Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w900)),
-            if (isCopyable) ...[
-              SizedBox(width: 8.w),
-              Icon(Icons.copy, color: Colors.white24, size: 16.sp),
-            ],
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildBubbleShimmer({required bool isMe}) {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -1270,28 +1063,6 @@ class MessageDetailsScreen extends GetView<MessageDetailsController> {
             bottomLeft: Radius.circular(isMe ? 24.r : 4.r),
             bottomRight: Radius.circular(isMe ? 4.r : 24.r),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionChip(IconData icon, String label, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 16.h),
-        decoration: BoxDecoration(
-          color: const Color(0xFF161622),
-          borderRadius: BorderRadius.circular(28.r),
-          border: Border.all(color: Colors.white.withOpacity(0.04)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: const Color(0xFF8B9BFF), size: 18.sp),
-            SizedBox(width: 8.w),
-            Text(label, style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
-          ],
         ),
       ),
     );
