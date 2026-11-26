@@ -40,6 +40,7 @@ class SellerOnboardingState {
   final bool canSell;
   final SellerStripeState stripe;
   final String? rejectionReason;
+  final bool accessRevoked;
   final List<String> outstandingRequirements;
 
   const SellerOnboardingState({
@@ -54,6 +55,7 @@ class SellerOnboardingState {
     this.canSell = false,
     this.stripe = const SellerStripeState(),
     this.rejectionReason,
+    this.accessRevoked = false,
     this.outstandingRequirements = const [],
   });
 
@@ -72,6 +74,7 @@ class SellerOnboardingState {
         json['stripe'] is Map ? Map<String, dynamic>.from(json['stripe']) : null,
       ),
       rejectionReason: json['rejectionReason']?.toString(),
+      accessRevoked: json['accessRevokedAt'] != null,
       outstandingRequirements: (json['outstandingRequirements'] as List?)
               ?.map((e) => e.toString())
               .toList() ??
@@ -85,7 +88,7 @@ class SellerOnboardingState {
       case 'approved':
         return canSell ? 'You are live as a seller' : 'Approved — finish Stripe';
       case 'rejected':
-        return 'Application not approved';
+        return accessRevoked ? 'Seller access revoked' : 'Application not approved';
       case 'pending_approval':
         return 'Pending ARIES approval';
       case 'stripe_pending':
@@ -104,7 +107,9 @@ class SellerOnboardingState {
       case 'rejected':
         return rejectionReason?.isNotEmpty == true
             ? rejectionReason!
-            : 'Your application was not approved. You can update it and apply again.';
+            : accessRevoked
+                ? 'ARIES can restore your seller access using the existing application.'
+                : 'Your application was not approved. You can update it and apply again.';
       case 'pending_approval':
         return 'Stripe has your details. An ARIES admin is reviewing your application — we will notify you once it is decided.';
       case 'stripe_pending':

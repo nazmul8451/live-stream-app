@@ -728,7 +728,10 @@ class HomeController extends GetxController {
           final hostName = (item['curator'] ?? seller?['fullName'] ?? seller?['name'] ?? "Curator").toString();
           
           String imageUrl = "";
-          String imagePath = (item['image'] ?? item['coverImage'] ?? "").toString();
+          String imagePath = (item['coverImage'] ?? '').toString().trim();
+          if (imagePath.isEmpty) {
+            imagePath = (item['image'] ?? item['thumbnail'] ?? '').toString().trim();
+          }
           if (imagePath.isEmpty && item['productId'] is Map) {
             final prod = item['productId'];
             final List prodImages = prod['images'] ?? [];
@@ -740,7 +743,7 @@ class HomeController extends GetxController {
           }
 
           if (imagePath.isNotEmpty) {
-            imageUrl = imagePath.startsWith('http')
+            imageUrl = imagePath.startsWith('http') || imagePath.startsWith('data:image/')
                 ? imagePath
                 : "${ApiUrl.imageBaseUrl}${imagePath.startsWith('/') ? imagePath : '/$imagePath'}";
           }

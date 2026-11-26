@@ -44,6 +44,7 @@ import '../view/screens/home/screen/all_shows_screen.dart';
 
 import '../view/screens/profile/screen/blocked_users_screen.dart';
 import '../view/screens/profile/screen/payment_methods_screen.dart';
+import '../view/screens/profile/screen/ship_from_address_screen.dart';
 
 class AppRoute {
   static final routeStream = StreamController<String>.broadcast();
@@ -73,6 +74,7 @@ class AppRoute {
   static const String accountSettings = "/account_settings";
   static const String profileInformation = "/profile_information";
   static const String changePassword = "/change_password";
+  static const String shipFromAddress = "/ship_from_address";
   static const String userPreferences = "/user_preferences";
   static const String blockedUsers = "/blocked_users";
   static const String terms = "/terms";
@@ -129,6 +131,7 @@ class AppRoute {
       page: () => const ProfileInformationScreen(),
     ),
     GetPage(name: changePassword, page: () => const ChangePasswordScreen()),
+    GetPage(name: shipFromAddress, page: () => const ShipFromAddressScreen()),
     GetPage(name: userPreferences, page: () => const UserPreferencesScreen()),
     GetPage(name: blockedUsers, page: () => const BlockedUsersScreen()),
     GetPage(name: terms, page: () => const TermsConditionsScreen()),

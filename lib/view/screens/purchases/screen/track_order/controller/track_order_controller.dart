@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import '../../../../../../data/services/api_client.dart';
 import '../../../../../../data/services/api_url.dart';
 import '../../../../../../data/helpers/shared_prefe.dart';
+import '../../../../../../data/services/shipping_service.dart';
+import '../../../../../../core/app_route.dart';
 import '../../../model/purchase_model.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
@@ -272,6 +274,78 @@ class TrackOrderController extends GetxController {
   }
 
   String get shippingLabelUrl => (orderData['shippingLabelUrl'] ?? fallbackModel?.shippingLabelUrl ?? '').toString();
+
+  // ── Shipping label (seller) ────────────────────────────────────────────────
+
+  final RxBool isBuyingLabel = false.obs;
+
+  Map<String, dynamic> get _shipment =>
+      orderData['shipment'] is Map ? Map<String, dynamic>.from(orderData['shipment']) : const {};
+
+  /// A carrier label has been bought for this order (not the old sample PDF).
+  bool get hasCarrierLabel => (_shipment['shipmentId'] ?? '').toString().isNotEmpty;
+
+  String get labelServiceName {
+    final service = (_shipment['service'] ?? orderData['shippingService'] ?? '').toString();
+    return service.isEmpty ? '' : uspsServiceName(service);
+  }
+
+  bool get isSampleLabel => (_shipment['provider'] ?? '').toString() == 'mock';
+
+  bool get canBuyLabel {
+    if (!isSeller || hasCarrierLabel) return false;
+    final paid = (orderData['paymentStatus'] ?? '').toString().toLowerCase();
+    final status = deliveryStatus.toLowerCase();
+    return paid == 'paid' && !status.contains('cancel') && !status.contains('deliver');
+  }
+
+  String get _mongoOrderId {
+    final fromData = (orderData['_id'] ?? orderData['id'] ?? '').toString();
+    if (fromData.isNotEmpty) return fromData;
+    final raw = fallbackModel?.rawOrderId;
+    return (raw != null && raw.isNotEmpty) ? raw : orderId;
+  }
+
+  /// Buys the USPS label for this order. If the seller has not set where they
+  /// ship from yet, sends them to that screen first and carries on after.
+  Future<bool> buyShippingLabel() async {
+    if (isBuyingLabel.value) return false;
+    isBuyingLabel.value = true;
+    try {
+      var result = await ShippingService.buyLabel(_mongoOrderId);
+
+      if (!result.ok && (result.error ?? '').toLowerCase().contains('shipping address')) {
+        final saved = await Get.toNamed(
+          AppRoute.shipFromAddress,
+          arguments: {'returnOnSave': true},
+        );
+        if (saved != true) return false;
+        result = await ShippingService.buyLabel(_mongoOrderId);
+      }
+
+      if (!result.ok) {
+        showAppSnackbar(
+          'Label not created',
+          result.error ?? 'Please try again.',
+          backgroundColor: Colors.red.withOpacity(0.85),
+          colorText: Colors.white,
+        );
+        return false;
+      }
+
+      orderData.assignAll(result.data!);
+      await fetchOrderDetails();
+      showAppSnackbar(
+        'Label ready',
+        'Print it, stick it on the package and drop it at USPS.',
+        backgroundColor: const Color(0xFF22C55E),
+        colorText: Colors.white,
+      );
+      return true;
+    } finally {
+      isBuyingLabel.value = false;
+    }
+  }
 
   double get taxes {
     final val = amountDetails['taxes'];

@@ -86,7 +86,9 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     isFollowingHost.value = !before;
     isFollowBusy.value = true;
     try {
-      final res = await Get.find<ApiClient>().postData("/follow/$hostId", {});
+      final res = await Get.find<ApiClient>().postData("/follow/$hostId", {
+        if (streamId.value.isNotEmpty) 'streamId': streamId.value,
+      });
       if (res.statusCode == 200 || res.statusCode == 201) {
         final d = jsonDecode(res.body)['data'];
         if (d is Map && d['followed'] != null) isFollowingHost.value = d['followed'] == true;
@@ -1084,16 +1086,21 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   }
 
   void _handleStreamEndedEvent(dynamic data) {
-    debugPrint("🚨 [AgoraLiveController] Stream ended event received: $data");
+    final removedSeller = data is Map && data['reason'] == 'seller_access_removed';
+    if (removedSeller && data['streamId']?.toString() != streamId.value) {
+      return;
+    }
     showAppSnackbar(
       "Stream Ended",
-      "The host has ended this live stream.",
+      removedSeller
+          ? "This live stream has been closed by ARIES."
+          : "The host has ended this live stream.",
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: Colors.black87,
       colorText: Colors.white,
       duration: const Duration(seconds: 4),
     );
-    if (!isHost.value) {
+    if (!isHost.value || removedSeller) {
       leaveStream();
     }
   }
@@ -1350,13 +1357,10 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       totalSalesRevenue.value = 0.0;
       totalItemsSold.value = 0;
 
-      // Resolve coverImage (required by backend Zod validation)
+      // Use the selected cover or inventory image when available.
       String resolvedCover = coverImage.trim();
       if (resolvedCover.isEmpty) {
         resolvedCover = productImage.trim();
-      }
-      if (resolvedCover.isEmpty) {
-        resolvedCover = "https://s3.amazonaws.com/culturecards/cover1.jpg";
       }
 
       // 1) Create stream on backend per Postman schema
@@ -2335,6 +2339,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
               frameRate: 30,
               bitrate: 1800,
               orientationMode: OrientationMode.orientationModeFixedPortrait,
+              mirrorMode: VideoMirrorModeType.videoMirrorModeDisabled,
             ),
           );
           await engine!.enableDualStreamMode(enabled: true);
@@ -3210,6 +3215,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         "buyerId": buyerId,
         "sellerId": targetSellerId,
         "productId": targetProductId,
+        if (streamId.value.isNotEmpty) "streamId": streamId.value,
         "purchaseType": "buy_now",
         "amountDetails": {
           "itemSubtotal": subtotal,

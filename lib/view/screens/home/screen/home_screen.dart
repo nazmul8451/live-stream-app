@@ -15,7 +15,7 @@ import '../../profile/screen/profile_screen.dart';
 import '../../trade_voting/widgets/tinder_swipeable_trade_voting.dart';
 import '../controller/home_controller.dart';
 import '../widgets/celebrity_spotlight_card.dart';
-import 'home_live_preview_widget.dart';
+import '../widgets/show_cover_image.dart';
 import 'package:live_stream_app/global/widgets/button_loader.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -437,10 +437,7 @@ class HomeScreen extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: HomeLivePreviewWidget(
-                    channelName: liveShow.raw?['agoraChannelName'] ?? '',
-                    fallbackImageUrl: image,
-                  ),
+                  child: ShowCoverImage(image: image),
                 ),
                 Positioned.fill(
                   child: Container(
@@ -1673,45 +1670,6 @@ class HomeScreen extends StatelessWidget {
     });
   }
 
-  Widget _buildUpcomingCoverImage(String rawImg) {
-    final trimmed = rawImg.trim();
-    if (trimmed.isEmpty) {
-      return Image.network(
-        "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
-        fit: BoxFit.cover,
-      );
-    }
-
-    // 1. If Base64 image
-    if (trimmed.startsWith('data:image/') && trimmed.contains('base64,')) {
-      try {
-        final bytes = base64Decode(trimmed.split('base64,').last);
-        return Image.memory(
-          bytes,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Image.network(
-            "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
-            fit: BoxFit.cover,
-          ),
-        );
-      } catch (_) {}
-    }
-
-    // 2. If Network image (full or relative)
-    final cleanUrl = trimmed.startsWith('http')
-        ? trimmed
-        : "${ApiUrl.imageBaseUrl}${trimmed.startsWith('/') ? trimmed : '/$trimmed'}";
-
-    return Image.network(
-      cleanUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Image.network(
-        "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
-        fit: BoxFit.cover,
-      ),
-    );
-  }
-
   Widget _buildUpcomingShowCard(HomeController controller, Map<String, dynamic> show, int index) {
     final rawTitle = (show['title'] ?? show['streamTitle'] ?? show['name'] ?? '').toString().trim();
     final title = rawTitle.isNotEmpty ? rawTitle : 'Upcoming Live Auction';
@@ -1881,7 +1839,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   // Collectibles / Pack Cover Image
                   Positioned.fill(
-                    child: _buildUpcomingCoverImage(rawImg),
+                    child: ShowCoverImage(image: rawImg),
                   ),
 
                   // Vignette overlay

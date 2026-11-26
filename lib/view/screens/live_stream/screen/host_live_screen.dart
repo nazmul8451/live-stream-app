@@ -69,7 +69,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     canvas: const VideoCanvas(
                       uid: 0,
                       renderMode: RenderModeType.renderModeHidden,
-                      mirrorMode: VideoMirrorModeType.videoMirrorModeEnabled,
+                      mirrorMode: VideoMirrorModeType.videoMirrorModeAuto,
                       sourceType: VideoSourceType.videoSourceCamera,
                     ),
                     useFlutterTexture: false,

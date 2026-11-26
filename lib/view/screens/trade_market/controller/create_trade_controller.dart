@@ -8,6 +8,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/s3_upload_service.dart';
+import '../../../../data/services/shipping_service.dart';
 import '../../profile/controller/profile_controller.dart';
 import 'package:live_stream_app/core/areis_categories.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
@@ -31,6 +32,24 @@ class CreateTradeController extends GetxController {
   final shippingWeightController = TextEditingController();
   final RxString shippingWeightUnit = "lbs".obs;
   final weightUnits = ["lbs", "oz", "kg"];
+
+  // Package the item ships in. Carriers need its size to quote a real rate.
+  final RxString packageType = kDefaultPackage.obs;
+  bool get isCustomPackage => packageType.value == kCustomPackage;
+  final packageLengthController = TextEditingController();
+  final packageWidthController = TextEditingController();
+  final packageHeightController = TextEditingController();
+
+  void setPackageType(String id) => packageType.value = id;
+
+  /// Custom dimensions in inches, or null when any is missing or invalid.
+  Map<String, double>? get _customDimensions {
+    final l = double.tryParse(packageLengthController.text.trim());
+    final w = double.tryParse(packageWidthController.text.trim());
+    final h = double.tryParse(packageHeightController.text.trim());
+    if (l == null || w == null || h == null || l <= 0 || w <= 0 || h <= 0) return null;
+    return {"lengthIn": l, "widthIn": w, "heightIn": h};
+  }
 
   // Custom Offer Settings (Feature 2)
   final RxBool allowOffers = true.obs; // Toggle for accepting custom offers
@@ -220,6 +239,28 @@ class CreateTradeController extends GetxController {
       return;
     }
 
+    final double weightValue =
+        double.tryParse(shippingWeightController.text.trim()) ?? 0.0;
+    if (weightValue <= 0) {
+      showAppSnackbar(
+        "Shipping Weight Required",
+        "Enter the packed weight so shipping can be calculated.",
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    if (isCustomPackage && _customDimensions == null) {
+      showAppSnackbar(
+        "Package Size Required",
+        "Enter the length, width and height of your package in inches.",
+        backgroundColor: Colors.red.withOpacity(0.8),
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     if (selectedImages.isEmpty) {
       showAppSnackbar(
         "Error",
@@ -258,8 +299,10 @@ class CreateTradeController extends GetxController {
           ? double.tryParse(buyNowRaw)
           : null;
 
-      final String shippingWeightRaw = shippingWeightController.text.trim();
-      final double shippingWeightParsed = double.tryParse(shippingWeightRaw) ?? 0.0;
+      // The backend stores pounds; the unit picker is only for typing.
+      final double shippingWeightLbs = double.parse(
+        weightToPounds(weightValue, shippingWeightUnit.value).toStringAsFixed(3),
+      );
 
       final String minOfferRaw = minOfferAmountController.text.trim();
       final double? minOfferParsed = allowOffers.value && minOfferRaw.isNotEmpty
@@ -281,8 +324,9 @@ class CreateTradeController extends GetxController {
         if (buyNowParsed != null) "buyNowPrice": buyNowParsed,
         "allowOffers": allowOffers.value,
         if (minOfferParsed != null) "minOfferAmount": minOfferParsed,
-        if (shippingWeightParsed > 0) "shippingWeight": shippingWeightParsed,
-        "shippingWeightUnit": shippingWeightUnit.value,
+        "shippingWeight": shippingWeightLbs,
+        "packageType": packageType.value,
+        if (isCustomPackage) "packageDimensions": _customDimensions,
         "allowTrade": isTradeMarket, // true: published to Trade Market, false: personal inventory
         "sellerId": userId,
         "images": imageUrls,
@@ -348,6 +392,9 @@ class CreateTradeController extends GetxController {
     estValueController.dispose();
     buyNowPriceController.dispose();
     shippingWeightController.dispose();
+    packageLengthController.dispose();
+    packageWidthController.dispose();
+    packageHeightController.dispose();
     minOfferAmountController.dispose();
     desiredItemController.dispose();
     minValueController.dispose();

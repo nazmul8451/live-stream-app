@@ -1,3 +1,4 @@
+import '../../live_stream/screen/show_shipping_orders_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -1011,6 +1012,15 @@ class ProfileScreen extends GetView<ProfileController> {
             showArrow: true,
             onTap: () => Get.toNamed('/my_trades'),
           ),
+          if (controller.sellerVerified.value)
+            _buildSettingsTile(
+              icon: Icons.local_shipping_outlined,
+              iconColor: const Color(0xFF8B9BFF),
+              title: "Shipping Orders",
+              subtitle: "Open completed shows and buyer shipments",
+              showArrow: true,
+              onTap: () => Get.to(() => const ShowShippingOrdersScreen()),
+            ),
           _buildSettingsTile(
             icon: Icons.sell_outlined,
             iconColor: const Color(0xFFF472B6),
@@ -1112,6 +1122,11 @@ class ProfileScreen extends GetView<ProfileController> {
 
   /// STATE 1 — Buyer: show CTA to apply as seller
   Widget _buildBuyerCard(bool isLoading) {
+    final status = controller.sellerApplicationStatus.value;
+    final hasApplication = status != 'not_started';
+    final action = status == 'stripe_pending'
+        ? 'Continue application'
+        : 'View status';
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       padding: EdgeInsets.all(20.r),
@@ -1165,7 +1180,16 @@ class ProfileScreen extends GetView<ProfileController> {
               ),
               SizedBox(width: 12.w),
               GestureDetector(
-                onTap: isLoading ? null : () => _showBecomeSeller(),
+                onTap: isLoading
+                    ? null
+                    : () async {
+                        if (!hasApplication) {
+                          _showBecomeSeller();
+                          return;
+                        }
+                        await Get.toNamed(AppRoute.sellerOnboardingStatus);
+                        await controller.fetchProfileData();
+                      },
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 11.h),
                   decoration: BoxDecoration(
@@ -1180,7 +1204,7 @@ class ProfileScreen extends GetView<ProfileController> {
                           children: [
                             Icon(Icons.storefront_rounded, color: Colors.white, size: 14.sp),
                             SizedBox(width: 5.w),
-                            Text('Apply Now', style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w900)),
+                            Text(hasApplication ? action : 'Apply Now', style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w900)),
                           ],
                         ),
                 ),
@@ -1443,11 +1467,10 @@ class ProfileScreen extends GetView<ProfileController> {
                   SizedBox(width: 8.w),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         Get.back();
-                        // Step 1 of the seller flow: the application form,
-                        // which hands over to Stripe Connect on submit.
-                        Get.toNamed(AppRoute.sellerApplication);
+                        await Get.toNamed(AppRoute.sellerApplication);
+                        await controller.fetchProfileData();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF8B9BFF),

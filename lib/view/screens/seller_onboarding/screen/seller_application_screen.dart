@@ -30,7 +30,6 @@ class _SellerApplicationScreenState extends State<SellerApplicationScreen> {
   @override
   void initState() {
     super.initState();
-    controller = Get.put(SellerOnboardingController());
     controller = Get.isRegistered<SellerOnboardingController>()
         ? Get.find<SellerOnboardingController>()
         : Get.put(SellerOnboardingController());
@@ -42,7 +41,8 @@ class _SellerApplicationScreenState extends State<SellerApplicationScreen> {
       final s = controller.state.value;
       if (!mounted) return;
       final bool isExplicitEdit = Get.arguments is Map && Get.arguments['edit'] == true;
-      if (!isExplicitEdit && s.hasApplied && s.status != 'rejected') {
+      if (s.accessRevoked ||
+          (!isExplicitEdit && s.hasApplied && s.status != 'rejected')) {
         Get.offNamed(AppRoute.sellerOnboardingStatus);
       }
     });

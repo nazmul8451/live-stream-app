@@ -89,6 +89,17 @@ class DeepLinkService extends GetxService {
 
       debugPrint('🔗 [DeepLinkService] Safely handling host: $host, segments: $pathSegments');
 
+      if (uri.scheme == 'culturecards' &&
+          host == 'seller' &&
+          uri.path == '/onboarding') {
+        AuthGuard.check(onAuthorized: () {
+          if (Get.currentRoute != AppRoute.sellerOnboardingStatus) {
+            Get.toNamed(AppRoute.sellerOnboardingStatus);
+          }
+        });
+        return;
+      }
+
       // Case 1: Custom Scheme: culturecards://trade/:id or HTTPS: https://.../trade/:id
       if (host == 'trade' || (pathSegments.isNotEmpty && pathSegments[0] == 'trade')) {
         final String productId = host == 'trade' 

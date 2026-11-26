@@ -1,3 +1,4 @@
+import 'show_shipping_orders_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -403,6 +404,13 @@ class PostShowSummaryScreen extends StatelessWidget {
                 ),
 
               SizedBox(height: 30.h),
+
+              OutlinedButton.icon(
+                onPressed: () => Get.to(() => ShowShippingOrdersScreen(streamId: streamId)),
+                icon: const Icon(Icons.local_shipping_outlined),
+                label: const Text('Shipping Orders'),
+              ),
+              SizedBox(height: 12.h),
 
               // Bottom Actions
               // 1. Print All Shipping Labels Button

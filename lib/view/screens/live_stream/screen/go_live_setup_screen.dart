@@ -327,7 +327,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
         }
       }
     }
-    return "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800";
+    return "";
   }
 
   Future<void> _handleSubmit() async {

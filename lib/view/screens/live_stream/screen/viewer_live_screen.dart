@@ -3030,14 +3030,29 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                             ),
                           ),
                           SizedBox(width: 8.w),
-                          Text(
-                            isGiveaway ? "FREE" : "\$$price",
-                            style: TextStyle(
-                              color: isGiveaway ? const Color(0xFFFFB800) : const Color(0xFF10B981),
-                              fontSize: 13.5.sp,
-                              fontWeight: FontWeight.w900,
+                          if (!isGiveaway &&
+                              !isCurrentlyLive &&
+                              ctrl.streamId.value.isNotEmpty &&
+                              (double.tryParse('${item['buyNowPrice']}') ?? 0) > 0)
+                            TextButton(
+                              onPressed: () {
+                                Get.back();
+                                Get.toNamed(AppRoute.checkout, arguments: {
+                                  ...item,
+                                  'showStreamId': ctrl.streamId.value,
+                                });
+                              },
+                              child: Text('Buy \$$price'),
+                            )
+                          else
+                            Text(
+                              isGiveaway ? "FREE" : "\$$price",
+                              style: TextStyle(
+                                color: isGiveaway ? const Color(0xFFFFB800) : const Color(0xFF10B981),
+                                fontSize: 13.5.sp,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     );

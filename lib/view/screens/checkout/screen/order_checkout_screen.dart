@@ -74,6 +74,13 @@ class OrderCheckoutScreen extends StatelessWidget {
 
                 SizedBox(height: 24.h),
 
+                // 2b. Shipping method (live USPS rates)
+                _buildSectionHeader("SHIPPING METHOD", Icons.local_shipping_outlined),
+                SizedBox(height: 12.h),
+                _buildShippingOptionsCard(controller),
+
+                SizedBox(height: 24.h),
+
                 // 3. Payment Method Section
                 _buildSectionHeader("PAYMENT METHOD", Icons.credit_card_outlined),
                 SizedBox(height: 12.h),
@@ -287,6 +294,132 @@ class OrderCheckoutScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildShippingOptionsCard(OrderCheckoutController controller) {
+    const accent = Color(0xFF8B9BFF);
+    return Container(
+      padding: EdgeInsets.all(14.r),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161622),
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Obx(() {
+        if (controller.isLoadingRates.value) {
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: 14.h),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 16.r,
+                  height: 16.r,
+                  child: const CircularProgressIndicator(strokeWidth: 2, color: accent),
+                ),
+                SizedBox(width: 12.w),
+                Text(
+                  "Getting USPS rates for your address…",
+                  style: TextStyle(color: Colors.white60, fontSize: 13.sp),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final rates = controller.shippingRates;
+        if (rates.isEmpty) {
+          final msg = controller.ratesMessage.value;
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 4.w),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline_rounded, color: Colors.white38, size: 16.sp),
+                SizedBox(width: 10.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        msg.isEmpty ? "Enter your address to see shipping options." : msg,
+                        style: TextStyle(color: Colors.white70, fontSize: 12.5.sp, height: 1.4),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        "Estimated shipping of \$${controller.shippingFee.value.toStringAsFixed(2)} is used for now.",
+                        style: TextStyle(color: Colors.white38, fontSize: 11.5.sp),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final selected = controller.selectedRate.value;
+        return Column(
+          children: rates.map((rate) {
+            final isSelected = selected?.id == rate.id;
+            return GestureDetector(
+              onTap: () => controller.selectRate(rate),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                margin: EdgeInsets.symmetric(vertical: 4.h),
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
+                decoration: BoxDecoration(
+                  color: isSelected ? accent.withOpacity(0.10) : const Color(0xFF1E1E2C),
+                  borderRadius: BorderRadius.circular(14.r),
+                  border: Border.all(
+                    color: isSelected ? accent.withOpacity(0.55) : Colors.white.withOpacity(0.06),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isSelected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                      color: isSelected ? accent : Colors.white24,
+                      size: 18.sp,
+                    ),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            rate.displayName,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (rate.etaLabel.isNotEmpty) ...[
+                            SizedBox(height: 2.h),
+                            Text(
+                              rate.etaLabel,
+                              style: TextStyle(color: Colors.white38, fontSize: 11.sp),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Text(
+                      "\$${rate.amount.toStringAsFixed(2)}",
+                      style: TextStyle(
+                        color: isSelected ? accent : Colors.white70,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      }),
     );
   }
 
@@ -504,7 +637,10 @@ class OrderCheckoutScreen extends StatelessWidget {
         children: [
           _buildSummaryRow("Item Subtotal", "\$${controller.itemSubtotal.value.toStringAsFixed(2)}"),
           SizedBox(height: 12.h),
-          _buildSummaryRow("Shipping & Handling", "\$${controller.shippingFee.value.toStringAsFixed(2)}"),
+          _buildSummaryRow(
+            controller.isShippingEstimated ? "Shipping (estimated)" : "Shipping",
+            "\$${controller.shippingFee.value.toStringAsFixed(2)}",
+          ),
           SizedBox(height: 12.h),
           _buildSummaryRow(
             "CultureCards Authentication",

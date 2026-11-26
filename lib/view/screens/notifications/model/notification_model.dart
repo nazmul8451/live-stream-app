@@ -65,7 +65,9 @@ class NotificationModel {
       id: (json['_id'] ?? json['id'] ?? '').toString(),
       type: type,
       title: json['title']?.toString() ?? (type == NotificationType.tradeOffer ? "TRADE OFFER" : type == NotificationType.liveAlert ? "LIVE ALERT" : type == NotificationType.outbid ? "OUTBID ALERT" : "SECURITY"),
-      message: json['text']?.toString() ?? json['message']?.toString() ?? '',
+      message: [json['content'], json['text'], json['message']]
+          .map((value) => value?.toString().trim() ?? '')
+          .firstWhere((value) => value.isNotEmpty, orElse: () => ''),
       timeAgo: timeAgo,
       imageUrl: json['imageUrl']?.toString() ?? json['image']?.toString(),
       avatarUrl: json['avatarUrl']?.toString() ?? json['avatar']?.toString(),

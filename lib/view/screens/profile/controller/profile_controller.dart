@@ -40,6 +40,21 @@ class ProfileController extends GetxController {
   final RxString role = "user".obs;
   final RxBool sellerVerified = false.obs; // Admin-approved seller status
   final RxBool isSwitchingRole = false.obs;
+  final RxString sellerApplicationStatus = 'not_started'.obs;
+
+  Future<void> fetchSellerApplicationStatus() async {
+    try {
+      final response = await _apiClient.getData(
+        '${ApiUrl.sellerApplication}?refresh=false',
+      );
+      if (response.statusCode == 200) {
+        sellerApplicationStatus.value =
+            jsonDecode(response.body)['data']?['status'] ?? 'not_started';
+      }
+    } catch (error) {
+      Get.log('Could not load seller application status: $error');
+    }
+  }
   final RxDouble rating = 0.0.obs;
   final RxInt reviewsCount = 0.obs;
   final RxInt activeCount = 0.obs;
@@ -143,6 +158,9 @@ class ProfileController extends GetxController {
 
         // sellerVerified is the admin-approval flag (distinct from email verification)
         sellerVerified.value = data['sellerVerified'] ?? false;
+        if (role.value != 'seller') {
+          await fetchSellerApplicationStatus();
+        }
         Get.log("✅ [Profile] Parsed role: ${role.value} | sellerVerified: ${sellerVerified.value}");
 
         // Stats block per culturecardsllc-server integration guide
@@ -435,6 +453,7 @@ class ProfileController extends GetxController {
     description.value = "";
     purchasesList.clear();
     sellerVerified.value = false;
+    sellerApplicationStatus.value = 'not_started';
     role.value = "user";
     rating.value = 0.0;
     activeCount.value = 0;
@@ -467,7 +486,7 @@ class ProfileController extends GetxController {
         ApiUrl.switchRole,
         {"role": targetRole},
       );
-      Get.log("🔄 [switchRole] Status: ${response.statusCode} | Body: ${response.body}");
+      Get.log("🔄 [switchRole] Status: ${response.statusCode}");
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         try {
@@ -476,7 +495,6 @@ class ProfileController extends GetxController {
           final newAccessToken = (dataMap['accessToken'] ?? dataMap['token'] ?? resData['accessToken'] ?? '').toString();
           if (newAccessToken.isNotEmpty) {
             await SharePrefsHelper.setString(SharePrefsHelper.accessTokenKey, newAccessToken);
-            Get.log("🔑 [switchRole] Saved updated activeRole accessToken: $newAccessToken");
           }
         } catch (_) {}
 

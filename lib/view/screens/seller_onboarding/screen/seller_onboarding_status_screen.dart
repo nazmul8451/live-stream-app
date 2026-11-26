@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/app_route.dart';
+import '../../../../data/services/socket_service.dart';
+import '../../profile/controller/profile_controller.dart';
 import '../controller/seller_onboarding_controller.dart';
 import '../model/seller_onboarding_state.dart';
 
@@ -28,22 +30,39 @@ class _SellerOnboardingStatusScreenState
   static const _amber = Color(0xFFFFB800);
 
   late final SellerOnboardingController controller;
+  SocketService? _socketService;
+  Worker? _socketConnectionWorker;
+
+  void _onSellerStatusChanged(dynamic _) async {
+    await controller.fetchStatus(showSpinner: false, refreshStripe: false);
+    if (mounted && Get.isRegistered<ProfileController>()) {
+      await Get.find<ProfileController>().fetchProfileData();
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    controller = Get.put(SellerOnboardingController());
     controller = Get.isRegistered<SellerOnboardingController>()
         ? Get.find<SellerOnboardingController>()
         : Get.put(SellerOnboardingController());
     controller.ensureControllers();
     WidgetsBinding.instance.addObserver(this);
+    if (Get.isRegistered<SocketService>()) {
+      _socketService = SocketService.to;
+      _socketService!.on('seller-onboarding-updated', _onSellerStatusChanged);
+      _socketConnectionWorker = ever<bool>(_socketService!.isConnected, (connected) {
+        if (connected) controller.fetchStatus(showSpinner: false);
+      });
+    }
     controller.fetchStatus();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _socketService?.off('seller-onboarding-updated', _onSellerStatusChanged);
+    _socketConnectionWorker?.dispose();
     super.dispose();
   }
 
@@ -191,8 +210,8 @@ class _SellerOnboardingStatusScreenState
           ),
           _divider(),
           _row(
-            'Stripe verification',
-            'Identity, bank account and tax details',
+            'Stripe details submitted',
+            'Stripe reviews your identity, bank account and tax details',
             s.stripeOnboardingComplete,
           ),
           _divider(),
@@ -205,7 +224,9 @@ class _SellerOnboardingStatusScreenState
           _row(
             'ARIES approval',
             s.status == 'rejected'
-                ? 'Your application was not approved'
+                ? (s.accessRevoked
+                    ? 'Only ARIES can restore your seller access'
+                    : 'Your application was not approved')
                 : 'An admin reviews every seller application',
             s.adminApproved,
             failed: s.status == 'rejected',
@@ -505,7 +526,7 @@ class _SellerOnboardingStatusScreenState
       widgets.add(SizedBox(height: 12.h));
     }
 
-    if (s.status == 'rejected') {
+    if (s.status == 'rejected' && !s.accessRevoked) {
       widgets.add(
         SizedBox(
           width: double.infinity,
@@ -537,7 +558,16 @@ class _SellerOnboardingStatusScreenState
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: () => Get.offAllNamed(AppRoute.main),
+            onPressed: () async {
+              final profile = Get.isRegistered<ProfileController>()
+                  ? Get.find<ProfileController>()
+                  : Get.put(ProfileController(), permanent: true);
+              if (profile.isSwitchingRole.value) return;
+              await profile.switchRole('seller');
+              if (mounted && profile.sellerVerified.value) {
+                Get.offAllNamed(AppRoute.main);
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: _green,
               padding: EdgeInsets.symmetric(vertical: 16.h),

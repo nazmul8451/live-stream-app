@@ -266,6 +266,15 @@ class AccountSettingsScreen extends StatelessWidget {
                       ),
                       _buildCardDivider(),
                       _buildSettingsTile(
+                        icon: Icons.local_shipping_outlined,
+                        iconColor: const Color(0xFF38BDF8),
+                        title: "Shipping Address",
+                        subtitle: "Where your packages ship from",
+                        showArrow: true,
+                        onTap: () => Get.toNamed(AppRoute.shipFromAddress),
+                      ),
+                      _buildCardDivider(),
+                      _buildSettingsTile(
                         icon: Icons.tune_rounded,
                         iconColor: const Color(0xFFA78BFA),
                         title: "Preferences",

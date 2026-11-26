@@ -1,7 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiUrl {
+  static const _stagingOrigin = String.fromEnvironment('STAGING_API_ORIGIN');
+  static const _useStaging = kDebugMode && _stagingOrigin != '';
+
   static String get baseUrl {
+    if (_useStaging) return '$_stagingOrigin/api/v1';
     if (dotenv.isInitialized) {
       return dotenv.env['BASE_URL'] ?? "https://api.areisco.com/api/v1";
     }
@@ -9,6 +14,7 @@ class ApiUrl {
   }
 
   static String get imageBaseUrl {
+    if (_useStaging) return _stagingOrigin;
     if (dotenv.isInitialized) {
       return dotenv.env['IMAGE_BASE_URL'] ?? "https://api.areisco.com";
     }
@@ -129,6 +135,12 @@ class ApiUrl {
   static const String subscriptionCheckoutSession = "/subscription/checkout-session";
   static const String createSetupIntent = "/payment/create-setup-intent";
   static const String paymentMethods = "/payment/methods";
+
+  // Shipping (USPS via EasyPost, or the mock provider before keys arrive)
+  static const String shippingPresets = "/shipping/presets";
+  static const String shipFromAddress = "/shipping/ship-from";
+  static const String shippingRates = "/shipping/rates";
+  static String orderShippingLabel(String orderId) => "/shipping/orders/$orderId/label";
   static String setDefaultPaymentMethod(String id) => "/payment/methods/$id/default";
   static String deletePaymentMethod(String id) => "/payment/methods/$id";
 

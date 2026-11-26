@@ -1,4 +1,4 @@
-import 'dart:convert';
+import '../widgets/show_cover_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -319,7 +319,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
                   color: const Color(0xFF1B1538),
                 ),
-                child: _buildCoverImage(liveShow.image),
+                child: ShowCoverImage(image: liveShow.image),
               ),
 
               // Gradient overlay
@@ -652,7 +652,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(19.r)),
                   color: const Color(0xFF1C1638),
                 ),
-                child: _buildCoverImage(rawImg),
+                child: ShowCoverImage(image: rawImg),
               ),
 
               // Gradient Overlay
@@ -836,38 +836,6 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCoverImage(String rawImg) {
-    final trimmed = rawImg.trim();
-    if (trimmed.isEmpty) {
-      return Image.network(
-        "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
-        fit: BoxFit.cover,
-      );
-    }
-
-    if (trimmed.startsWith("data:image")) {
-      try {
-        final commaIdx = trimmed.indexOf(',');
-        final b64 = commaIdx != -1 ? trimmed.substring(commaIdx + 1) : trimmed;
-        final bytes = base64Decode(b64);
-        return Image.memory(bytes, fit: BoxFit.cover);
-      } catch (_) {}
-    }
-
-    final cleanUrl = trimmed.startsWith('http')
-        ? trimmed
-        : "${ApiUrl.imageBaseUrl}${trimmed.startsWith('/') ? trimmed : '/$trimmed'}";
-
-    return Image.network(
-      cleanUrl,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => Image.network(
-        "https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?q=80&w=800",
-        fit: BoxFit.cover,
       ),
     );
   }

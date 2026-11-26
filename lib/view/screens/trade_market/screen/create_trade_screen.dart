@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../data/services/shipping_service.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import '../../../../global/widgets/custom_background.dart';
@@ -134,9 +135,14 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
                   _buildShippingWeightInput(),
                   SizedBox(height: 4.h),
                   Text(
-                    "Required for automated shipping label calculation.",
+                    "Packed weight, including the mailer or box.",
                     style: TextStyle(color: Colors.white38, fontSize: 11.5.sp),
                   ),
+                  SizedBox(height: 20.h),
+
+                  // Package
+                  _buildLabel("Package"),
+                  _buildPackagePicker(),
                   SizedBox(height: 22.h),
 
                   // Buy Now Section
@@ -697,6 +703,108 @@ class CreateTradeScreen extends GetView<CreateTradeController> {
             ),
           )),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPackagePicker() {
+    return Obx(() {
+      final selected = controller.packageType.value;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...kPackagePresets.map((p) => _buildPackageOption(
+                selected: selected == p.id,
+                title: p.name,
+                subtitle: "${p.description} · ${p.sizeLabel}",
+                icon: p.id.contains('box') ? Icons.inventory_2_outlined : Icons.mail_outline_rounded,
+                onTap: () => controller.setPackageType(p.id),
+              )),
+          _buildPackageOption(
+            selected: selected == kCustomPackage,
+            title: "Custom size",
+            subtitle: "Enter your own dimensions",
+            icon: Icons.straighten_rounded,
+            onTap: () => controller.setPackageType(kCustomPackage),
+          ),
+          if (selected == kCustomPackage) ...[
+            SizedBox(height: 6.h),
+            Row(
+              children: [
+                Expanded(child: _buildTextField("Length", controller.packageLengthController, keyboardType: const TextInputType.numberWithOptions(decimal: true), suffixText: "in")),
+                SizedBox(width: 8.w),
+                Expanded(child: _buildTextField("Width", controller.packageWidthController, keyboardType: const TextInputType.numberWithOptions(decimal: true), suffixText: "in")),
+                SizedBox(width: 8.w),
+                Expanded(child: _buildTextField("Height", controller.packageHeightController, keyboardType: const TextInputType.numberWithOptions(decimal: true), suffixText: "in")),
+              ],
+            ),
+          ],
+          SizedBox(height: 4.h),
+          Text(
+            "Shipping is priced from the package size and weight.",
+            style: TextStyle(color: Colors.white38, fontSize: 11.5.sp),
+          ),
+        ],
+      );
+    });
+  }
+
+  Widget _buildPackageOption({
+    required bool selected,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    const accent = Color(0xFF8B9BFF);
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: selected ? accent.withOpacity(0.10) : const Color(0xFF101019),
+            borderRadius: BorderRadius.circular(14.r),
+            border: Border.all(
+              color: selected ? accent.withOpacity(0.55) : Colors.white.withOpacity(0.08),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: selected ? accent : Colors.white54, size: 18.sp),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.5.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      subtitle,
+                      style: TextStyle(color: Colors.white38, fontSize: 11.sp),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                color: selected ? accent : Colors.white24,
+                size: 18.sp,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

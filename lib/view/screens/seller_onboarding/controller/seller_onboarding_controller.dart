@@ -76,10 +76,17 @@ class SellerOnboardingController extends GetxController {
 
   /// Reads the live status. The backend re-syncs with Stripe on each call, so
   /// this is what the screen calls when the seller comes back from Stripe.
-  Future<void> fetchStatus({bool showSpinner = true}) async {
+  Future<void> fetchStatus({
+    bool showSpinner = true,
+    bool refreshStripe = true,
+  }) async {
     if (showSpinner) isLoading.value = true;
     try {
-      final response = await _apiClient.getData(ApiUrl.sellerApplication);
+      final response = await _apiClient.getData(
+        refreshStripe
+            ? ApiUrl.sellerApplication
+            : '${ApiUrl.sellerApplication}?refresh=false',
+      );
       if (response.statusCode == 200) {
         final data = _decodeData(response.body);
         if (data != null) {

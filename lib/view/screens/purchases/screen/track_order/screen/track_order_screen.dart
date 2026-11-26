@@ -1128,24 +1128,10 @@ class TrackOrderScreen extends StatelessWidget {
           ],
         ),
 
-        SizedBox(height: 10.h),
-
-        // Print Shipping Label
-        SizedBox(
-          width: double.infinity,
-          height: 48.h,
-          child: ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF8B9BFF).withValues(alpha: 0.10),
-              foregroundColor: const Color(0xFFA5B4FC),
-              side: BorderSide(
-                color: const Color(0xFF8B9BFF).withValues(alpha: 0.28),
-                width: 1,
-              ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
-              elevation: 0,
-            ),
-            onPressed: () {
+        // SELLER ONLY: the shipping label. A buyer has nothing to print.
+        if (controller.isSeller)
+          Obx(() {
+            void openLabel() {
               Get.toNamed(AppRoute.shippingLabel, arguments: {
                 "orderId": controller.displayOrderId,
                 "rawOrderId": controller.orderId,
@@ -1161,18 +1147,90 @@ class TrackOrderScreen extends StatelessWidget {
                 "shippingLabelUrl": controller.orderData['shippingLabelUrl'] ?? '',
                 "isSeller": controller.isSeller,
               });
-            },
-            icon: Icon(Icons.print_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
-            label: Text(
-              "Print Shipping Label",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 13.5.sp,
-                fontWeight: FontWeight.w700,
+            }
+
+            final canBuy = controller.canBuyLabel;
+            final hasLabel = controller.hasCarrierLabel ||
+                controller.shippingLabelUrl.isNotEmpty;
+            if (!canBuy && !hasLabel) return const SizedBox.shrink();
+
+            final buying = controller.isBuyingLabel.value;
+            return Padding(
+              padding: EdgeInsets.only(top: 10.h),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48.h,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: canBuy
+                            ? const Color(0xFF8B9BFF)
+                            : const Color(0xFF8B9BFF).withValues(alpha: 0.10),
+                        disabledBackgroundColor:
+                            const Color(0xFF8B9BFF).withValues(alpha: 0.6),
+                        foregroundColor: const Color(0xFFA5B4FC),
+                        side: BorderSide(
+                          color: const Color(0xFF8B9BFF).withValues(alpha: 0.28),
+                          width: 1,
+                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15.r)),
+                        elevation: 0,
+                      ),
+                      onPressed: buying
+                          ? null
+                          : () async {
+                              if (canBuy) {
+                                final ok = await controller.buyShippingLabel();
+                                if (ok) openLabel();
+                              } else {
+                                openLabel();
+                              }
+                            },
+                      icon: buying
+                          ? SizedBox(
+                              width: 16.r,
+                              height: 16.r,
+                              child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : Icon(
+                              canBuy ? Icons.local_shipping_rounded : Icons.print_rounded,
+                              color: canBuy ? Colors.white : const Color(0xFF8B9BFF),
+                              size: 18.sp,
+                            ),
+                      label: Text(
+                        buying
+                            ? "Creating label…"
+                            : (canBuy ? "Get Shipping Label" : "Print Shipping Label"),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13.5.sp,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (controller.hasCarrierLabel) ...[
+                    SizedBox(height: 6.h),
+                    Text(
+                      [
+                        if (controller.labelServiceName.isNotEmpty) controller.labelServiceName,
+                        if (controller.isSampleLabel) "Sample label for testing — not real postage",
+                      ].join(' · '),
+                      style: TextStyle(color: Colors.white38, fontSize: 11.sp),
+                    ),
+                  ] else if (canBuy) ...[
+                    SizedBox(height: 6.h),
+                    Text(
+                      "The buyer paid for shipping at checkout.",
+                      style: TextStyle(color: Colors.white38, fontSize: 11.sp),
+                    ),
+                  ],
+                ],
               ),
-            ),
-          ),
-        ),
+            );
+          }),
 
         // BUYER ONLY: refund request. ARIES reviews it; nothing is reversed
         // until an admin approves.

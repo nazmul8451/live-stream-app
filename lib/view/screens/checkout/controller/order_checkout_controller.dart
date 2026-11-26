@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -8,6 +9,7 @@ import '../../../../data/helpers/shared_prefe.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../../../../data/services/pending_order_service.dart';
+import '../../../../data/services/shipping_service.dart';
 import '../../../../data/services/socket_service.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 import 'package:live_stream_app/global/helper/stripe_account_scope.dart';
@@ -39,6 +41,17 @@ class OrderCheckoutController extends GetxController {
   // Pricing
   final RxDouble itemSubtotal = 0.0.obs;
   final RxDouble shippingFee = 15.00.obs;
+
+  // Live USPS rates for this item to the buyer's address.
+  final RxList<ShippingRate> shippingRates = <ShippingRate>[].obs;
+  final Rx<ShippingRate?> selectedRate = Rx<ShippingRate?>(null);
+  final RxBool isLoadingRates = false.obs;
+  final RxString ratesMessage = "".obs;
+  Timer? _ratesDebounce;
+  String _lastRatesKey = "";
+
+  /// True when the shipping price is a fallback guess, not a carrier rate.
+  bool get isShippingEstimated => selectedRate.value == null;
   final RxDouble authenticationFee = 0.00.obs;
   final RxDouble estimatedTax = 0.0.obs;
   final RxDouble totalAmount = 0.0.obs;
@@ -55,8 +68,89 @@ class OrderCheckoutController extends GetxController {
       product.assignAll(Map<String, dynamic>.from(Get.arguments));
       _calculatePricing();
     }
-    _loadUserSavedAddress();
+    _loadUserSavedAddress().then((_) => refreshShippingRates());
     loadSavedCards();
+    for (final c in [streetController, cityController, stateController, zipCodeController]) {
+      c.addListener(_scheduleRatesRefresh);
+    }
+  }
+
+  void _scheduleRatesRefresh() {
+    _ratesDebounce?.cancel();
+    _ratesDebounce = Timer(const Duration(milliseconds: 900), refreshShippingRates);
+  }
+
+  bool get _addressComplete =>
+      streetController.text.trim().isNotEmpty &&
+      cityController.text.trim().isNotEmpty &&
+      stateController.text.trim().length >= 2 &&
+      zipCodeController.text.trim().length >= 5;
+
+  /// Fetches real rates once the delivery address is complete. Until then
+  /// (or if the seller has no ship-from address) the old flat estimate stays.
+  Future<void> refreshShippingRates() async {
+    final productId = (product['_id'] ?? product['id'] ?? '').toString();
+    if (productId.isEmpty) return;
+
+    if (!_addressComplete) {
+      shippingRates.clear();
+      selectedRate.value = null;
+      ratesMessage.value = "Enter your address to see shipping options.";
+      _applyShipping();
+      return;
+    }
+
+    final key = [
+      streetController.text.trim(),
+      cityController.text.trim(),
+      stateController.text.trim().toUpperCase(),
+      zipCodeController.text.trim(),
+    ].join('|');
+    if (key == _lastRatesKey && shippingRates.isNotEmpty) return;
+    _lastRatesKey = key;
+
+    isLoadingRates.value = true;
+    ratesMessage.value = "";
+    final result = await ShippingService.getRates(
+      productId: productId,
+      name: fullNameController.text.trim(),
+      street: streetController.text.trim(),
+      city: cityController.text.trim(),
+      state: stateController.text.trim().toUpperCase(),
+      zip: zipCodeController.text.trim(),
+    );
+    // A newer address was typed while this one was loading.
+    if (key != _lastRatesKey) return;
+    isLoadingRates.value = false;
+
+    if (result.ok && (result.data?.isNotEmpty ?? false)) {
+      final rates = result.data!;
+      shippingRates.assignAll(rates);
+      final keep = rates.firstWhereOrNull((r) => r.service == selectedRate.value?.service);
+      selectedRate.value = keep ?? rates.first;
+    } else {
+      shippingRates.clear();
+      selectedRate.value = null;
+      ratesMessage.value = result.error ?? "Shipping could not be calculated.";
+    }
+    _applyShipping();
+  }
+
+  void selectRate(ShippingRate rate) {
+    selectedRate.value = rate;
+    _applyShipping();
+  }
+
+  void _applyShipping() {
+    final rate = selectedRate.value;
+    if (rate != null) {
+      shippingFee.value = rate.amount;
+    } else {
+      shippingFee.value = double.tryParse(product['shippingFee']?.toString() ?? '') ?? 15.00;
+    }
+    totalAmount.value = double.parse(
+      (itemSubtotal.value + shippingFee.value + estimatedTax.value).toStringAsFixed(2),
+    );
   }
 
   Future<void> loadSavedCards() async {
@@ -141,6 +235,17 @@ class OrderCheckoutController extends GetxController {
       showAppSnackbar(
         "Address Required",
         "Please fill in your delivery street, city, state, and ZIP code.",
+        backgroundColor: const Color(0xFFFF6B35),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
+    if (isLoadingRates.value) {
+      showAppSnackbar(
+        "One moment",
+        "Still calculating shipping for your address.",
         backgroundColor: const Color(0xFFFF6B35),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -388,7 +493,9 @@ class OrderCheckoutController extends GetxController {
       if (sellerId.isNotEmpty) "sellerId": sellerId,
       if (userId.isNotEmpty) "buyerId": userId,
       "purchaseType": "buy_now",
+      if (product['showStreamId'] != null) "streamId": product['showStreamId'],
       "totalPaid": totalAmount.value,
+      if (selectedRate.value != null) "shippingService": selectedRate.value!.service,
       if (paymentIntentId != null && paymentIntentId.startsWith('pi_')) "paymentIntentId": paymentIntentId,
       "amountDetails": {
         "itemSubtotal": itemSubtotal.value,
@@ -496,6 +603,7 @@ class OrderCheckoutController extends GetxController {
 
   @override
   void onClose() {
+    _ratesDebounce?.cancel();
     fullNameController.dispose();
     phoneController.dispose();
     streetController.dispose();

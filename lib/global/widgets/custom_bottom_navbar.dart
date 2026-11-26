@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import '../../core/app_route.dart';
 import '../../view/screens/main/controller/main_controller.dart';
 import '../helper/auth_guard.dart';
 
@@ -233,20 +234,19 @@ class CustomBottomNavbar extends StatelessWidget {
     });
   }
 
-  /// Client spec: Sell offers TRADING or ADD TO Inventory.
   void _showSellOptions() {
     Widget option({
       required IconData icon,
       required Color color,
       required String title,
       required String subtitle,
-      required int mode,
+      required VoidCallback onSelected,
     }) {
       return InkWell(
         borderRadius: BorderRadius.circular(16.r),
         onTap: () {
           Get.back();
-          Get.toNamed('/create_trade', arguments: {'mode': mode});
+          onSelected();
         },
         child: Container(
           padding: EdgeInsets.all(16.r),
@@ -282,42 +282,58 @@ class CustomBottomNavbar extends StatelessWidget {
 
     Get.bottomSheet(
       SafeArea(
-        child: Container(
-          padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0F1222),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40.w,
-                  height: 4.h,
-                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2.r)),
+        child: SingleChildScrollView(
+          child: Container(
+            padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F1222),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2.r)),
+                  ),
                 ),
-              ),
-              SizedBox(height: 16.h),
-              Text("What would you like to do?", style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w900)),
-              SizedBox(height: 16.h),
-              option(
-                icon: Icons.swap_horiz_rounded,
-                color: const Color(0xFF8B9BFF),
-                title: "Trading",
-                subtitle: "List an item specifically for trading with another user.",
-                mode: 0,
-              ),
-              SizedBox(height: 12.h),
-              option(
-                icon: Icons.inventory_2_rounded,
-                color: const Color(0xFF10B981),
-                title: "Add to Inventory",
-                subtitle: "Upload and save products to your personal inventory for future giveaways and auctions in your live shows.",
-                mode: 1,
-              ),
-            ],
+                SizedBox(height: 16.h),
+                Text("What would you like to do?", style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w900)),
+                SizedBox(height: 16.h),
+                option(
+                  icon: Icons.swap_horiz_rounded,
+                  color: const Color(0xFF8B9BFF),
+                  title: "Trading",
+                  subtitle: "List an item specifically for trading with another user.",
+                  onSelected: () => Get.toNamed(
+                    AppRoute.createTrade,
+                    arguments: {'mode': 0},
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                option(
+                  icon: Icons.inventory_2_rounded,
+                  color: const Color(0xFF10B981),
+                  title: "Add to Inventory",
+                  subtitle: "Upload and save products to your personal inventory for future giveaways and auctions in your live shows.",
+                  onSelected: () => Get.toNamed(
+                    AppRoute.createTrade,
+                    arguments: {'mode': 1},
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                option(
+                  icon: Icons.storefront_rounded,
+                  color: const Color(0xFFF5B86B),
+                  title: 'Become a Seller',
+                  subtitle: 'Apply to sell and host live shows, or check your application status.',
+                  onSelected: () => Get.toNamed(AppRoute.sellerApplication),
+                ),
+              ],
+            ),
           ),
         ),
       ),
