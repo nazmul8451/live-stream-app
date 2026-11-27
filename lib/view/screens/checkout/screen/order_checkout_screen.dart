@@ -27,12 +27,11 @@ class OrderCheckoutScreen extends StatelessWidget {
             onPressed: () => Get.back(),
           ),
           title: Text(
-            "Order Checkout",
+            "Checkout",
             style: TextStyle(
               color: Colors.white,
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.3,
+              fontSize: 17.sp,
+              fontWeight: FontWeight.w600,
             ),
           ),
           centerTitle: true,
@@ -49,9 +48,9 @@ class OrderCheckoutScreen extends StatelessWidget {
           }
 
           final seller = product['sellerId'] ?? product['seller'];
-          String sellerName = 'Verified Curator';
+          String sellerName = 'Seller';
           if (seller is Map) {
-            sellerName = seller['fullName'] ?? seller['name'] ?? seller['username'] ?? 'Verified Curator';
+            sellerName = seller['fullName'] ?? seller['name'] ?? seller['username'] ?? 'Seller';
           } else if (seller != null) {
             sellerName = seller.toString();
           }
@@ -68,28 +67,28 @@ class OrderCheckoutScreen extends StatelessWidget {
                 SizedBox(height: 24.h),
 
                 // 2. Shipping Address Section
-                _buildSectionHeader("SHIPPING ADDRESS", Icons.location_on_outlined),
+                _buildSectionHeader("Shipping address", Icons.location_on_outlined),
                 SizedBox(height: 12.h),
                 _buildAddressCard(controller),
 
                 SizedBox(height: 24.h),
 
                 // 2b. Shipping method (live USPS rates)
-                _buildSectionHeader("SHIPPING METHOD", Icons.local_shipping_outlined),
+                _buildSectionHeader("Shipping method", Icons.local_shipping_outlined),
                 SizedBox(height: 12.h),
                 _buildShippingOptionsCard(controller),
 
                 SizedBox(height: 24.h),
 
                 // 3. Payment Method Section
-                _buildSectionHeader("PAYMENT METHOD", Icons.credit_card_outlined),
+                _buildSectionHeader("Payment", Icons.credit_card_outlined),
                 SizedBox(height: 12.h),
                 _buildPaymentMethodSelectorCard(controller),
 
                 SizedBox(height: 24.h),
 
                 // 4. Price Breakdown Section
-                _buildSectionHeader("PAYMENT SUMMARY", Icons.receipt_long_outlined),
+                _buildSectionHeader("Summary", Icons.receipt_long_outlined),
                 SizedBox(height: 12.h),
                 _buildPriceBreakdownCard(controller),
 
@@ -111,15 +110,12 @@ class OrderCheckoutScreen extends StatelessWidget {
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF8B9BFF), size: 16.sp),
-        SizedBox(width: 8.w),
         Text(
           title,
           style: TextStyle(
-            color: const Color(0xFF8B9BFF),
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.0,
+            color: Colors.white,
+            fontSize: 17.sp,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -127,31 +123,24 @@ class OrderCheckoutScreen extends StatelessWidget {
   }
 
   Widget _buildProductSummaryCard(String imgUrl, String title, String sellerName, Map<String, dynamic> product) {
-    final condition = product['condition'] ?? 'MINT';
+    final condition = (product['condition'] ?? '').toString();
 
     return Container(
       padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        color: const Color(0xFF161622),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 20.r,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Row(
         children: [
           // Image
           ClipRRect(
-            borderRadius: BorderRadius.circular(16.r),
+            borderRadius: BorderRadius.circular(10.r),
             child: Container(
-              width: 80.w,
-              height: 80.w,
-              color: const Color(0xFF1E1E2C),
+              width: 72.w,
+              height: 72.w,
+              color: const Color(0xFF1A1A25),
               child: imgUrl.isNotEmpty
                   ? (imgUrl.startsWith('data:image/')
                       ? Image.memory(base64Decode(imgUrl.split(',').last), fit: BoxFit.cover)
@@ -170,23 +159,6 @@ class OrderCheckoutScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B9BFF).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Text(
-                    condition.toString().toUpperCase(),
-                    style: TextStyle(
-                      color: const Color(0xFF8B9BFF),
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 6.h),
                 Text(
                   title,
                   maxLines: 2,
@@ -194,23 +166,15 @@ class OrderCheckoutScreen extends StatelessWidget {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 15.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 SizedBox(height: 4.h),
-                Row(
-                  children: [
-                    Icon(Icons.storefront_rounded, color: Colors.white38, size: 13.sp),
-                    SizedBox(width: 4.w),
-                    Expanded(
-                      child: Text(
-                        "Seller: $sellerName",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Colors.white54, fontSize: 12.sp),
-                      ),
-                    ),
-                  ],
+                Text(
+                  [sellerName, if (condition.isNotEmpty) condition].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white54, fontSize: 13.sp),
                 ),
               ],
             ),
@@ -224,9 +188,9 @@ class OrderCheckoutScreen extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(18.r),
       decoration: BoxDecoration(
-        color: const Color(0xFF161622),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -236,15 +200,15 @@ class OrderCheckoutScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: _buildInputField(
-                  label: "RECIPIENT NAME",
+                  label: "Full name",
                   controller: controller.fullNameController,
-                  hint: "Full Name",
+                  hint: "Jane Doe",
                 ),
               ),
               SizedBox(width: 12.w),
               Expanded(
                 child: _buildInputField(
-                  label: "PHONE NUMBER",
+                  label: "Phone",
                   controller: controller.phoneController,
                   hint: "+1 (555) 000-0000",
                 ),
@@ -255,7 +219,7 @@ class OrderCheckoutScreen extends StatelessWidget {
 
           // Street
           _buildInputField(
-            label: "STREET ADDRESS",
+            label: "Street address",
             controller: controller.streetController,
             hint: "123 Main Street, Apt 4B",
           ),
@@ -267,7 +231,7 @@ class OrderCheckoutScreen extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: _buildInputField(
-                  label: "CITY",
+                  label: "City",
                   controller: controller.cityController,
                   hint: "City",
                 ),
@@ -276,7 +240,7 @@ class OrderCheckoutScreen extends StatelessWidget {
               Expanded(
                 flex: 1,
                 child: _buildInputField(
-                  label: "STATE",
+                  label: "State",
                   controller: controller.stateController,
                   hint: "NY",
                 ),
@@ -285,7 +249,7 @@ class OrderCheckoutScreen extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: _buildInputField(
-                  label: "ZIP CODE",
+                  label: "ZIP code",
                   controller: controller.zipCodeController,
                   hint: "10001",
                 ),
@@ -302,9 +266,9 @@ class OrderCheckoutScreen extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(14.r),
       decoration: BoxDecoration(
-        color: const Color(0xFF161622),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Obx(() {
         if (controller.isLoadingRates.value) {
@@ -369,10 +333,9 @@ class OrderCheckoutScreen extends StatelessWidget {
                 margin: EdgeInsets.symmetric(vertical: 4.h),
                 padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h),
                 decoration: BoxDecoration(
-                  color: isSelected ? accent.withOpacity(0.10) : const Color(0xFF1E1E2C),
-                  borderRadius: BorderRadius.circular(14.r),
+                  borderRadius: BorderRadius.circular(10.r),
                   border: Border.all(
-                    color: isSelected ? accent.withOpacity(0.55) : Colors.white.withOpacity(0.06),
+                    color: isSelected ? accent.withOpacity(0.6) : Colors.white.withOpacity(0.08),
                   ),
                 ),
                 child: Row(
@@ -391,15 +354,15 @@ class OrderCheckoutScreen extends StatelessWidget {
                             rate.displayName,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           if (rate.etaLabel.isNotEmpty) ...[
                             SizedBox(height: 2.h),
                             Text(
                               rate.etaLabel,
-                              style: TextStyle(color: Colors.white38, fontSize: 11.sp),
+                              style: TextStyle(color: Colors.white54, fontSize: 12.sp),
                             ),
                           ],
                         ],
@@ -408,9 +371,9 @@ class OrderCheckoutScreen extends StatelessWidget {
                     Text(
                       "\$${rate.amount.toStringAsFixed(2)}",
                       style: TextStyle(
-                        color: isSelected ? accent : Colors.white70,
+                        color: Colors.white,
                         fontSize: 14.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -434,23 +397,21 @@ class OrderCheckoutScreen extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white38,
-            fontSize: 9.sp,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.6,
+            color: Colors.white54,
+            fontSize: 12.sp,
           ),
         ),
         SizedBox(height: 6.h),
         Container(
           padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.h),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E1E2C),
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: Colors.white.withOpacity(0.06)),
+            color: Colors.white.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
           ),
           child: TextField(
             controller: controller,
-            style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w600),
+            style: TextStyle(color: Colors.white, fontSize: 14.sp),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: Colors.white24, fontSize: 13.sp),
@@ -468,9 +429,9 @@ class OrderCheckoutScreen extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(18.r),
       decoration: BoxDecoration(
-        color: const Color(0xFF161622),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Obx(() {
         if (controller.savedCards.isNotEmpty) {
@@ -479,7 +440,7 @@ class OrderCheckoutScreen extends StatelessWidget {
             (c) => c['id'] == selectedId,
             orElse: () => controller.savedCards.first,
           );
-          final brand = (currentCard['brand'] ?? 'Card').toString().toUpperCase();
+          final brand = _brand(currentCard['brand']);
           final last4 = currentCard['last4']?.toString() ?? '••••';
 
           return Row(
@@ -487,26 +448,19 @@ class OrderCheckoutScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: EdgeInsets.all(8.r),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    child: Icon(Icons.credit_card_rounded, color: const Color(0xFF8B9BFF), size: 20.sp),
-                  ),
+                  Icon(Icons.credit_card_rounded, color: Colors.white70, size: 22.sp),
                   SizedBox(width: 12.w),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         "$brand •••• $last4",
-                        style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w700),
+                        style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w500),
                       ),
                       SizedBox(height: 2.h),
                       Text(
-                        "Instant 1-Tap Checkout",
-                        style: TextStyle(color: const Color(0xFF22C55E), fontSize: 11.sp, fontWeight: FontWeight.bold),
+                        "Saved card",
+                        style: TextStyle(color: Colors.white54, fontSize: 12.sp),
                       ),
                     ],
                   ),
@@ -516,7 +470,7 @@ class OrderCheckoutScreen extends StatelessWidget {
                 onPressed: () => _showCardSelectionDialog(controller),
                 child: Text(
                   "Change",
-                  style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w700),
+                  style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 14.sp, fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -525,22 +479,15 @@ class OrderCheckoutScreen extends StatelessWidget {
 
         return Row(
           children: [
-            Container(
-              padding: EdgeInsets.all(8.r),
-              decoration: BoxDecoration(
-                color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10.r),
-              ),
-              child: Icon(Icons.payment_rounded, color: const Color(0xFF8B9BFF), size: 20.sp),
-            ),
+            Icon(Icons.credit_card_rounded, color: Colors.white70, size: 22.sp),
             SizedBox(width: 12.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Credit / Debit Card (Stripe)", style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w700)),
+                  Text("Card", style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w500)),
                   SizedBox(height: 2.h),
-                  Text("Enter details via Stripe PaymentSheet", style: TextStyle(color: Colors.white38, fontSize: 11.sp)),
+                  Text("You'll enter it on the next step", style: TextStyle(color: Colors.white54, fontSize: 12.sp)),
                 ],
               ),
             ),
@@ -549,16 +496,9 @@ class OrderCheckoutScreen extends StatelessWidget {
                 await Get.toNamed(AppRoute.paymentMethods);
                 controller.loadSavedCards();
               },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Text(
-                  "+ Add Card",
-                  style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 11.sp, fontWeight: FontWeight.bold),
-                ),
+              child: Text(
+                "Add card",
+                style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 14.sp, fontWeight: FontWeight.w500),
               ),
             ),
           ],
@@ -572,8 +512,8 @@ class OrderCheckoutScreen extends StatelessWidget {
       Container(
         padding: EdgeInsets.all(24.r),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E1E2C),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+          color: const Color(0xFF13131D),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -582,7 +522,7 @@ class OrderCheckoutScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Select Payment Card", style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.bold)),
+                Text("Choose a card", style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.bold)),
                 IconButton(icon: const Icon(Icons.close, color: Colors.white38), onPressed: () => Get.back()),
               ],
             ),
@@ -592,7 +532,7 @@ class OrderCheckoutScreen extends StatelessWidget {
                 ...controller.savedCards.map((card) {
                   final id = card['id']?.toString() ?? '';
                   final isSelected = controller.selectedPaymentMethodId.value == id;
-                  final brand = (card['brand'] ?? 'Card').toString().toUpperCase();
+                  final brand = _brand(card['brand']);
                   final last4 = card['last4']?.toString() ?? '••••';
 
                   return ListTile(
@@ -609,7 +549,7 @@ class OrderCheckoutScreen extends StatelessWidget {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF8B9BFF)),
-                  title: const Text("Manage & Add New Cards", style: TextStyle(color: Color(0xFF8B9BFF), fontWeight: FontWeight.bold)),
+                  title: const Text("Manage cards", style: TextStyle(color: Color(0xFF8B9BFF), fontWeight: FontWeight.bold)),
                   onTap: () async {
                     Get.back();
                     await Get.toNamed(AppRoute.paymentMethods);
@@ -629,27 +569,20 @@ class OrderCheckoutScreen extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(18.r),
       decoration: BoxDecoration(
-        color: const Color(0xFF161622),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
         children: [
-          _buildSummaryRow("Item Subtotal", "\$${controller.itemSubtotal.value.toStringAsFixed(2)}"),
+          _buildSummaryRow("Item", "\$${controller.itemSubtotal.value.toStringAsFixed(2)}"),
           SizedBox(height: 12.h),
           _buildSummaryRow(
             controller.isShippingEstimated ? "Shipping (estimated)" : "Shipping",
             "\$${controller.shippingFee.value.toStringAsFixed(2)}",
           ),
           SizedBox(height: 12.h),
-          _buildSummaryRow(
-            "CultureCards Authentication",
-            "FREE",
-            valueColor: const Color(0xFF22C55E),
-            isBold: true,
-          ),
-          SizedBox(height: 12.h),
-          _buildSummaryRow("Estimated Sales Tax (5%)", "\$${controller.estimatedTax.value.toStringAsFixed(2)}"),
+          _buildSummaryRow("Estimated sales tax (5%)", "\$${controller.estimatedTax.value.toStringAsFixed(2)}"),
           SizedBox(height: 16.h),
           Divider(color: Colors.white.withOpacity(0.08)),
           SizedBox(height: 12.h),
@@ -657,19 +590,19 @@ class OrderCheckoutScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Total Amount",
+                "Total",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16.sp,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
                 "\$${controller.totalAmount.value.toStringAsFixed(2)}",
                 style: TextStyle(
-                  color: const Color(0xFF8B9BFF),
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -686,17 +619,16 @@ class OrderCheckoutScreen extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white60,
-            fontSize: 13.sp,
-            fontWeight: FontWeight.w500,
+            color: Colors.white54,
+            fontSize: 14.sp,
           ),
         ),
         Text(
           value,
           style: TextStyle(
             color: valueColor ?? Colors.white,
-            fontSize: 13.sp,
-            fontWeight: isBold ? FontWeight.w900 : FontWeight.w700,
+            fontSize: 14.sp,
+            fontWeight: isBold ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ],
@@ -704,57 +636,32 @@ class OrderCheckoutScreen extends StatelessWidget {
   }
 
   Widget _buildBuyerProtectionBadge() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
-      decoration: BoxDecoration(
-        color: const Color(0xFF22C55E).withOpacity(0.08),
-        borderRadius: BorderRadius.circular(18.r),
-        border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.shield_outlined, color: const Color(0xFF22C55E), size: 22.sp),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "100% Buyer Guarantee & Vault Authentication",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 2.h),
-                Text(
-                  "Items are verified for authenticity before payout release.",
-                  style: TextStyle(
-                    color: Colors.white60,
-                    fontSize: 11.sp,
-                  ),
-                ),
-              ],
-            ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.lock_outline_rounded, color: Colors.white54, size: 18.sp),
+        SizedBox(width: 10.w),
+        Expanded(
+          child: Text(
+            "Your card details never reach the seller. If something's wrong with the order, you can request a refund from your purchases.",
+            style: TextStyle(color: Colors.white54, fontSize: 13.sp, height: 1.45),
           ),
-        ],
-      ),
+        ),
+      ],
     );
+  }
+
+  static String _brand(dynamic raw) {
+    final b = (raw ?? 'Card').toString().trim();
+    if (b.isEmpty) return 'Card';
+    return b[0].toUpperCase() + b.substring(1).toLowerCase();
   }
 
   Widget _buildBottomPayBar(OrderCheckoutController controller) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F0B1E),
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.08))),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.6),
-            blurRadius: 20.r,
-            offset: const Offset(0, -6),
-          ),
-        ],
+        color: const Color(0xFF0C0C14),
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
       ),
       child: SafeArea(
         top: false,
@@ -768,12 +675,10 @@ class OrderCheckoutScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "TOTAL PAYABLE",
+                    "Total",
                     style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 10.sp,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
+                      color: Colors.white54,
+                      fontSize: 12.sp,
                     ),
                   ),
                   SizedBox(height: 2.h),
@@ -781,8 +686,8 @@ class OrderCheckoutScreen extends StatelessWidget {
                     "\$${controller.totalAmount.value.toStringAsFixed(2)}",
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 22.sp,
-                      fontWeight: FontWeight.w900,
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -792,7 +697,7 @@ class OrderCheckoutScreen extends StatelessWidget {
               // Pay Button on right
               Expanded(
                 child: SizedBox(
-                  height: 52.h,
+                  height: 48.h,
                   child: ElevatedButton(
                     onPressed: controller.isProcessing.value ? null : () => controller.proceedToPayment(),
                     style: ElevatedButton.styleFrom(
@@ -800,7 +705,7 @@ class OrderCheckoutScreen extends StatelessWidget {
                       disabledBackgroundColor: const Color(0xFF8B9BFF).withValues(alpha: 0.6),
                       foregroundColor: const Color(0xFF0F0B1E),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(26.r),
+                        borderRadius: BorderRadius.circular(12.r),
                       ),
                       elevation: 0,
                     ),
@@ -812,10 +717,10 @@ class OrderCheckoutScreen extends StatelessWidget {
                               Icon(Icons.lock_outline_rounded, size: 18.sp, color: const Color(0xFF0F0B1E)),
                               SizedBox(width: 8.w),
                               Text(
-                                "Pay with Stripe",
+                                "Pay now",
                                 style: TextStyle(
-                                  fontSize: 15.5.sp,
-                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.w600,
                                   color: const Color(0xFF0F0B1E),
                                 ),
                               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'plain_text.dart';
 
 enum _Tone { success, error, warning, info }
 
@@ -38,8 +39,8 @@ void showAppSnackbar(
     _Tone.info => Icons.info_rounded,
   };
 
-  final cleanTitle = isValidation ? 'Almost there' : _friendlyTitle(_stripEmoji(title), tone);
-  final cleanMessage = _friendlyMessage(_stripEmoji(message), tone);
+  final cleanTitle = isValidation ? 'Almost there' : _friendlyTitle(stripEmoji(title), tone);
+  final cleanMessage = _friendlyMessage(stripEmoji(message), tone);
 
   if (Get.isSnackbarOpen) {
     Get.closeCurrentSnackbar();
@@ -169,10 +170,3 @@ bool _isValidationHint(String message) {
   final m = message.trim().toLowerCase();
   return RegExp(r"^(please (enter|select|add|choose|fill|provide|pick|upload)|.* (is|are) required|.* (cannot|can't|can not) be empty)").hasMatch(m);
 }
-
-/// Server messages carry emoji the app font cannot draw (they show as boxes).
-String _stripEmoji(String text) => text
-    .replaceAll(RegExp(r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]', unicode: true), '')
-    .replaceAll(RegExp(r'[ \t]{2,}'), ' ')
-    .replaceAll(RegExp(r'\n[ \t]+'), '\n')
-    .trim();

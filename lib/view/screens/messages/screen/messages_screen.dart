@@ -7,6 +7,7 @@ import '../controller/messages_controller.dart';
 import '../../../../global/widgets/custom_shimmer.dart';
 import '../../../../data/helpers/shared_prefe.dart';
 import 'package:live_stream_app/global/widgets/user_avatar.dart';
+import 'package:live_stream_app/global/helper/plain_text.dart';
 
 class MessagesScreen extends GetView<MessagesController> {
   const MessagesScreen({super.key});
@@ -71,12 +72,12 @@ class MessagesScreen extends GetView<MessagesController> {
                             return Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildSectionHeader("UPDATES"),
+                                _buildSectionHeader("Updates"),
                                 SizedBox(height: 16.h),
                                 _buildUpdateCardShimmer(),
                                 _buildUpdateCardShimmer(),
                                 SizedBox(height: 24.h),
-                                _buildSectionHeader("MESSAGES"),
+                                _buildSectionHeader("Chats"),
                                 SizedBox(height: 16.h),
                                 _buildMessageRowShimmer(),
                                 _buildMessageRowShimmer(),
@@ -103,8 +104,8 @@ class MessagesScreen extends GetView<MessagesController> {
                                       ),
                                       child: Icon(
                                         Icons.chat_bubble_outline_rounded,
-                                        color: const Color(0xFF8B9BFF),
-                                        size: 40.sp,
+                                        color: Colors.white38,
+                                        size: 36.sp,
                                       ),
                                     ),
                                     SizedBox(height: 20.h),
@@ -113,12 +114,12 @@ class MessagesScreen extends GetView<MessagesController> {
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 18.sp,
-                                        fontWeight: FontWeight.w900,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                     SizedBox(height: 8.h),
                                     Text(
-                                      "You don't have any conversations yet.\nStart chatting to trade or purchase items!",
+                                      "When you message a seller or make an offer, the chat shows up here.",
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: Colors.white38,
@@ -139,7 +140,7 @@ class MessagesScreen extends GetView<MessagesController> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (updates.isNotEmpty) ...[
-                                _buildSectionHeader("UPDATES", badge: newUpdatesCount > 0 ? "$newUpdatesCount NEW" : null),
+                                _buildSectionHeader("Updates", badge: newUpdatesCount > 0 ? "$newUpdatesCount new" : null),
                                 SizedBox(height: 16.h),
                                 ...updates.map((up) => _buildUpdateCard(
                                   name: up['name'] ?? '',
@@ -154,7 +155,7 @@ class MessagesScreen extends GetView<MessagesController> {
                               ],
 
                               if (chats.isNotEmpty) ...[
-                                _buildSectionHeader("MESSAGES"),
+                                _buildSectionHeader("Chats"),
                                 SizedBox(height: 16.h),
                                 ...chats.map((ch) => _buildMessageRow(
                                   id: ch['id'] ?? '',
@@ -184,24 +185,25 @@ class MessagesScreen extends GetView<MessagesController> {
 
   Widget _buildSearchBar() {
     return Container(
-      height: 64.h,
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
+      height: 48.h,
+      padding: EdgeInsets.symmetric(horizontal: 14.w),
       decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(32.r),
-        border: Border.all(color: Colors.white12, width: 1.5),
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Row(
         children: [
-          Icon(Icons.search, color: Colors.white, size: 24.sp),
-          SizedBox(width: 16.w),
+          Icon(Icons.search_rounded, color: Colors.white54, size: 20.sp),
+          SizedBox(width: 12.w),
           Expanded(
             child: TextField(
-              style: TextStyle(color: Colors.white, fontSize: 16.sp),
+              style: TextStyle(color: Colors.white, fontSize: 14.sp),
               decoration: InputDecoration(
-                hintText: "Search conversations, orders, or trades...",
-                hintStyle: TextStyle(color: Colors.white38, fontSize: 16.sp),
+                hintText: "Search chats and updates",
+                hintStyle: TextStyle(color: Colors.white38, fontSize: 14.sp),
                 border: InputBorder.none,
+                isDense: true,
               ),
             ),
           ),
@@ -219,20 +221,23 @@ class MessagesScreen extends GetView<MessagesController> {
             final isSelected = msgCtrl.selectedFilter.value == index;
             return GestureDetector(
               onTap: () => msgCtrl.changeFilter(index),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
                 margin: EdgeInsets.symmetric(horizontal: 4.w),
-                padding: EdgeInsets.symmetric(vertical: 14.h),
+                height: 38.h,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF8B9BFF) : const Color(0xFF161622),
-                  borderRadius: BorderRadius.circular(28.r),
+                  color: isSelected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(color: isSelected ? Colors.white : Colors.white.withOpacity(0.1)),
                 ),
                 child: Text(
                   msgCtrl.filters[index],
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: isSelected ? Colors.black : Colors.white38,
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w900,
+                    color: isSelected ? const Color(0xFF0F0B1E) : Colors.white70,
+                    fontSize: 14.sp,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ),
@@ -247,13 +252,9 @@ class MessagesScreen extends GetView<MessagesController> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w900, letterSpacing: 1)),
+        Text(title, style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w600)),
         if (badge != null)
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-            decoration: BoxDecoration(color: const Color(0xFF1E1E2C), borderRadius: BorderRadius.circular(8.r)),
-            child: Text(badge, style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.sp, fontWeight: FontWeight.w900)),
-          ),
+          Text(badge, style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w500)),
       ],
     );
   }
@@ -281,6 +282,8 @@ class MessagesScreen extends GetView<MessagesController> {
     bool hasNew = false,
     Map<String, dynamic>? itemData,
   }) {
+    name = stripEmoji(name);
+    message = stripEmoji(message);
     final String type = (itemData?['type'] ?? '').toString();
     final String prodTitle = (itemData?['productTitle'] ?? '').toString();
     final String amount = (itemData?['amount'] ?? '').toString();
@@ -361,14 +364,14 @@ class MessagesScreen extends GetView<MessagesController> {
           Get.toNamed(AppRoute.purchases);
         }
       },
-      borderRadius: BorderRadius.circular(24.r),
+      borderRadius: BorderRadius.circular(16.r),
       child: Container(
-        margin: EdgeInsets.only(bottom: 16.h),
-        padding: EdgeInsets.all(20.r),
+        margin: EdgeInsets.only(bottom: 12.h),
+        padding: EdgeInsets.all(14.r),
         decoration: BoxDecoration(
-          color: const Color(0xFF161622),
-          borderRadius: BorderRadius.circular(24.r),
-          border: hasNew ? Border.all(color: const Color(0xFF8B9BFF).withOpacity(0.35), width: 1.2) : null,
+          color: const Color(0xFF13131D),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,14 +391,14 @@ class MessagesScreen extends GetView<MessagesController> {
                           Expanded(
                             child: Text(
                               name,
-                              style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                              style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w600),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Row(
                             children: [
-                              Text(time, style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w700)),
+                              Text(time, style: TextStyle(color: Colors.white38, fontSize: 12.sp)),
                               if (hasNew) ...[
                                 SizedBox(width: 8.w),
                                 Container(width: 8.h, height: 8.h, decoration: const BoxDecoration(color: Color(0xFF8B9BFF), shape: BoxShape.circle)),
@@ -424,18 +427,17 @@ class MessagesScreen extends GetView<MessagesController> {
                   final isAuction = tag.toUpperCase().contains('AUCTION');
                   return Container(
                     margin: EdgeInsets.only(right: 8.w),
-                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                     decoration: BoxDecoration(
-                      color: isAuction ? const Color(0xFFFFB800).withOpacity(0.15) : Colors.black26,
-                      borderRadius: BorderRadius.circular(10.r),
-                      border: isAuction ? Border.all(color: const Color(0xFFFFB800).withOpacity(0.3)) : null,
+                      color: Colors.white.withOpacity(isAuction ? 0.08 : 0.05),
+                      borderRadius: BorderRadius.circular(6.r),
                     ),
                     child: Text(
-                      tag,
+                      _sentence(tag),
                       style: TextStyle(
-                        color: isAuction ? const Color(0xFFFFB800) : Colors.white54,
-                        fontSize: 10.sp,
-                        fontWeight: FontWeight.w800,
+                        color: Colors.white60,
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   );
@@ -472,12 +474,12 @@ class MessagesScreen extends GetView<MessagesController> {
         });
       },
       child: Padding(
-        padding: EdgeInsets.only(bottom: 24.h),
+        padding: EdgeInsets.only(bottom: 18.h),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildUserAvatar(avatar, 56.r),
-            SizedBox(width: 16.w),
+            _buildUserAvatar(avatar, 48.r),
+            SizedBox(width: 12.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,11 +492,11 @@ class MessagesScreen extends GetView<MessagesController> {
                           name.isNotEmpty ? name : "Chat",
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                          style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w600),
                         ),
                       ),
                       SizedBox(width: 8.w),
-                      Text(time, style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w700)),
+                      Text(time, style: TextStyle(color: Colors.white38, fontSize: 12.sp)),
                     ],
                   ),
                   SizedBox(height: 4.h),
@@ -503,9 +505,9 @@ class MessagesScreen extends GetView<MessagesController> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: isSpecial ? const Color(0xFF8B9BFF) : Colors.white70,
+                      color: isSpecial ? Colors.white : Colors.white60,
                       fontSize: 14.sp,
-                      fontWeight: isSpecial ? FontWeight.w900 : FontWeight.w500,
+                      fontWeight: isSpecial ? FontWeight.w500 : FontWeight.w400,
                     ),
                   ),
                 ],
@@ -624,11 +626,11 @@ class MessagesScreen extends GetView<MessagesController> {
             ),
             SizedBox(height: 24.h),
             Text(
-              "Direct Messages",
+              "Messages",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20.sp,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             SizedBox(height: 10.h),
@@ -652,14 +654,14 @@ class MessagesScreen extends GetView<MessagesController> {
                   foregroundColor: const Color(0xFF0F0B1E),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(25.r),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
                 child: Text(
-                  "Log In to Chat",
+                  "Log in",
                   style: TextStyle(
                     fontSize: 15.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -668,5 +670,10 @@ class MessagesScreen extends GetView<MessagesController> {
         ),
       ),
     );
+  }
+
+  static String _sentence(String t) {
+    final x = t.trim().toLowerCase().replaceAll('_', ' ');
+    return x.isEmpty ? x : x[0].toUpperCase() + x.substring(1);
   }
 }

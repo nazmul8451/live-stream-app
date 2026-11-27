@@ -302,7 +302,7 @@ class HomeScreen extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: 20.h),
           alignment: Alignment.center,
           child: Text(
-            "You've reached the end ✨",
+            "That's everything for now",
             style: TextStyle(
               color: Colors.white30,
               fontSize: 12.sp,
