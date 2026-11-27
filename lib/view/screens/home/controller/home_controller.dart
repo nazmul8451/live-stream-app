@@ -344,7 +344,9 @@ class HomeController extends GetxController {
     super.onInit();
     isGuestUser.value = SharePrefsHelper.isGuest ||
         SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isEmpty;
-    final cachedName = SharePrefsHelper.getString('userName');
+    // Prefer the real name; 'userName' holds the handle.
+    final cachedFull = SharePrefsHelper.getString('fullName');
+    final cachedName = cachedFull.isNotEmpty ? cachedFull : SharePrefsHelper.getString('userName');
     if (cachedName.isNotEmpty) {
       fullName.value = cachedName.split(" ").first;
     }
@@ -621,7 +623,8 @@ class HomeController extends GetxController {
       final response = await _apiClient.getData(ApiUrl.profile);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body)['data'];
-        final String full = data['fullName'] ?? "User";
+        // Some accounts only have `name`; fall back to it before a placeholder.
+        final String full = (data['fullName'] ?? data['name'] ?? data['userName'] ?? "User").toString();
         // Extract only the first name
         fullName.value = full.split(" ").first;
         isGuestUser.value = false;

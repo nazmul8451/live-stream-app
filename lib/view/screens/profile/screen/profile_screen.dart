@@ -146,14 +146,7 @@ class ProfileScreen extends GetView<ProfileController> {
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: const Color(0xFF11111E),
-                    gradient: coverUrl.isEmpty
-                        ? const LinearGradient(
-                            colors: [Color(0xFF0D0D1A), Color(0xFF1A1040)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          )
-                        : null,
-                  ),
+                                      ),
                   child: coverUrl.isNotEmpty
                       ? _buildProfileProductImage(coverUrl)
                       : Column(
@@ -173,7 +166,7 @@ class ProfileScreen extends GetView<ProfileController> {
                             ),
                             SizedBox(height: 10.h),
                             Text(
-                              "Add Cover Photo",
+                              "Add a cover photo",
                               style: TextStyle(
                                 color: Colors.white38,
                                 fontSize: 13.sp,
@@ -206,16 +199,16 @@ class ProfileScreen extends GetView<ProfileController> {
                       children: [
                         Icon(
                           Icons.camera_alt_rounded,
-                          color: const Color(0xFF8B9BFF),
+                          color: Colors.white70,
                           size: 14.sp,
                         ),
                         SizedBox(width: 6.w),
                         Text(
-                          "Edit Cover",
+                          "Edit cover",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 11.sp,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -236,24 +229,13 @@ class ProfileScreen extends GetView<ProfileController> {
                         padding: EdgeInsets.all(3.r),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF8B9BFF), Color(0xFF22C55E)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.5),
-                              blurRadius: 16.r,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+                          color: Colors.white.withOpacity(0.12),
                         ),
                         child: UserAvatar(
                           imageUrl: profileUrl,
                           radius: 44.r,
                           backgroundColor: const Color(0xFF0D0D1A),
-                          iconColor: const Color(0xFF8B9BFF),
+                          iconColor: Colors.white38,
                           iconSize: 44.sp,
                         ),
                       ),
@@ -283,8 +265,7 @@ class ProfileScreen extends GetView<ProfileController> {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 22.sp,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.3,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -304,9 +285,9 @@ class ProfileScreen extends GetView<ProfileController> {
                   Text(
                     "@$displayUsername",
                     style: TextStyle(
-                      color: const Color(0xFF8B9BFF).withOpacity(0.85),
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w700,
+                      color: Colors.white54,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -356,7 +337,7 @@ class ProfileScreen extends GetView<ProfileController> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 13.sp,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         Padding(
@@ -481,20 +462,20 @@ class ProfileScreen extends GetView<ProfileController> {
   Widget _buildStatsRow() {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
       decoration: BoxDecoration(
-        color: const Color(0xFF141422),
-        borderRadius: BorderRadius.circular(24.r),
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
         border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Obx(() => Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildStatItem("ACTIVE", "${controller.activeCount.value}", const Color(0xFF8B9BFF), Icons.storefront_rounded),
+          _buildStatItem("Listed", "${controller.activeCount.value}", const Color(0xFF8B9BFF), Icons.storefront_rounded),
           Container(height: 32.h, width: 1, color: Colors.white10),
-          _buildStatItem("SOLD", "${controller.soldCount.value}", const Color(0xFF22C55E), Icons.shopping_bag_rounded, onTap: () => Get.toNamed(AppRoute.soldItems)),
+          _buildStatItem("Sold", "${controller.soldCount.value}", const Color(0xFF22C55E), Icons.shopping_bag_rounded, onTap: () => Get.toNamed(AppRoute.soldItems)),
           Container(height: 32.h, width: 1, color: Colors.white10),
-          _buildStatItem("TRADES", "${controller.totalTrades.value}", const Color(0xFFFF8BFF), Icons.swap_horizontal_circle_rounded, onTap: () => Get.toNamed('/my_trades')),
+          _buildStatItem("Trades", "${controller.totalTrades.value}", const Color(0xFFFF8BFF), Icons.swap_horizontal_circle_rounded, onTap: () => Get.toNamed('/my_trades')),
         ],
       )),
     );
@@ -508,14 +489,12 @@ class ProfileScreen extends GetView<ProfileController> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: color.withOpacity(0.8), size: 14.sp),
-              SizedBox(width: 4.w),
               Text(
                 value,
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 20.sp,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
@@ -524,10 +503,8 @@ class ProfileScreen extends GetView<ProfileController> {
           Text(
             label,
             style: TextStyle(
-              color: Colors.white38,
-              fontSize: 10.sp,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
+              color: Colors.white54,
+              fontSize: 13.sp,
             ),
           ),
         ],
@@ -540,8 +517,8 @@ class ProfileScreen extends GetView<ProfileController> {
       margin: EdgeInsets.symmetric(horizontal: 16.w),
       padding: EdgeInsets.all(6.r),
       decoration: BoxDecoration(
-        color: const Color(0xFF161622),
-        borderRadius: BorderRadius.circular(32.r),
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(12.r),
       ),
       child: Row(
         children: List.generate(controller.tabs.length, (index) {
@@ -551,20 +528,20 @@ class ProfileScreen extends GetView<ProfileController> {
               return GestureDetector(
                 onTap: () => controller.changeTab(index),
                 child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  padding: EdgeInsets.symmetric(vertical: 10.h),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFF282C36)
+                        ? Colors.white.withOpacity(0.1)
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(28.r),
+                    borderRadius: BorderRadius.circular(9.r),
                   ),
                   child: Text(
                     controller.tabs[index],
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white38,
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w900,
+                      color: isSelected ? Colors.white : Colors.white54,
+                      fontSize: 14.sp,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     ),
                   ),
                 ),
@@ -674,14 +651,14 @@ class ProfileScreen extends GetView<ProfileController> {
                         color: isSelected
                             ? const Color(0xFF8B9BFF)
                             : const Color(0xFF161622),
-                        borderRadius: BorderRadius.circular(24.r),
+                        borderRadius: BorderRadius.circular(16.r),
                       ),
                       child: Text(
                         controller.activityFilters[index],
                         style: TextStyle(
                           color: isSelected ? Colors.black : Colors.white38,
                           fontSize: 13.sp,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -873,7 +850,7 @@ class ProfileScreen extends GetView<ProfileController> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16.sp,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         Text(
@@ -911,7 +888,7 @@ class ProfileScreen extends GetView<ProfileController> {
       children: [
         _buildRoleSwitcherCard(),
         SizedBox(height: 20.h),
-        _buildSettingsSection("ACCOUNT", [
+        _buildSettingsSection("Account", [
           _buildSettingsTile(
             icon: Icons.manage_accounts_outlined,
             iconColor: const Color(0xFF8B9BFF),
@@ -988,7 +965,7 @@ class ProfileScreen extends GetView<ProfileController> {
           ),
         ]),
         SizedBox(height: 22.h),
-        _buildSettingsSection("ORDERS & INVENTORY", [
+        _buildSettingsSection("Orders and inventory", [
           _buildSettingsTile(
             icon: Icons.shopping_bag_outlined,
             iconColor: const Color(0xFF10B981),
@@ -1032,7 +1009,7 @@ class ProfileScreen extends GetView<ProfileController> {
           ),
         ]),
         SizedBox(height: 22.h),
-        _buildSettingsSection("SUPPORT & LEGAL", [
+        _buildSettingsSection("Help and legal", [
           _buildSettingsTile(
             icon: Icons.description_outlined,
             iconColor: const Color(0xFF94A3B8),
@@ -1091,7 +1068,7 @@ class ProfileScreen extends GetView<ProfileController> {
                       style: TextStyle(
                         color: const Color(0xFFFCA5A5),
                         fontSize: 15.5.sp,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 0.2,
                       ),
                     ),
@@ -1132,14 +1109,9 @@ class ProfileScreen extends GetView<ProfileController> {
       margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF0F1E36), Color(0xFF0D0D1A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28.r),
-        border: Border.all(color: const Color(0xFF8B9BFF).withOpacity(0.15), width: 1.5),
-        boxShadow: [BoxShadow(color: const Color(0xFF8B9BFF).withOpacity(0.04), blurRadius: 18, offset: const Offset(0, 6))],
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1156,7 +1128,7 @@ class ProfileScreen extends GetView<ProfileController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Buyer Account', style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w900)),
+                    Text('Buyer Account', style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700)),
                     SizedBox(height: 3.h),
                     Text('Browse, bid & buy from the platform', style: TextStyle(color: Colors.white38, fontSize: 12.sp)),
                   ],
@@ -1173,7 +1145,7 @@ class ProfileScreen extends GetView<ProfileController> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Want to sell?', style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800)),
+                    Text('Want to sell?', style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w600)),
                     SizedBox(height: 3.h),
                     Text('Apply to list products & host live streams.', style: TextStyle(color: Colors.white38, fontSize: 11.sp, height: 1.4)),
                   ],
@@ -1194,9 +1166,8 @@ class ProfileScreen extends GetView<ProfileController> {
                 child: Container(
                   padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 11.h),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF8B9BFF), Color(0xFF6C7BFF)]),
+                    color: const Color(0xFF8B9BFF),
                     borderRadius: BorderRadius.circular(20.r),
-                    boxShadow: [BoxShadow(color: const Color(0xFF8B9BFF).withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4))],
                   ),
                   child: isLoading
                       ? ButtonLoader(size: 16)
@@ -1205,7 +1176,7 @@ class ProfileScreen extends GetView<ProfileController> {
                           children: [
                             Icon(Icons.storefront_rounded, color: Colors.white, size: 14.sp),
                             SizedBox(width: 5.w),
-                            Text(hasApplication ? action : 'Apply Now', style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w900)),
+                            Text(hasApplication ? action : 'Apply Now', style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w700)),
                           ],
                         ),
                 ),
@@ -1223,14 +1194,9 @@ class ProfileScreen extends GetView<ProfileController> {
       margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A1200), Color(0xFF0D0D1A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28.r),
-        border: Border.all(color: const Color(0xFFFFB800).withOpacity(0.18), width: 1.5),
-        boxShadow: [BoxShadow(color: const Color(0xFFFFB800).withOpacity(0.04), blurRadius: 18, offset: const Offset(0, 6))],
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1250,7 +1216,7 @@ class ProfileScreen extends GetView<ProfileController> {
                   children: [
                     Row(
                       children: [
-                        Text('Seller Application', style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w900)),
+                        Text('Seller Application', style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700)),
                         SizedBox(width: 8.w),
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
@@ -1264,7 +1230,7 @@ class ProfileScreen extends GetView<ProfileController> {
                             children: [
                               Container(width: 5.r, height: 5.r, decoration: const BoxDecoration(color: Color(0xFFFFB800), shape: BoxShape.circle)),
                               SizedBox(width: 4.w),
-                              Text('PENDING', style: TextStyle(color: const Color(0xFFFFB800), fontSize: 9.sp, fontWeight: FontWeight.w900, letterSpacing: 0.8)),
+                              Text('Pending', style: TextStyle(color: const Color(0xFFFFB800), fontSize: 9.sp, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                             ],
                           ),
                         ),
@@ -1321,14 +1287,9 @@ class ProfileScreen extends GetView<ProfileController> {
       margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       padding: EdgeInsets.all(20.r),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF12003A), Color(0xFF0D0D1A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28.r),
-        border: Border.all(color: const Color(0xFF8B9BFF).withOpacity(0.22), width: 1.5),
-        boxShadow: [BoxShadow(color: const Color(0xFF8B9BFF).withOpacity(0.07), blurRadius: 20, offset: const Offset(0, 8))],
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1347,7 +1308,7 @@ class ProfileScreen extends GetView<ProfileController> {
                   children: [
                     Row(
                       children: [
-                        Text('Seller Account', style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w900)),
+                        Text('Seller Account', style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700)),
                         SizedBox(width: 6.w),
                         Icon(Icons.verified_rounded, color: const Color(0xFF8B9BFF), size: 16.sp),
                       ],
@@ -1412,7 +1373,7 @@ class ProfileScreen extends GetView<ProfileController> {
           children: [
             Icon(icon, size: 14.sp, color: active ? const Color(0xFF8B9BFF) : Colors.white24),
             SizedBox(height: 3.h),
-            Text(label, style: TextStyle(color: active ? const Color(0xFF8B9BFF) : Colors.white24, fontSize: 9.sp, fontWeight: FontWeight.w800)),
+            Text(label, style: TextStyle(color: active ? const Color(0xFF8B9BFF) : Colors.white24, fontSize: 9.sp, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -1423,7 +1384,7 @@ class ProfileScreen extends GetView<ProfileController> {
     Get.dialog(
       Dialog(
         backgroundColor: const Color(0xFF11111A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28.r)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         child: Padding(
           padding: EdgeInsets.all(24.r),
           child: Column(
@@ -1435,7 +1396,7 @@ class ProfileScreen extends GetView<ProfileController> {
                 child: Icon(Icons.storefront_rounded, color: const Color(0xFF8B9BFF), size: 32.sp),
               ),
               SizedBox(height: 18.h),
-              Text('Become a Seller?', style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
+              Text('Become a Seller?', style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
               SizedBox(height: 10.h),
               Text(
                 'Tell us what you plan to sell and accept the marketplace policies. '
@@ -1478,7 +1439,7 @@ class ProfileScreen extends GetView<ProfileController> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
                         padding: EdgeInsets.symmetric(vertical: 14.h),
                       ),
-                      child: Text('Apply Now', style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w900)),
+                      child: Text('Apply Now', style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ],
@@ -1504,7 +1465,7 @@ class ProfileScreen extends GetView<ProfileController> {
           Divider(
             color: Colors.white.withValues(alpha: 0.06),
             height: 1,
-            indent: 68.w,
+            indent: 52.w,
             endIndent: 16.w,
           ),
         );
@@ -1518,22 +1479,12 @@ class ProfileScreen extends GetView<ProfileController> {
           padding: EdgeInsets.only(left: 22.w, bottom: 10.h),
           child: Row(
             children: [
-              Container(
-                width: 3.w,
-                height: 12.h,
-                decoration: BoxDecoration(
-                  color: accentColor,
-                  borderRadius: BorderRadius.circular(2.r),
-                ),
-              ),
-              SizedBox(width: 8.w),
               Text(
                 title,
                 style: TextStyle(
                   color: Colors.white54,
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.1,
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -1542,22 +1493,12 @@ class ProfileScreen extends GetView<ProfileController> {
         Container(
           margin: EdgeInsets.symmetric(horizontal: 18.w),
           decoration: BoxDecoration(
-            color: const Color(0xFF151624),
-            borderRadius: BorderRadius.circular(20.r),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.28),
-                blurRadius: 14.r,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            color: const Color(0xFF13131D),
+            borderRadius: BorderRadius.circular(16.r),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20.r),
+            borderRadius: BorderRadius.circular(16.r),
             child: Column(children: divided),
           ),
         ),
@@ -1575,41 +1516,34 @@ class ProfileScreen extends GetView<ProfileController> {
     Widget? trailing,
     VoidCallback? onTap,
   }) {
+    // One quiet colour for every row; the rainbow of icon tints is gone.
+    const Color glyph = Colors.white70;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        splashColor: iconColor.withValues(alpha: 0.12),
+        splashColor: Colors.white.withValues(alpha: 0.06),
         highlightColor: Colors.white.withValues(alpha: 0.03),
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.h),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 13.h),
           child: Row(
             children: [
-              Container(
-                width: 40.r,
-                height: 40.r,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                    color: iconColor.withValues(alpha: 0.25),
-                    width: 1,
-                  ),
-                ),
-                alignment: Alignment.center,
+              SizedBox(
+                width: 24.r,
+                height: 24.r,
                 child: icon != null
-                    ? Icon(icon, color: iconColor, size: 20.sp)
+                    ? Icon(icon, color: glyph, size: 21.sp)
                     : (svgPath != null
                         ? SvgPicture.asset(
                             svgPath,
                             width: 20.r,
                             height: 20.r,
                             colorFilter: ColorFilter.mode(
-                              iconColor,
+                              glyph,
                               BlendMode.srcIn,
                             ),
                           )
-                        : Icon(Icons.settings_outlined, color: iconColor, size: 20.sp)),
+                        : Icon(Icons.settings_outlined, color: glyph, size: 21.sp)),
               ),
               SizedBox(width: 14.w),
               Expanded(
@@ -1623,20 +1557,20 @@ class ProfileScreen extends GetView<ProfileController> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 14.5.sp,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     if (subtitle != null && subtitle.isNotEmpty) ...[
-                      SizedBox(height: 2.5.h),
+                      SizedBox(height: 2.h),
                       Text(
                         subtitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white54,
-                          fontSize: 11.5.sp,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 12.5.sp,
+                          fontWeight: FontWeight.w400,
                           height: 1.25,
                         ),
                       ),
@@ -1677,9 +1611,11 @@ class ProfileScreen extends GetView<ProfileController> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
-          color: const Color(0xFF161622),
-          borderRadius: BorderRadius.circular(24.r),
+          color: const Color(0xFF13131D),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1692,7 +1628,7 @@ class ProfileScreen extends GetView<ProfileController> {
                   decoration: BoxDecoration(
                     color: Colors.black12,
                     borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(24.r),
+                      top: Radius.circular(16.r),
                     ),
                   ),
                   child: SizedBox(
@@ -1726,9 +1662,9 @@ class ProfileScreen extends GetView<ProfileController> {
                             value: 'edit',
                             child: Row(
                               children: [
-                                const Icon(Icons.edit_rounded, color: Color(0xFF8B9BFF), size: 18),
+                                const Icon(Icons.edit_rounded, color: Colors.white70, size: 18),
                                 SizedBox(width: 8.w),
-                                const Text("Edit Listing", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                const Text("Edit", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                               ],
                             ),
                           ),
@@ -1739,7 +1675,7 @@ class ProfileScreen extends GetView<ProfileController> {
                               children: [
                                 const Icon(Icons.delete_outline_rounded, color: Color(0xFFEF4444), size: 18),
                                 SizedBox(width: 8.w),
-                                const Text("Delete Listing", style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w600)),
+                                const Text("Delete", style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w600)),
                               ],
                             ),
                           ),
@@ -1748,16 +1684,16 @@ class ProfileScreen extends GetView<ProfileController> {
                   ),
                 if (isLive)
                   Positioned(
-                    top: 12.h,
-                    left: 12.w,
+                    top: 8.h,
+                    left: 8.w,
                     child: Container(
                       padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 4.h,
+                        horizontal: 7.w,
+                        vertical: 3.h,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF8B9BFF),
-                        borderRadius: BorderRadius.circular(8.r),
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(6.r),
                       ),
                       child: Row(
                         children: [
@@ -1765,17 +1701,17 @@ class ProfileScreen extends GetView<ProfileController> {
                             width: 6.r,
                             height: 6.r,
                             decoration: const BoxDecoration(
-                              color: Colors.black,
+                              color: Color(0xFF4ADE80),
                               shape: BoxShape.circle,
                             ),
                           ),
-                          SizedBox(width: 6.w),
+                          SizedBox(width: 5.w),
                           Text(
-                            "LIVE",
+                            "Listed",
                             style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -1787,7 +1723,7 @@ class ProfileScreen extends GetView<ProfileController> {
                     decoration: BoxDecoration(
                       color: Colors.black45,
                       borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(24.r),
+                        top: Radius.circular(16.r),
                       ),
                     ),
                     child: Center(
@@ -1802,11 +1738,11 @@ class ProfileScreen extends GetView<ProfileController> {
                           border: Border.all(color: Colors.white12),
                         ),
                         child: Text(
-                          "SOLD",
+                          "Sold",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 10.sp,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -1816,7 +1752,7 @@ class ProfileScreen extends GetView<ProfileController> {
             ),
           ),
           Padding(
-            padding: EdgeInsets.all(16.r),
+            padding: EdgeInsets.all(12.r),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1825,41 +1761,34 @@ class ProfileScreen extends GetView<ProfileController> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w900,
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                SizedBox(height: 8.h),
+                SizedBox(height: 4.h),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       price,
                       style: TextStyle(
-                        color: const Color(0xFF8B9BFF),
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     if (hasTrade)
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8.w,
-                          vertical: 4.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2E1E5D),
-                          borderRadius: BorderRadius.circular(6.r),
-                        ),
-                        child: Text(
-                          "TRADE",
-                          style: TextStyle(
-                            color: const Color(0xFF8B9BFF),
-                            fontSize: 8.sp,
-                            fontWeight: FontWeight.w900,
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.swap_horiz_rounded, color: Colors.white54, size: 14.sp),
+                          SizedBox(width: 3.w),
+                          Text(
+                            "Trade",
+                            style: TextStyle(color: Colors.white54, fontSize: 12.sp),
                           ),
-                        ),
+                        ],
                       ),
                   ],
                 ),
@@ -1978,7 +1907,7 @@ class ProfileScreen extends GetView<ProfileController> {
             padding: EdgeInsets.all(12.r),
             decoration: BoxDecoration(
               color: const Color(0xFF11111A),
-              borderRadius: BorderRadius.circular(24.r),
+              borderRadius: BorderRadius.circular(16.r),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2032,10 +1961,10 @@ class ProfileScreen extends GetView<ProfileController> {
     Get.dialog(
       AlertDialog(
         backgroundColor: const Color(0xFF11111A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         title: Text(
           "Sign Out",
-          style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900),
+          style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w700),
         ),
         content: Text(
           "Are you sure you want to sign out of your account?",
@@ -2089,7 +2018,7 @@ class ProfileScreen extends GetView<ProfileController> {
             style: TextStyle(
               color: Colors.white,
               fontSize: 22.sp,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
           SizedBox(height: 10.h),
@@ -2117,7 +2046,7 @@ class ProfileScreen extends GetView<ProfileController> {
               ),
               child: Text(
                 "Log In",
-                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
               ),
             ),
           ),
@@ -2209,25 +2138,15 @@ class ProfileScreen extends GetView<ProfileController> {
                   Expanded(
                     child: Row(
                       children: [
-                        Container(
-                          width: 4.w,
-                          height: 16.h,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF8B9BFF),
-                            borderRadius: BorderRadius.circular(2.r),
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
                         Flexible(
                           child: Text(
-                            "MY UPCOMING SHOWS",
+                            "Your shows",
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 14.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.1,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -2248,7 +2167,7 @@ class ProfileScreen extends GetView<ProfileController> {
                               style: TextStyle(
                                 color: const Color(0xFF8B9BFF),
                                 fontSize: 11.sp,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -2262,29 +2181,20 @@ class ProfileScreen extends GetView<ProfileController> {
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF8B9BFF), Color(0xFF6C5CE7)],
-                        ),
+                        color: const Color(0xFF8B9BFF),
                         borderRadius: BorderRadius.circular(12.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF8B9BFF).withValues(alpha: 0.3),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.add_rounded, color: Colors.white, size: 14.sp),
+                          Icon(Icons.add_rounded, color: const Color(0xFF0F0B1E), size: 14.sp),
                           SizedBox(width: 4.w),
                           Text(
                             "Schedule",
                             style: TextStyle(
-                              color: Colors.white,
+                              color: const Color(0xFF0F0B1E),
                               fontSize: 11.5.sp,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -2328,62 +2238,30 @@ class ProfileScreen extends GetView<ProfileController> {
                 padding: EdgeInsets.symmetric(horizontal: 24.w),
                 child: Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(16.r),
+                  padding: EdgeInsets.all(14.r),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF130F26),
-                    borderRadius: BorderRadius.circular(20.r),
-                    border: Border.all(
-                      color: const Color(0xFF8B9BFF).withValues(alpha: 0.25),
-                      width: 1.2,
-                    ),
+                    color: const Color(0xFF13131D),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        padding: EdgeInsets.all(12.r),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.videocam_outlined, color: const Color(0xFF8B9BFF), size: 24.sp),
-                      ),
-                      SizedBox(width: 14.w),
+                      Icon(Icons.event_outlined, color: Colors.white38, size: 22.sp),
+                      SizedBox(width: 12.w),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "No Scheduled Shows",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w800,
-                              ),
+                              "No shows scheduled",
+                              style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w600),
                             ),
-                            SizedBox(height: 3.h),
+                            SizedBox(height: 2.h),
                             Text(
-                              "Schedule your next auction break to notify buyers and build excitement!",
-                              style: TextStyle(
-                                color: Colors.white60,
-                                fontSize: 11.sp,
-                                height: 1.3,
-                              ),
+                              "Schedule one and your followers get a reminder.",
+                              style: TextStyle(color: Colors.white54, fontSize: 13.sp, height: 1.35),
                             ),
                           ],
-                        ),
-                      ),
-                      SizedBox(width: 8.w),
-                      ElevatedButton(
-                        onPressed: () => SellerGate.check(action: 'go live', onAllowed: () => Get.toNamed(AppRoute.goLiveSetup)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8B9BFF),
-                          foregroundColor: const Color(0xFF0F0B1E),
-                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                        ),
-                        child: Text(
-                          "Go Live",
-                          style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w900),
                         ),
                       ),
                     ],
@@ -2491,13 +2369,6 @@ class ProfileScreen extends GetView<ProfileController> {
           color: const Color(0xFF8B9BFF).withValues(alpha: 0.5),
           width: 1.5,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
-            blurRadius: 14.r,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -2555,12 +2426,11 @@ class ProfileScreen extends GetView<ProfileController> {
                         ),
                         SizedBox(width: 5.w),
                         Text(
-                          isLive ? "LIVE NOW" : "SCHEDULED",
+                          isLive ? "Live now" : "Scheduled",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 9.5.sp,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -2592,7 +2462,7 @@ class ProfileScreen extends GetView<ProfileController> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 10.5.sp,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -2621,7 +2491,7 @@ class ProfileScreen extends GetView<ProfileController> {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 14.sp,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 0.2,
                         ),
                       ),
@@ -2662,19 +2532,8 @@ class ProfileScreen extends GetView<ProfileController> {
                       width: double.infinity,
                       height: 38.h,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: isLive
-                              ? [const Color(0xFFFF4B6E), const Color(0xFFE11D48)]
-                              : [const Color(0xFF22C55E), const Color(0xFF16A34A)],
-                        ),
+                        color: isLive ? const Color(0xFFE5484D) : const Color(0xFF8B9BFF),
                         borderRadius: BorderRadius.circular(12.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (isLive ? const Color(0xFFFF4B6E) : const Color(0xFF22C55E)).withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -2686,12 +2545,11 @@ class ProfileScreen extends GetView<ProfileController> {
                           ),
                           SizedBox(width: 6.w),
                           Text(
-                            isLive ? "CONTINUE LIVE 🔴" : "START LIVE NOW 🚀",
+                            isLive ? "Continue show" : "Start show",
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 11.5.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.3,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -2749,12 +2607,12 @@ class ProfileScreen extends GetView<ProfileController> {
     Get.dialog(
       AlertDialog(
         backgroundColor: const Color(0xFF1E1E2C),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.r)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
         title: Row(
           children: [
             const Icon(Icons.delete_forever_rounded, color: Color(0xFFEF4444)),
             SizedBox(width: 10.w),
-            const Text("Delete Listing", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            const Text("Delete", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ],
         ),
         content: const Text(
@@ -2829,7 +2687,7 @@ class ProfileScreen extends GetView<ProfileController> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Edit Listing", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.bold)),
+                  Text("Edit", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.bold)),
                   IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Get.back()),
                 ],
               ),

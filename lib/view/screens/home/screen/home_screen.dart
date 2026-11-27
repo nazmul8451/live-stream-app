@@ -49,19 +49,6 @@ class HomeScreen extends StatelessWidget {
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              // Welcome Header
-              Obx(
-                () => Text(
-                  controller.isGuestUser.value ? "WELCOME" : "WELCOME BACK",
-                  style: TextStyle(
-                    color: Colors.white38,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ),
-              SizedBox(height: 6.h),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -73,11 +60,14 @@ class HomeScreen extends StatelessWidget {
                         child: Text(
                           controller.isGuestUser.value
                               ? "Browsing as guest"
-                              : "Hello, ${controller.fullName.value}",
+                              : (controller.fullName.value.isEmpty || controller.fullName.value == "User"
+                                  ? "Welcome back"
+                                  : "Hi, ${controller.fullName.value.split(' ').first}"),
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.w900,
+                            fontSize: 24.sp,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
                           ),
                         ),
                       ),
@@ -123,21 +113,14 @@ class HomeScreen extends StatelessWidget {
                                 color: const Color(0xFF8B9BFF),
                                 borderRadius: BorderRadius.circular(10.r),
                                 border: Border.all(color: const Color(0xFF0D0819), width: 1.5),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF8B9BFF).withValues(alpha: 0.45),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
                               ),
                               child: Center(
                                 child: Text(
                                   count > 99 ? "99+" : "$count",
                                   style: TextStyle(
-                                    color: Colors.white,
+                                    color: const Color(0xFF0F0B1E),
                                     fontSize: 9.sp,
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w700,
                                     height: 1.1,
                                   ),
                                   textAlign: TextAlign.center,
@@ -181,8 +164,7 @@ class HomeScreen extends StatelessWidget {
 
               SizedBox(height: 18.h),
 
-              // Futuristic Sci-Fi Go Live Button
-              _buildSciFiGoLiveButton(context),
+              _buildGoLiveRow(),
 
               // Celebrity Spotlight VIP Section (Only displays when a celebrity is live)
               Obx(() {
@@ -191,7 +173,7 @@ class HomeScreen extends StatelessWidget {
               }),
 
               // Dynamic spacing between Go Live and content
-              Obx(() => SizedBox(height: (controller.liveItems.isNotEmpty || controller.celebrityLiveItems.isNotEmpty) ? 18.h : 36.h)),
+              Obx(() => SizedBox(height: (controller.liveItems.isNotEmpty || controller.celebrityLiveItems.isNotEmpty) ? 18.h : 16.h)),
 
               // Dynamic Live Stream (Shows dynamically when a broadcaster is live)
               Obx(() {
@@ -222,21 +204,14 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     SizedBox(height: 36.h),
                     Text(
-                      "Featured Collectibles",
+                      "For sale and trade",
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Text(
-                      "Explore items verified by experts",
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 13.sp,
-                      ),
-                    ),
-                    SizedBox(height: 20.h),
+                    SizedBox(height: 14.h),
                     Obx(() {
                       if (controller.isProductsLoading.value) {
                         return _buildProductGridShimmer();
@@ -247,11 +222,10 @@ class HomeScreen extends StatelessWidget {
                           padding: EdgeInsets.symmetric(vertical: 40.h),
                           alignment: Alignment.center,
                           child: Text(
-                            "No products found in this category.",
+                            "Nothing listed here yet.",
                             style: TextStyle(
-                              color: Colors.white38,
+                              color: Colors.white54,
                               fontSize: 14.sp,
-                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         );
@@ -265,9 +239,9 @@ class HomeScreen extends StatelessWidget {
                             physics: const NeverScrollableScrollPhysics(),
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              crossAxisSpacing: 16.w,
-                              mainAxisSpacing: 16.h,
-                              childAspectRatio: 0.75,
+                              crossAxisSpacing: 12.w,
+                              mainAxisSpacing: 12.h,
+                              childAspectRatio: 0.74,
                             ),
                             itemCount: controller.products.length,
                             itemBuilder: (context, index) {
@@ -422,18 +396,11 @@ class HomeScreen extends StatelessWidget {
         children: [
           SizedBox(height: 18.h),
           Container(
-            height: 440.h,
+            height: 380.h,
             width: double.infinity,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(32.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 20.r,
-                  offset: Offset(0, 10.h),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(20.r),
             ),
             child: Stack(
               children: [
@@ -455,31 +422,31 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.all(28.r),
+                  padding: EdgeInsets.all(18.r),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFF5252),
-                              borderRadius: BorderRadius.circular(10.r),
+                              color: const Color(0xFFE5484D),
+                              borderRadius: BorderRadius.circular(6.r),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Padding(
                                   padding: EdgeInsets.only(right: 6.w),
-                                  child: Icon(Icons.circle, color: Colors.white, size: 8.sp),
+                                  child: Icon(Icons.circle, color: Colors.white, size: 6.sp),
                                 ),
                                 Text(
-                                  "LIVE",
+                                  "Live",
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 11.sp,
-                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -487,10 +454,10 @@ class HomeScreen extends StatelessWidget {
                           ),
                           SizedBox(width: 10.w),
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                             decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.4),
-                              borderRadius: BorderRadius.circular(10.r),
+                              color: Colors.black.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(6.r),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -503,8 +470,8 @@ class HomeScreen extends StatelessWidget {
                                   viewers,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 11.sp,
-                                    fontWeight: FontWeight.w900,
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -516,50 +483,41 @@ class HomeScreen extends StatelessWidget {
                       Row(
                         children: [
                           CircleAvatar(
-                            radius: 22.r,
-                            backgroundColor: const Color(0xFF1E2644),
-                            child: Icon(Icons.person_rounded, color: const Color(0xFF8B9BFF), size: 24.sp),
+                            radius: 14.r,
+                            backgroundColor: const Color(0xFF2A2A3A),
+                            child: Icon(Icons.person_rounded, color: Colors.white60, size: 16.sp),
                           ),
-                          SizedBox(width: 12.w),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Curated by",
-                                style: TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 10.sp,
-                                  letterSpacing: 0.5,
-                                ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              curator,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
                               ),
-                              Text(
-                                curator,
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 18.h),
+                      SizedBox(height: 10.h),
                       Text(
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 24.sp,
-                          fontWeight: FontWeight.w900,
-                          height: 1.15,
+                          fontSize: 22.sp,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
                         ),
                       ),
-                      SizedBox(height: 24.h),
+                      SizedBox(height: 16.h),
                       SizedBox(
                         width: double.infinity,
-                        height: 60.h,
+                        height: 48.h,
                         child: Obx(() {
                           AgoraLiveController? agoraCtrl;
                           try {
@@ -576,10 +534,10 @@ class HomeScreen extends StatelessWidget {
                                   (agoraCtrl.isHost.value && agoraCtrl.isLive.value));
                           final bool isHost = agoraCtrl?.isHost.value ?? false;
 
-                          String btnText = "Join Stream";
+                          String btnText = "Watch";
                           IconData btnIcon = Icons.play_circle_fill_rounded;
                           if (isLiveActive) {
-                            btnText = isHost ? "Return to My Stream" : "Return to Stream";
+                            btnText = isHost ? "Back to your show" : "Back to the show";
                             btnIcon = isHost ? Icons.videocam_rounded : Icons.play_circle_fill_rounded;
                           }
 
@@ -598,10 +556,10 @@ class HomeScreen extends StatelessWidget {
                               );
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isLiveActive ? const Color(0xFFFF4B4B) : const Color(0xFF8B9BFF),
+                              backgroundColor: isLiveActive ? const Color(0xFFE5484D) : Colors.white,
                               foregroundColor: isLiveActive ? Colors.white : const Color(0xFF0F0B1E),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30.r),
+                                borderRadius: BorderRadius.circular(12.r),
                               ),
                               elevation: 0,
                             ),
@@ -610,15 +568,15 @@ class HomeScreen extends StatelessWidget {
                               children: [
                                 Icon(
                                   btnIcon,
-                                  size: 28.sp,
+                                  size: 20.sp,
                                   color: isLiveActive ? Colors.white : const Color(0xFF0F0B1E),
                                 ),
-                                SizedBox(width: 10.w),
+                                SizedBox(width: 8.w),
                                 Text(
                                   btnText,
                                   style: TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 18.sp,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16.sp,
                                     color: isLiveActive ? Colors.white : const Color(0xFF0F0B1E),
                                   ),
                                 ),
@@ -645,248 +603,75 @@ class HomeScreen extends StatelessWidget {
       if (!controller.isGiveawayActive) return const SizedBox.shrink();
       final isEntered = controller.isGiveawayEntered.value;
       final isEntering = controller.isEnteringGiveaway.value;
-      final title = controller.giveawayTitle;
-      final subtitle = "Draw: ${controller.giveawayDrawDateFormatted}\nFree Entry for all members!";
-      final prizeImage = controller.giveawayPrizeImage;
+      final drawDate = controller.giveawayDrawDateFormatted;
 
       return GestureDetector(
         onTap: () => _showGiveawayDetailsSheet(controller, context),
         child: Container(
           width: double.infinity,
-          margin: EdgeInsets.only(top: 14.h, bottom: 28.h),
-          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF130E29),
-                Color(0xFF1B1238),
-                Color(0xFF0D091F),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(22.r),
-            border: Border.all(
-              color: isEntered
-                  ? const Color(0xFF10B981).withValues(alpha: 0.8)
-                  : const Color(0xFF6B46C1).withValues(alpha: 0.6),
-              width: isEntered ? 1.5 : 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isEntered
-                    ? const Color(0xFF10B981).withValues(alpha: 0.25)
-                    : const Color(0xFF7A40F2).withValues(alpha: 0.22),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Stack(
+          margin: EdgeInsets.only(top: 8.h, bottom: 24.h),
+          padding: EdgeInsets.all(12.r),
+          decoration: _homeCard(),
+          child: Row(
             children: [
-              // Cyber glowing streaks in the background
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _GiveawayCyberLinesPainter(),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10.r),
+                child: SizedBox(
+                  width: 72.w,
+                  height: 88.w,
+                  child: _giveawayImage(controller.giveawayPrizeImage),
                 ),
               ),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Left Content
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Gift Tag (Scaled safely)
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                          decoration: BoxDecoration(
-                            color: isEntered
-                                ? const Color(0xFF10B981).withValues(alpha: 0.18)
-                                : const Color(0xFF8B9BFF).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6.r),
-                            border: Border.all(
-                              color: isEntered
-                                  ? const Color(0xFF10B981).withValues(alpha: 0.5)
-                                  : const Color(0xFF8B9BFF).withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isEntered ? Icons.verified_rounded : Icons.card_giftcard_rounded,
-                                color: isEntered ? const Color(0xFF10B981) : const Color(0xFF8B9BFF),
-                                size: 14.sp,
-                              ),
-                              SizedBox(width: 4.w),
-                              Flexible(
-                                child: Text(
-                                  isEntered ? "YOU'RE ENTERED!" : "EXCLUSIVE GIVEAWAY",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: isEntered ? const Color(0xFF10B981) : const Color(0xFF8B9BFF),
-                                    fontSize: 10.sp,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.6,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        // Title
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14.5.sp,
-                            fontWeight: FontWeight.w900,
-                            height: 1.15,
-                          ),
-                        ),
-                        SizedBox(height: 5.h),
-                        // Subtitle
-                        Text(
-                          subtitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: const Color(0xFF8A96BC),
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w500,
-                            height: 1.2,
-                          ),
-                        ),
-                        if (isEntered) ...[
-                          SizedBox(height: 4.h),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.check_circle_rounded, color: const Color(0xFF10B981), size: 11.sp),
-                              SizedBox(width: 4.w),
-                              Flexible(
-                                child: Text(
-                                  controller.giveawayEnteredAtFormatted.isNotEmpty
-                                      ? "Entered: ${controller.giveawayEnteredAtFormatted}"
-                                      : "Entry Confirmed in Draw",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: const Color(0xFF34D399),
-                                    fontSize: 9.5.sp,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        SizedBox(height: 10.h),
-                        // ENTER HERE / YOU'RE ENTERED Action Button
-                        GestureDetector(
-                          onTap: () {
-                            if (!isEntered) {
-                              controller.enterGiveaway();
-                            } else {
-                              _showGiveawayDetailsSheet(controller, context);
-                            }
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(horizontal: 11.w, vertical: 6.h),
-                            decoration: BoxDecoration(
-                              color: isEntered ? const Color(0xFF0F2E22) : const Color(0xFF14102B),
-                              borderRadius: BorderRadius.circular(20.r),
-                              border: Border.all(
-                                color: isEntered ? const Color(0xFF10B981) : const Color(0xFF6366F1),
-                                width: 1.2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: (isEntered ? const Color(0xFF10B981) : const Color(0xFF6366F1)).withValues(alpha: 0.35),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: isEntering
-                                ? ButtonLoader(size: 14)
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Flexible(
-                                        child: Text(
-                                          isEntered ? "YOU'RE ENTERED!" : "ENTER HERE",
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: isEntered ? const Color(0xFF6EE7B7) : Colors.white,
-                                            fontSize: 10.sp,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: 0.6,
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(width: 5.w),
-                                      Icon(
-                                        isEntered ? Icons.check_rounded : Icons.arrow_forward_rounded,
-                                        color: isEntered ? const Color(0xFF6EE7B7) : Colors.white,
-                                        size: 12.sp,
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  // Right Jersey Image Container
-                  Container(
-                    width: 112.w,
-                    height: 134.h,
-                    clipBehavior: Clip.antiAlias,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1B1538),
-                      borderRadius: BorderRadius.circular(16.r),
-                      border: Border.all(
-                        color: const Color(0xFF483A7E).withValues(alpha: 0.6),
-                        width: 1,
+              SizedBox(width: 14.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isEntered ? "You're entered · draw $drawDate" : "Free giveaway · draw $drawDate",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: isEntered ? _homeGreen : Colors.white54,
+                        fontSize: 12.5.sp,
+                        fontWeight: FontWeight.w500,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.4),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
                     ),
-                    child: prizeImage.isNotEmpty
-                        ? Image.network(
-                            prizeImage.startsWith('http')
-                                ? prizeImage
-                                : "${ApiUrl.imageBaseUrl}${prizeImage.startsWith('/') ? prizeImage : '/$prizeImage'}",
-                            fit: BoxFit.cover,
-                            alignment: Alignment.topCenter,
-                            errorBuilder: (_, __, ___) => Image.asset(
-                              "assets/images/obj_jersey_giveaway.jpg",
-                              fit: BoxFit.cover,
-                              alignment: Alignment.topCenter,
-                            ),
-                          )
-                        : Image.asset(
-                            "assets/images/obj_jersey_giveaway.jpg",
-                            fit: BoxFit.cover,
-                            alignment: Alignment.topCenter,
+                    SizedBox(height: 4.h),
+                    Text(
+                      controller.giveawayTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                      ),
+                    ),
+                    SizedBox(height: 10.h),
+                    if (isEntering)
+                      SizedBox(height: 18.h, child: ButtonLoader(size: 14))
+                    else
+                      GestureDetector(
+                        onTap: () {
+                          if (!isEntered) {
+                            controller.enterGiveaway();
+                          } else {
+                            _showGiveawayDetailsSheet(controller, context);
+                          }
+                        },
+                        child: Text(
+                          isEntered ? "View entry" : "Enter for free",
+                          style: TextStyle(
+                            color: _homeAccent,
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
                           ),
-                  ),
-                ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -895,25 +680,38 @@ class HomeScreen extends StatelessWidget {
     });
   }
 
+  Widget _giveawayImage(String prizeImage) {
+    const fallback = "assets/images/obj_jersey_giveaway.jpg";
+    if (prizeImage.isEmpty) {
+      return Image.asset(fallback, fit: BoxFit.cover, alignment: Alignment.topCenter);
+    }
+    return Image.network(
+      prizeImage.startsWith('http')
+          ? prizeImage
+          : "${ApiUrl.imageBaseUrl}${prizeImage.startsWith('/') ? prizeImage : '/$prizeImage'}",
+      fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
+      errorBuilder: (_, __, ___) => Image.asset(fallback, fit: BoxFit.cover, alignment: Alignment.topCenter),
+    );
+  }
+
   void _showGiveawayDetailsSheet(HomeController controller, BuildContext context) {
     Get.bottomSheet(
       Container(
         constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-        padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 24.h),
+        padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 24.h),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F0C22),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
-          border: Border.all(color: const Color(0xFF2E2452)),
+          color: const Color(0xFF13131D),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+          border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.06))),
         ),
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Obx(() {
             final isEntered = controller.isGiveawayEntered.value;
             final isEntering = controller.isEnteringGiveaway.value;
-            final prizeTitle = controller.giveawayPrizeTitle;
-            final desc = controller.giveawayDescription;
             final drawDate = controller.giveawayDrawDateFormatted;
-            final prizeImg = controller.giveawayPrizeImage;
+            final desc = controller.giveawayDescription;
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -921,9 +719,9 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Center(
                   child: Container(
-                    width: 44.w,
+                    width: 36.w,
                     height: 4.h,
-                    margin: EdgeInsets.only(bottom: 16.h),
+                    margin: EdgeInsets.only(bottom: 18.h),
                     decoration: BoxDecoration(
                       color: Colors.white24,
                       borderRadius: BorderRadius.circular(2.r),
@@ -931,123 +729,15 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 Row(
-                  children: [
-                    Icon(
-                      isEntered ? Icons.check_circle_rounded : Icons.card_giftcard_rounded,
-                      color: isEntered ? const Color(0xFF10B981) : const Color(0xFF8B9BFF),
-                      size: 22.sp,
-                    ),
-                    SizedBox(width: 8.w),
-                    Expanded(
-                      child: Text(
-                        isEntered ? "GIVEAWAY ENTRY CONFIRMED" : "EXCLUSIVE GIVEAWAY",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isEntered ? const Color(0xFF10B981) : const Color(0xFF8B9BFF),
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Get.back(),
-                      icon: Icon(Icons.close_rounded, color: Colors.white60, size: 20.sp),
-                    ),
-                  ],
-                ),
-                if (isEntered) ...[
-                  SizedBox(height: 12.h),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 11.h),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF064E3B), Color(0xFF0F3A2B)],
-                      ),
-                      borderRadius: BorderRadius.circular(14.r),
-                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.7), width: 1.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(6.r),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF10B981),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.check_rounded, color: Colors.white, size: 16.sp),
-                        ),
-                        SizedBox(width: 12.w),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "You're in the Official Draw!",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12.5.sp,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              SizedBox(height: 2.h),
-                              Text(
-                                controller.giveawayEnteredAtFormatted.isNotEmpty
-                                    ? "Registered: ${controller.giveawayEnteredAtFormatted} • Status: Active"
-                                    : "Status: Active • Verified Entry Confirmed",
-                                style: TextStyle(
-                                  color: const Color(0xFFD1FAE5),
-                                  fontSize: 10.5.sp,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                SizedBox(height: 12.h),
-                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 95.w,
-                      height: 115.h,
-                      clipBehavior: Clip.antiAlias,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14.r),
-                        border: Border.all(
-                          color: isEntered
-                              ? const Color(0xFF10B981).withValues(alpha: 0.6)
-                              : const Color(0xFF483A7E),
-                        ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12.r),
+                      child: SizedBox(
+                        width: 88.w,
+                        height: 108.w,
+                        child: _giveawayImage(controller.giveawayPrizeImage),
                       ),
-                      child: prizeImg.isNotEmpty
-                          ? Image.network(
-                              prizeImg.startsWith('http')
-                                  ? prizeImg
-                                  : "${ApiUrl.imageBaseUrl}${prizeImg.startsWith('/') ? prizeImg : '/$prizeImg'}",
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Image.asset(
-                                "assets/images/obj_jersey_giveaway.jpg",
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Image.asset(
-                              "assets/images/obj_jersey_giveaway.jpg",
-                              fit: BoxFit.cover,
-                            ),
                     ),
                     SizedBox(width: 14.w),
                     Expanded(
@@ -1055,96 +745,70 @@ class HomeScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            prizeTitle,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w900,
-                            ),
+                            "Giveaway",
+                            style: TextStyle(color: Colors.white54, fontSize: 13.sp),
                           ),
                           SizedBox(height: 4.h),
                           Text(
-                            desc,
+                            controller.giveawayPrizeTitle,
                             style: TextStyle(
-                              color: const Color(0xFF8A96BC),
-                              fontSize: 11.sp,
-                              height: 1.3,
+                              color: Colors.white,
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w700,
+                              height: 1.25,
                             ),
                           ),
                           SizedBox(height: 8.h),
-                          Wrap(
-                            spacing: 6.w,
-                            runSpacing: 4.h,
-                            children: [
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF22C55E).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6.r),
-                                ),
-                                child: Text(
-                                  "FREE ENTRY • VERIFIED",
-                                  style: TextStyle(
-                                    color: const Color(0xFF22C55E),
-                                    fontSize: 9.5.sp,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF8B9BFF).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6.r),
-                                ),
-                                child: Text(
-                                  "DRAW: $drawDate",
-                                  style: TextStyle(
-                                    color: const Color(0xFF8B9BFF),
-                                    fontSize: 9.5.sp,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          Text(
+                            "Free to enter · draw on $drawDate",
+                            style: TextStyle(color: Colors.white60, fontSize: 13.sp),
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 16.h),
-                // Info Box (as requested in Integration Guide)
+                if (desc.isNotEmpty) ...[
+                  SizedBox(height: 18.h),
+                  Text(
+                    desc,
+                    style: TextStyle(color: Colors.white70, fontSize: 14.sp, height: 1.5),
+                  ),
+                ],
+                SizedBox(height: 18.h),
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(12.r),
+                  padding: EdgeInsets.all(14.r),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF141028),
-                    borderRadius: BorderRadius.circular(14.r),
-                    border: Border.all(color: const Color(0xFF2A2045)),
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
+                      Icon(
+                        isEntered ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+                        color: isEntered ? _homeGreen : Colors.white54,
+                        size: 18.sp,
+                      ),
                       SizedBox(width: 10.w),
                       Expanded(
                         child: Text(
-                          "Winner will be drawn on $drawDate. Completely random & fair selection.",
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 11.sp,
-                            height: 1.3,
-                          ),
+                          isEntered
+                              ? (controller.giveawayEnteredAtFormatted.isNotEmpty
+                                  ? "You entered on ${controller.giveawayEnteredAtFormatted}. The winner is picked at random on $drawDate."
+                                  : "You're entered. The winner is picked at random on $drawDate.")
+                              : "One entry per member. The winner is picked at random on $drawDate.",
+                          style: TextStyle(color: Colors.white70, fontSize: 13.sp, height: 1.45),
                         ),
                       ),
                     ],
                   ),
                 ),
                 SizedBox(height: 20.h),
-                // Enter / Confirmed Button
                 SizedBox(
                   width: double.infinity,
-                  height: 50.h,
+                  height: 48.h,
                   child: ElevatedButton(
                     onPressed: isEntering
                         ? null
@@ -1156,19 +820,18 @@ class HomeScreen extends StatelessWidget {
                             }
                           },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: isEntered ? const Color(0xFF10B981) : const Color(0xFF6366F1),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                      backgroundColor: isEntered ? Colors.white.withValues(alpha: 0.08) : _homeAccent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
                       elevation: 0,
                     ),
                     child: isEntering
                         ? ButtonLoader()
                         : Text(
-                            isEntered ? "YOU'RE ENTERED! 🎉" : "ENTER GIVEAWAY NOW",
+                            isEntered ? "Done" : "Enter giveaway",
                             style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1,
+                              color: isEntered ? Colors.white : const Color(0xFF0F0B1E),
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                   ),
@@ -1216,11 +879,8 @@ class HomeScreen extends StatelessWidget {
         Get.toNamed(AppRoute.tradeDetails, arguments: argMap);
       },
       child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF11111A),
-          borderRadius: BorderRadius.circular(24.r),
-          border: Border.all(color: Colors.white.withOpacity(0.04)),
-        ),
+        decoration: _homeCard(),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1229,19 +889,19 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Positioned.fill(
                     child: ClipRRect(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
                       child: _buildProductImage(rawImg, fit: BoxFit.cover),
                     ),
                   ),
                   if (isSold)
                     Center(
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+                        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(10.r),
+                          borderRadius: BorderRadius.circular(8.r),
                         ),
-                        child: Text('SOLD', style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w900)),
+                        child: Text('Sold', style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w600)),
                       ),
                     ),
                   if (allowTrade && !isSold)
@@ -1249,12 +909,19 @@ class HomeScreen extends StatelessWidget {
                       top: 8.h,
                       left: 8.w,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                        padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD677FF).withOpacity(0.85),
-                          borderRadius: BorderRadius.circular(8.r),
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(6.r),
                         ),
-                        child: Text('TRADE', style: TextStyle(color: Colors.white, fontSize: 8.sp, fontWeight: FontWeight.w900)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 12.sp),
+                            SizedBox(width: 3.w),
+                            Text('Trade', style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
                       ),
                     ),
                 ],
@@ -1267,14 +934,16 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13.sp, fontWeight: FontWeight.w500, height: 1.3),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 6.h),
+                  SizedBox(height: 4.h),
                   Text(
-                    '\$${price.toStringAsFixed(0)}',
-                    style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 15.sp, fontWeight: FontWeight.w900),
+                    price > 0 ? '\$${price.toStringAsFixed(price % 1 == 0 ? 0 : 2)}' : 'Trade only',
+                    style: price > 0
+                        ? TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w700)
+                        : TextStyle(color: Colors.white54, fontSize: 13.sp, fontWeight: FontWeight.w500),
                   ),
                 ],
               ),
@@ -1290,20 +959,13 @@ class HomeScreen extends StatelessWidget {
     final initials = cleanName.isNotEmpty ? cleanName.substring(0, 1).toUpperCase() : '?';
     return Container(
       alignment: Alignment.center,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF6C5CE7), Color(0xFF8B9BFF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      color: const Color(0xFF2A2A3A),
       child: Text(
         initials,
         style: TextStyle(
-          color: Colors.white,
+          color: Colors.white70,
           fontSize: fontSize ?? 13.sp,
-          fontWeight: FontWeight.w900,
-          letterSpacing: -0.5,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -1339,16 +1001,7 @@ class HomeScreen extends StatelessWidget {
       height: 28.r,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: isMine ? const Color(0xFF8B9BFF) : const Color(0xFFBD8BFF).withValues(alpha: 0.8),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: (isMine ? const Color(0xFF8B9BFF) : const Color(0xFFBD8BFF)).withValues(alpha: 0.25),
-            blurRadius: 6.r,
-          ),
-        ],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1),
       ),
       clipBehavior: Clip.antiAlias,
       child: imageContent,
@@ -1387,41 +1040,15 @@ class HomeScreen extends StatelessWidget {
     return Container(
       height: height,
       width: width,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Color(0xFF1E1C2E), // Deep indigo
-            Color(0xFF2C1E3C), // Cyber magenta
-            Color(0xFF0F0F1A), // Dark obsidian
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
+      color: const Color(0xFF1A1A25),
       child: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: EdgeInsets.all(10.r),
-              decoration: BoxDecoration(
-                color: const Color(0xFF8B9BFF).withOpacity(0.08),
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFF8B9BFF).withOpacity(0.15), width: 1.5),
-              ),
-              child: Icon(icon ?? Icons.image_outlined, color: const Color(0xFF8B9BFF), size: iconSize.sp),
-            ),
+            Icon(icon ?? Icons.image_outlined, color: Colors.white24, size: (iconSize * 0.85).sp),
             if (subtitle != null) ...[
               SizedBox(height: 6.h),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: Colors.white24,
-                  fontSize: 10.sp,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                ),
-              ),
+              Text(subtitle, style: TextStyle(color: Colors.white38, fontSize: 11.sp)),
             ],
           ],
         ),
@@ -1435,24 +1062,20 @@ class HomeScreen extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 16.w,
-        mainAxisSpacing: 16.h,
-        childAspectRatio: 0.75,
+        crossAxisSpacing: 12.w,
+        mainAxisSpacing: 12.h,
+        childAspectRatio: 0.74,
       ),
       itemCount: 4,
       itemBuilder: (context, index) {
         return Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF11111A),
-            borderRadius: BorderRadius.circular(24.r),
-            border: Border.all(color: Colors.white.withOpacity(0.04)),
-          ),
+          decoration: _homeCard(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
                   child: const CustomShimmer.rectangular(height: double.infinity),
                 ),
               ),
@@ -1476,19 +1099,12 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildHomeSearchBar(HomeController controller) {
     return Container(
-      height: 56.h,
-      decoration: BoxDecoration(
-        color: const Color(0xFF141024),
-        borderRadius: BorderRadius.circular(28.r),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.12),
-          width: 1.2,
-        ),
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 18.w),
+      height: 48.h,
+      decoration: _homeCard(radius: 14),
+      padding: EdgeInsets.symmetric(horizontal: 14.w),
       child: Row(
         children: [
-          Icon(Icons.search_rounded, color: const Color(0xFF8B9BFF), size: 22.sp),
+          Icon(Icons.search_rounded, color: Colors.white54, size: 20.sp),
           SizedBox(width: 12.w),
           Expanded(
             child: TextField(
@@ -1497,11 +1113,10 @@ class HomeScreen extends StatelessWidget {
               style: TextStyle(color: Colors.white, fontSize: 14.sp),
               cursorColor: const Color(0xFF8B9BFF),
               decoration: InputDecoration(
-                hintText: "Search collectibles, streams, cards...",
+                hintText: "Search cards, shows, sellers",
                 hintStyle: TextStyle(
                   color: Colors.white38,
-                  fontSize: 13.5.sp,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 14.sp,
                 ),
                 border: InputBorder.none,
                 isDense: true,
@@ -1538,11 +1153,11 @@ class HomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "Community Voting",
+                "Community votes",
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w900,
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               GestureDetector(
@@ -1553,15 +1168,13 @@ class HomeScreen extends StatelessWidget {
                   child: Row(
                     children: [
                       Text(
-                        "See All",
+                        "See all",
                         style: TextStyle(
-                          color: const Color(0xFF8B9BFF),
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w700,
+                          color: Colors.white60,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                      SizedBox(width: 4.w),
-                      Icon(Icons.arrow_forward_ios_rounded, color: const Color(0xFF8B9BFF), size: 12.sp),
                     ],
                   ),
                 ),
@@ -1604,14 +1217,13 @@ class HomeScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  "Current & Upcoming Shows",
+                  "Shows",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20.sp,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.3,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -1814,19 +1426,11 @@ class HomeScreen extends StatelessWidget {
         width: 215.w,
         margin: EdgeInsets.only(right: isLast ? 0 : 14.w),
         decoration: BoxDecoration(
-          color: const Color(0xFF16122E),
-          borderRadius: BorderRadius.circular(18.r),
+          color: const Color(0xFF13131D),
+          borderRadius: BorderRadius.circular(16.r),
           border: Border.all(
-            color: isMine ? const Color(0xFF8B9BFF).withValues(alpha: 0.6) : const Color(0xFF2C224E),
-            width: isMine ? 1.5 : 1.2,
+            color: isMine ? const Color(0xFF8B9BFF).withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.06),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.45),
-              blurRadius: 12.r,
-              offset: const Offset(0, 5),
-            ),
-          ],
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -1868,16 +1472,8 @@ class HomeScreen extends StatelessWidget {
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 7.w, vertical: 3.h),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF3B5C), Color(0xFFFF5252)],
-                        ),
-                        borderRadius: BorderRadius.circular(10.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF3B5C).withValues(alpha: 0.55),
-                            blurRadius: 8.r,
-                          ),
-                        ],
+                        color: const Color(0xFFE5484D),
+                        borderRadius: BorderRadius.circular(6.r),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -1892,12 +1488,11 @@ class HomeScreen extends StatelessWidget {
                           ),
                           SizedBox(width: 4.w),
                           Text(
-                            "LIVE",
+                            "Live",
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -2051,37 +1646,16 @@ class HomeScreen extends StatelessWidget {
       final isSelected = controller.selectedHomeFilter.value == index;
       return GestureDetector(
         onTap: () => controller.changeHomeFilter(index),
-        child: Container(
-          height: 46.h,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 38.h,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            gradient: isSelected
-                ? const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF8B9BFF),
-                      Color(0xFF6C5CE7),
-                    ],
-                  )
-                : null,
-            color: isSelected ? null : const Color(0xFF14142B).withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(26.r),
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(10.r),
             border: Border.all(
-              color: isSelected
-                  ? const Color(0xFFB4C0FF)
-                  : Colors.white.withValues(alpha: 0.08),
-              width: 1.2,
+              color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.1),
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF8B9BFF).withValues(alpha: 0.5),
-                      blurRadius: 16,
-                      spreadRadius: 1,
-                    ),
-                  ]
-                : null,
           ),
           child: Text(
             label,
@@ -2089,10 +1663,9 @@ class HomeScreen extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isSelected ? Colors.white : Colors.white70,
+              color: isSelected ? const Color(0xFF0F0B1E) : Colors.white70,
               fontSize: 14.sp,
-              fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
-              letterSpacing: 0.3,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
         ),
@@ -2100,282 +1673,76 @@ class HomeScreen extends StatelessWidget {
     });
   }
 
-  Widget _buildSciFiGoLiveButton(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final buttonWidth = 172.w;
-    final buttonHeight = 48.h;
-    final totalHeight = 54.h;
-
-    return SizedBox(
-      height: totalHeight,
-      child: OverflowBox(
-        minWidth: 0.0,
-        maxWidth: screenWidth,
-        alignment: Alignment.center,
-        child: SizedBox(
-          width: screenWidth,
-          height: totalHeight,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Sci-Fi Tech Circuit Wings
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _GoLiveCircuitPainter(
-                    buttonWidth: buttonWidth,
-                    buttonHeight: buttonHeight,
-                  ),
-                ),
+  /// A plain row, not a hero: most people come to watch, not to host.
+  Widget _buildGoLiveRow() {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        AuthGuard.check(
+          title: "Sign in to Go Live",
+          message:
+              "Guest mode is browse-only. Sign in or create an account to host streams and auction items.",
+          onAuthorized: () {
+            try {
+              if (Get.isRegistered<AgoraLiveController>()) {
+                final ctrl = Get.find<AgoraLiveController>();
+                if (ctrl.isLive.value) {
+                  ctrl.resumeStream();
+                  return;
+                }
+              }
+            } catch (_) {}
+            SellerGate.check(
+              action: 'go live',
+              onAllowed: () => Get.toNamed(AppRoute.goLiveSetup),
+            );
+          },
+        );
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+        decoration: _homeCard(radius: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 36.r,
+              height: 36.r,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF43F5E).withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10.r),
               ),
-
-              // Futuristic Pill Button
-              GestureDetector(
-                onTap: () {
-                  AuthGuard.check(
-                    title: "Sign in to Go Live",
-                    message:
-                        "Guest mode is browse-only. Sign in or create an account to host streams and auction items.",
-                    onAuthorized: () {
-                      try {
-                        if (Get.isRegistered<AgoraLiveController>()) {
-                          final ctrl = Get.find<AgoraLiveController>();
-                          if (ctrl.isLive.value) {
-                            ctrl.resumeStream();
-                            return;
-                          }
-                        }
-                      } catch (_) {}
-                      SellerGate.check(
-                        action: 'go live',
-                        onAllowed: () => Get.toNamed(AppRoute.goLiveSetup),
-                      );
-                    },
-                  );
-                },
-                child: Container(
-                  width: buttonWidth,
-                  height: buttonHeight,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(buttonHeight / 2),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xFF1B1745),
-                        Color(0xFF0F0D29),
-                      ],
-                    ),
-                    border: Border.all(
-                      color: const Color(0xFF8B9BFF),
-                      width: 1.6,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.55),
-                        blurRadius: 18,
-                        spreadRadius: 1,
-                      ),
-                      BoxShadow(
-                        color: const Color(0xFF6C5CE7).withValues(alpha: 0.35),
-                        blurRadius: 30,
-                        spreadRadius: 2,
-                      ),
-                    ],
+              child: Icon(Icons.videocam_rounded, color: const Color(0xFFF87171), size: 19.sp),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Go live",
+                    style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w600),
                   ),
-                  child: Center(
-                    child: Text(
-                      "Go Live",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 17.sp,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    "Start a show and auction your items",
+                    style: TextStyle(color: Colors.white54, fontSize: 12.5.sp),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 22.sp),
+          ],
         ),
       ),
     );
   }
 }
 
-class _GoLiveCircuitPainter extends CustomPainter {
-  final double buttonWidth;
-  final double buttonHeight;
+const _homeAccent = Color(0xFF8B9BFF);
+const _homeGreen = Color(0xFF4ADE80);
 
-  _GoLiveCircuitPainter({
-    required this.buttonWidth,
-    required this.buttonHeight,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double cx = size.width / 2;
-    final double cy = size.height / 2;
-
-    // Glowing base paint
-    final glowPaint = Paint()
-      ..color = const Color(0xFF8B9BFF).withValues(alpha: 0.35)
-      ..strokeWidth = 3.2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    // Crisp neon foreground paint
-    final linePaint = Paint()
-      ..color = const Color(0xFF8B9BFF)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    // Accent lines paint
-    final accentPaint = Paint()
-      ..color = const Color(0xFFAAB8FF)
-      ..strokeWidth = 1.4
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    // Terminal dots
-    final dotPaint = Paint()
-      ..color = const Color(0xFFC7D0FF)
-      ..style = PaintingStyle.fill;
-
-    final double btnLeft = cx - (buttonWidth / 2);
-    final double btnRight = cx + (buttonWidth / 2);
-
-    final double gap = 12.0;
-    final double xCutLeft = btnLeft - gap;
-    final double xCutRight = btnRight + gap;
-
-    final double chamfer = 14.0;
-    final double topY = cy - 13.0;
-    final double bottomY = cy + 13.0;
-
-    // --- LEFT WING ---
-    final leftPath = Path();
-    leftPath.moveTo(0, topY);
-    leftPath.lineTo(xCutLeft - chamfer, topY);
-    leftPath.lineTo(xCutLeft, cy - 3.5);
-
-    leftPath.moveTo(0, bottomY);
-    leftPath.lineTo(xCutLeft - chamfer, bottomY);
-    leftPath.lineTo(xCutLeft, cy + 3.5);
-
-    canvas.drawPath(leftPath, glowPaint);
-    canvas.drawPath(leftPath, linePaint);
-
-    // Left middle accent line
-    if (xCutLeft - chamfer - 20 > 16) {
-      canvas.drawLine(
-        Offset(14, cy),
-        Offset(xCutLeft - chamfer - 18, cy),
-        accentPaint,
-      );
-    }
-
-    // Left vertical ticks
-    const double tickXLeft = 40.0;
-    if (tickXLeft < xCutLeft - chamfer - 10) {
-      canvas.drawLine(
-        Offset(tickXLeft, topY - 3.5),
-        Offset(tickXLeft, topY + 3.5),
-        accentPaint,
-      );
-      canvas.drawLine(
-        Offset(tickXLeft, bottomY - 3.5),
-        Offset(tickXLeft, bottomY + 3.5),
-        accentPaint,
-      );
-    }
-
-    // Left terminal dots
-    canvas.drawCircle(Offset(xCutLeft, cy - 3.5), 1.8, dotPaint);
-    canvas.drawCircle(Offset(xCutLeft, cy + 3.5), 1.8, dotPaint);
-
-    // --- RIGHT WING ---
-    final rightPath = Path();
-    rightPath.moveTo(xCutRight, cy - 3.5);
-    rightPath.lineTo(xCutRight + chamfer, topY);
-    rightPath.lineTo(size.width, topY);
-
-    rightPath.moveTo(xCutRight, cy + 3.5);
-    rightPath.lineTo(xCutRight + chamfer, bottomY);
-    rightPath.lineTo(size.width, bottomY);
-
-    canvas.drawPath(rightPath, glowPaint);
-    canvas.drawPath(rightPath, linePaint);
-
-    // Right middle accent line
-    if (size.width - 14 > xCutRight + chamfer + 20) {
-      canvas.drawLine(
-        Offset(xCutRight + chamfer + 18, cy),
-        Offset(size.width - 14, cy),
-        accentPaint,
-      );
-    }
-
-    // Right vertical ticks
-    final double tickXRight = size.width - 40.0;
-    if (tickXRight > xCutRight + chamfer + 10) {
-      canvas.drawLine(
-        Offset(tickXRight, topY - 3.5),
-        Offset(tickXRight, topY + 3.5),
-        accentPaint,
-      );
-      canvas.drawLine(
-        Offset(tickXRight, bottomY - 3.5),
-        Offset(tickXRight, bottomY + 3.5),
-        accentPaint,
-      );
-    }
-
-    // Right terminal dots
-    canvas.drawCircle(Offset(xCutRight, cy - 3.5), 1.8, dotPaint);
-    canvas.drawCircle(Offset(xCutRight, cy + 3.5), 1.8, dotPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _GoLiveCircuitPainter oldDelegate) {
-    return oldDelegate.buttonWidth != buttonWidth ||
-        oldDelegate.buttonHeight != buttonHeight;
-  }
-}
-
-class _GiveawayCyberLinesPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = const Color(0xFF5B3EE4).withValues(alpha: 0.20)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    final brightPaint = Paint()
-      ..color = const Color(0xFF7C5CFC).withValues(alpha: 0.30)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
-    // Diagonal futuristic lines across the giveaway card background
-    canvas.drawLine(
-      Offset(size.width * 0.12, size.height),
-      Offset(size.width * 0.52, 0),
-      linePaint,
+BoxDecoration _homeCard({double radius = 16}) => BoxDecoration(
+      color: const Color(0xFF13131D),
+      borderRadius: BorderRadius.circular(radius.r),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
     );
-    canvas.drawLine(
-      Offset(size.width * 0.32, size.height),
-      Offset(size.width * 0.70, 0),
-      brightPaint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.46, size.height),
-      Offset(size.width * 0.84, 0),
-      linePaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-

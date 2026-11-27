@@ -5,7 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../model/trade_vote_model.dart';
 import 'trade_vote_card.dart';
 
-/// A premium, Tinder-style interactive swipeable container for Trade Voting cards.
+/// A swipeable stack for Trade Voting cards.
 ///
 /// Features:
 /// - Realistic physical drag offset and tilt rotation (Tinder effect)
@@ -168,74 +168,6 @@ class _TinderSwipeableTradeVotingState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Swipe gesture instruction bar
-        Padding(
-          padding: EdgeInsets.only(bottom: 8.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF6584).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20.r),
-                      border: Border.all(
-                        color: const Color(0xFFFF6584).withValues(alpha: 0.35),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.local_fire_department_rounded,
-                          color: const Color(0xFFFF6584),
-                          size: 13.sp,
-                        ),
-                        SizedBox(width: 4.w),
-                        Text(
-                          "SWIPE DECK",
-                          style: TextStyle(
-                            color: const Color(0xFFFF6584),
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Text(
-                    "Swipe card left or right",
-                    style: TextStyle(
-                      color: Colors.white38,
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  Icon(Icons.swipe_rounded, color: const Color(0xFF8B9BFF), size: 14.sp),
-                  SizedBox(width: 4.w),
-                  Text(
-                    "${currentIdx + 1} of ${widget.trades.length}",
-                    style: TextStyle(
-                      color: const Color(0xFF8B9BFF),
-                      fontSize: 11.5.sp,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
         // Stacked Deck Area with top margin for layered cards
         Padding(
           padding: EdgeInsets.only(top: hasThree ? 18.h : (hasMultiple ? 10.h : 0)),
@@ -322,31 +254,24 @@ class _TinderSwipeableTradeVotingState
                                 vertical: 6.h,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF8B9BFF).withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(20.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF8B9BFF).withValues(alpha: 0.5),
-                                    blurRadius: 12.r,
-                                  ),
-                                ],
+                                color: Colors.black.withValues(alpha: 0.75),
+                                borderRadius: BorderRadius.circular(10.r),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Text(
-                                    "NEXT TRADE",
+                                    "Next",
                                     style: TextStyle(
-                                      color: const Color(0xFF0F0B1E),
-                                      fontSize: 11.sp,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.5,
+                                      color: Colors.white,
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                   SizedBox(width: 4.w),
                                   Icon(
                                     Icons.arrow_forward_rounded,
-                                    color: const Color(0xFF0F0B1E),
+                                    color: Colors.white,
                                     size: 14.sp,
                                   ),
                                 ],
@@ -368,14 +293,8 @@ class _TinderSwipeableTradeVotingState
                                 vertical: 6.h,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFF6584).withValues(alpha: 0.9),
-                                borderRadius: BorderRadius.circular(20.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFFF6584).withValues(alpha: 0.5),
-                                    blurRadius: 12.r,
-                                  ),
-                                ],
+                                color: Colors.black.withValues(alpha: 0.75),
+                                borderRadius: BorderRadius.circular(10.r),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -387,12 +306,11 @@ class _TinderSwipeableTradeVotingState
                                   ),
                                   SizedBox(width: 4.w),
                                   Text(
-                                    "PREVIOUS",
+                                    "Previous",
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 11.sp,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 0.5,
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],

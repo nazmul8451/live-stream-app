@@ -116,7 +116,7 @@ class ProfileController extends GetxController {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body)['data'];
 
-        final String fn = data['fullName'] ?? "";
+        final String fn = (data['fullName'] ?? data['name'] ?? "").toString();
         name.value = fn.isNotEmpty ? fn : "User";
         if (fn.isNotEmpty) {
           SharePrefsHelper.setString('fullName', fn);

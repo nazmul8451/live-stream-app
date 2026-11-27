@@ -46,22 +46,16 @@ class TradeVotingFeedScreen extends GetView<TradeVotingController> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                "Who Won The Trade?",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              SizedBox(width: 6.w),
-                              Text("🔥", style: TextStyle(fontSize: 16.sp)),
-                            ],
+                          Text(
+                            "Community votes",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                           Text(
-                            "Community card trade voting feed",
+                            "Pick the side that got the better deal",
                             style: TextStyle(
                               color: Colors.white54,
                               fontSize: 12.sp,

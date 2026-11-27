@@ -6,6 +6,11 @@ import '../model/trade_vote_model.dart';
 import '../../../../global/widgets/custom_shimmer.dart';
 import 'package:live_stream_app/global/widgets/button_loader.dart';
 
+const _cardColor = Color(0xFF13131D);
+const _accent = Color(0xFF8B9BFF);
+
+/// One finished trade, two sides, and a single question. Both sides look the
+/// same until someone votes, so the card never nudges the answer.
 class TradeVoteCard extends StatelessWidget {
   final TradeVoteModel trade;
   final Function(TradeVoteModel trade, String option) onVote;
@@ -26,172 +31,86 @@ class TradeVoteCard extends StatelessWidget {
     this.isCompact = false,
   });
 
+  String get _nameA => trade.itemA.traderName.isNotEmpty ? trade.itemA.traderName : 'Trader A';
+  String get _nameB => trade.itemB.traderName.isNotEmpty ? trade.itemB.traderName : 'Trader B';
+
   @override
   Widget build(BuildContext context) {
+    final meta = [
+      if (trade.category.isNotEmpty) _sentence(trade.category),
+      if (trade.timeAgo.isNotEmpty) trade.timeAgo,
+    ].join(' · ');
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF130F26),
-        borderRadius: BorderRadius.circular(isCompact ? 20.r : 24.r),
-        border: Border.all(
-          color: const Color(0xFF2E2452),
-          width: 1.2.w,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
-            blurRadius: 20.r,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
-      padding: EdgeInsets.all(isCompact ? 12.r : 16.r),
+      padding: EdgeInsets.all(isCompact ? 14.r : 16.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Category, TimeAgo, and optional Carousel controls
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF8B9BFF), Color(0xFF6C5CE7)],
-                        ),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.how_to_vote_rounded, color: Colors.black, size: 12.sp),
-                          SizedBox(width: 4.w),
-                          Text(
-                            trade.category.toUpperCase(),
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 9.5.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      "Who won this trade?",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: isCompact ? 16.sp : 17.sp,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(width: 8.w),
-                    Flexible(
-                      child: Text(
-                        trade.timeAgo,
+                    if (meta.isNotEmpty) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        meta,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: TextStyle(color: Colors.white54, fontSize: 12.5.sp),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
-
               if (showHeaderArrows)
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (onPrev != null)
-                      GestureDetector(
-                        onTap: onPrev,
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          padding: EdgeInsets.all(6.r),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.06),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.arrow_back_ios_rounded, color: Colors.white70, size: 12.sp),
-                        ),
-                      ),
+                    if (onPrev != null) _arrow(Icons.chevron_left_rounded, onPrev!),
                     if (counterText != null)
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w),
+                        padding: EdgeInsets.symmetric(horizontal: 4.w),
                         child: Text(
                           counterText!,
-                          style: TextStyle(
-                            color: const Color(0xFF8B9BFF),
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: TextStyle(color: Colors.white54, fontSize: 12.sp, fontWeight: FontWeight.w500),
                         ),
                       ),
-                    if (onNext != null)
-                      GestureDetector(
-                        onTap: onNext,
-                        behavior: HitTestBehavior.opaque,
-                        child: Container(
-                          padding: EdgeInsets.all(6.r),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.06),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 12.sp),
-                        ),
-                      ),
+                    if (onNext != null) _arrow(Icons.chevron_right_rounded, onNext!),
                   ],
                 )
               else
-                Obx(() => Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                      ),
-                      child: Text(
-                        "${trade.totalVotes.value} votes",
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                Obx(() => Text(
+                      _votes(trade.totalVotes.value),
+                      style: TextStyle(color: Colors.white54, fontSize: 12.sp),
                     )),
             ],
           ),
 
-          SizedBox(height: isCompact ? 8.h : 12.h),
+          SizedBox(height: isCompact ? 12.h : 16.h),
 
-          Text(
-            "Who won this trade? 🔥",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: isCompact ? 15.sp : 17.sp,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          Text(
-            "Community verdict • Tap to pick the winning side",
-            style: TextStyle(
-              color: Colors.white38,
-              fontSize: isCompact ? 10.sp : 11.sp,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-
-          SizedBox(height: isCompact ? 10.h : 16.h),
-
-          // Comparison: Trader A vs Trader B
           Obx(() {
             final hasVoted = trade.hasVoted.value;
             final votedOption = trade.votedOption.value;
-
             return Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Trader A Card
                 Expanded(
                   child: _buildItemCard(
                     sideTag: "Trader A",
@@ -200,41 +119,13 @@ class TradeVoteCard extends StatelessWidget {
                     value: trade.itemA.value,
                     imageUrl: trade.itemA.formattedImageUrl,
                     isVoted: hasVoted && votedOption == "A",
-                    accentColor: const Color(0xFF8B9BFF),
+                    accentColor: _accent,
                   ),
                 ),
-
-                // VS Badge
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: isCompact ? 6.w : 8.w, vertical: isCompact ? 26.h : 40.h),
-                  child: Container(
-                    padding: EdgeInsets.all(isCompact ? 6.r : 8.r),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1F183C),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.4),
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF8B9BFF).withValues(alpha: 0.25),
-                          blurRadius: 10.r,
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      "VS",
-                      style: TextStyle(
-                        color: const Color(0xFF8B9BFF),
-                        fontSize: isCompact ? 9.5.sp : 11.sp,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: isCompact ? 36.h : 46.h),
+                  child: Icon(Icons.swap_horiz_rounded, color: Colors.white30, size: 18.sp),
                 ),
-
-                // Trader B Card
                 Expanded(
                   child: _buildItemCard(
                     sideTag: "Trader B",
@@ -243,205 +134,120 @@ class TradeVoteCard extends StatelessWidget {
                     value: trade.itemB.value,
                     imageUrl: trade.itemB.formattedImageUrl,
                     isVoted: hasVoted && votedOption == "B",
-                    accentColor: const Color(0xFFD677FF),
+                    accentColor: _accent,
                   ),
                 ),
               ],
             );
           }),
 
-          SizedBox(height: isCompact ? 10.h : 16.h),
+          SizedBox(height: isCompact ? 12.h : 16.h),
 
-          // Action Area: Vote Buttons OR Result Bar
           Obx(() {
             final hasVoted = trade.hasVoted.value;
             final isVoting = trade.isVoting.value;
 
             if (!hasVoted) {
+              if (isVoting) {
+                return SizedBox(height: 42.h, child: Center(child: ButtonLoader(size: 18)));
+              }
               return Row(
                 children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: isVoting ? null : () => onVote(trade, "A"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8B9BFF),
-                        foregroundColor: const Color(0xFF0F0B1E),
-                        elevation: 0,
-                        padding: EdgeInsets.symmetric(vertical: isCompact ? 9.h : 12.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(isCompact ? 12.r : 16.r),
-                        ),
-                      ),
-                      child: isVoting
-                          ? ButtonLoader(size: 16)
-                          : Text(
-                              trade.itemA.traderName.isNotEmpty
-                                  ? "Vote ${trade.itemA.traderName}"
-                                  : "Vote Trader A",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: isCompact ? 11.sp : 12.sp,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                    ),
-                  ),
-                  SizedBox(width: isCompact ? 8.w : 12.w),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: isVoting ? null : () => onVote(trade, "B"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD677FF),
-                        foregroundColor: const Color(0xFF0F0B1E),
-                        elevation: 0,
-                        padding: EdgeInsets.symmetric(vertical: isCompact ? 9.h : 12.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(isCompact ? 12.r : 16.r),
-                        ),
-                      ),
-                      child: isVoting
-                          ? ButtonLoader(size: 16)
-                          : Text(
-                              trade.itemB.traderName.isNotEmpty
-                                  ? "Vote ${trade.itemB.traderName}"
-                                  : "Vote Trader B",
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: isCompact ? 11.sp : 12.sp,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                    ),
-                  ),
+                  Expanded(child: _voteButton(_nameA, () => onVote(trade, "A"))),
+                  SizedBox(width: 10.w),
+                  Expanded(child: _voteButton(_nameB, () => onVote(trade, "B"))),
                 ],
               );
             }
 
-            // User has voted: Show results and chosen trader banner
             final pctA = trade.percentageA.value;
             final pctB = trade.percentageB.value;
-            final chosenSide = trade.votedOption.value;
-            final chosenTrader = chosenSide == "A"
-                ? (trade.itemA.traderName.isNotEmpty ? trade.itemA.traderName : "Trader A")
-                : (trade.itemB.traderName.isNotEmpty ? trade.itemB.traderName : "Trader B");
+            final chosen = trade.votedOption.value == "A" ? _nameA : _nameB;
 
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // "You voted for Trader X" Banner
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
-                  decoration: BoxDecoration(
-                    color: (chosenSide == "A" ? const Color(0xFF8B9BFF) : const Color(0xFFD677FF))
-                        .withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(
-                      color: (chosenSide == "A" ? const Color(0xFF8B9BFF) : const Color(0xFFD677FF))
-                          .withValues(alpha: 0.35),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_rounded,
-                        color: chosenSide == "A" ? const Color(0xFF8B9BFF) : const Color(0xFFD677FF),
-                        size: 16.sp,
-                      ),
-                      SizedBox(width: 6.w),
-                      Flexible(
-                        child: Text(
-                          "You voted for $chosenTrader",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                SizedBox(height: 12.h),
-
-                // Labels & Percentages
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        if (chosenSide == "A")
-                          Icon(Icons.check_rounded, color: const Color(0xFF8B9BFF), size: 14.sp),
-                        Text(
-                          "Trader A: $pctA%",
-                          style: TextStyle(
-                            color: chosenSide == "A" ? const Color(0xFF8B9BFF) : Colors.white70,
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      "${trade.totalVotes.value} votes",
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 11.sp,
-                        fontWeight: FontWeight.w600,
+                    Expanded(
+                      child: Text(
+                        "$_nameA  $pctA%",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w600),
                       ),
                     ),
-                    Row(
-                      children: [
-                        Text(
-                          "Trader B: $pctB%",
-                          style: TextStyle(
-                            color: chosenSide == "B" ? const Color(0xFFD677FF) : Colors.white70,
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        if (chosenSide == "B")
-                          Icon(Icons.check_rounded, color: const Color(0xFFD677FF), size: 14.sp),
-                      ],
+                    SizedBox(width: 8.w),
+                    Flexible(
+                      child: Text(
+                        "$pctB%  $_nameB",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: TextStyle(color: Colors.white70, fontSize: 13.sp, fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ],
                 ),
-
                 SizedBox(height: 8.h),
-
-                // Dual Progress Bar
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10.r),
+                  borderRadius: BorderRadius.circular(4.r),
                   child: SizedBox(
-                    height: 10.h,
+                    height: 6.h,
                     child: Row(
                       children: [
-                        Expanded(
-                          flex: pctA > 0 ? pctA : 1,
-                          child: Container(
-                            color: const Color(0xFF8B9BFF),
-                          ),
-                        ),
+                        Expanded(flex: pctA > 0 ? pctA : 1, child: Container(color: _accent)),
                         SizedBox(width: 2.w),
-                        Expanded(
-                          flex: pctB > 0 ? pctB : 1,
-                          child: Container(
-                            color: const Color(0xFFD677FF),
-                          ),
-                        ),
+                        Expanded(flex: pctB > 0 ? pctB : 1, child: Container(color: Colors.white24)),
                       ],
                     ),
                   ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  "You voted for $chosen · ${_votes(trade.totalVotes.value)}",
+                  style: TextStyle(color: Colors.white54, fontSize: 12.sp),
                 ),
               ],
             );
           }),
         ],
+      ),
+    );
+  }
+
+  static String _votes(int n) => n == 1 ? "1 vote" : "$n votes";
+
+  static String _sentence(String s) {
+    final t = s.trim().toLowerCase();
+    return t.isEmpty ? t : t[0].toUpperCase() + t.substring(1);
+  }
+
+  Widget _arrow(IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: EdgeInsets.all(4.r),
+        child: Icon(icon, color: Colors.white60, size: 22.sp),
+      ),
+    );
+  }
+
+  Widget _voteButton(String name, VoidCallback onTap) {
+    return OutlinedButton(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: Colors.white,
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.16)),
+        padding: EdgeInsets.symmetric(vertical: isCompact ? 10.h : 12.h, horizontal: 8.w),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.r)),
+      ),
+      child: Text(
+        "Vote $name",
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
       ),
     );
   }
@@ -455,152 +261,61 @@ class TradeVoteCard extends StatelessWidget {
     required bool isVoted,
     required Color accentColor,
   }) {
-    return Container(
-      padding: EdgeInsets.all(isCompact ? 8.r : 10.r),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1434),
-        borderRadius: BorderRadius.circular(isCompact ? 14.r : 18.r),
-        border: Border.all(
-          color: isVoted ? accentColor : Colors.white.withValues(alpha: 0.06),
-          width: isVoted ? 1.8 : 1,
+    final imageHeight = isCompact ? 96.h : 116.h;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: imageHeight,
+          width: double.infinity,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(10.r),
+            border: Border.all(
+              color: isVoted ? accentColor : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: imageUrl.isNotEmpty
+              ? CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => CustomShimmer.rectangular(
+                    width: double.infinity,
+                    height: imageHeight,
+                  ),
+                  errorWidget: (context, url, error) => _buildImageFallback(),
+                )
+              : _buildImageFallback(),
         ),
-        boxShadow: isVoted
-            ? [
-                BoxShadow(
-                  color: accentColor.withValues(alpha: 0.2),
-                  blurRadius: 12.r,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Side badge & Trader Name
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 2.h),
-                decoration: BoxDecoration(
-                  color: isVoted ? accentColor : Colors.white.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(6.r),
-                ),
-                child: Text(
-                  sideTag,
-                  style: TextStyle(
-                    color: isVoted ? const Color(0xFF0F0B1E) : Colors.white70,
-                    fontSize: isCompact ? 9.sp : 9.5.sp,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              if (isVoted)
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 1.5.h),
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.check, color: accentColor, size: 10.sp),
-                      SizedBox(width: 2.w),
-                      Text(
-                        "PICK",
-                        style: TextStyle(
-                          color: accentColor,
-                          fontSize: 8.5.sp,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+        SizedBox(height: 8.h),
+        Text(
+          name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 13.sp,
+            fontWeight: FontWeight.w500,
+            height: 1.25,
           ),
-
-          if (traderName.isNotEmpty) ...[
-            SizedBox(height: 3.h),
-            Text(
-              traderName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: isCompact ? 9.5.sp : 10.5.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-
-          SizedBox(height: isCompact ? 6.h : 8.h),
-
-          // Item Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12.r),
-            child: Container(
-              height: isCompact ? 76.h : 100.h,
-              width: double.infinity,
-              color: Colors.black26,
-              child: imageUrl.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => CustomShimmer.rectangular(
-                        width: double.infinity,
-                        height: isCompact ? 76.h : 100.h,
-                        shapeBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
-                      ),
-                      errorWidget: (context, url, error) => _buildImageFallback(),
-                    )
-                  : _buildImageFallback(),
-            ),
-          ),
-
-          SizedBox(height: isCompact ? 6.h : 8.h),
-
-          // Item Name
-          Text(
-            name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: isCompact ? 11.5.sp : 12.sp,
-              fontWeight: FontWeight.w700,
-              height: 1.2,
-            ),
-          ),
-
-          SizedBox(height: 3.h),
-
-          // Value
-          if (value.isNotEmpty)
-            Text(
-              value,
-              style: TextStyle(
-                color: const Color(0xFF22C55E),
-                fontSize: isCompact ? 11.sp : 12.sp,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-        ],
-      ),
+        ),
+        SizedBox(height: 2.h),
+        Text(
+          [traderName.isNotEmpty ? traderName : sideTag, if (value.isNotEmpty) value].join(' · '),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(color: Colors.white54, fontSize: 12.sp),
+        ),
+      ],
     );
   }
 
   Widget _buildImageFallback() {
     return Container(
-      color: Colors.white.withValues(alpha: 0.04),
       alignment: Alignment.center,
-      child: Icon(
-        Icons.style_rounded,
-        color: Colors.white24,
-        size: 32.sp,
-      ),
+      child: Icon(Icons.style_outlined, color: Colors.white24, size: 28.sp),
     );
   }
 }
