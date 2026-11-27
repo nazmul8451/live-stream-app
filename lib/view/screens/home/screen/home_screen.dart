@@ -44,7 +44,7 @@ class HomeScreen extends StatelessWidget {
               return false;
             },
             child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

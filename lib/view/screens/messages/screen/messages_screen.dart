@@ -46,7 +46,7 @@ class MessagesScreen extends GetView<MessagesController> {
                       await msgController.fetchNotifications();
                     },
                     child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                      physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                       padding: EdgeInsets.symmetric(horizontal: 16.w),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

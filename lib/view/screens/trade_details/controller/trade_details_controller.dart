@@ -49,6 +49,14 @@ class TradeDetailsController extends GetxController {
     }
   }
 
+  /// Pull to refresh: fetch the listing again so a late or changed field
+  /// (price, status, photos, seller) shows up without leaving the screen.
+  Future<void> refreshProduct() async {
+    final id = productId;
+    if (id.isEmpty) return;
+    await _fetchFullProductDetails(id);
+  }
+
   Future<void> _fetchFullProductDetails(String id) async {
     try {
       final response = await _apiClient.getData("${ApiUrl.products}/$id");

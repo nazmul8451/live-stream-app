@@ -60,7 +60,7 @@ class TradeStatusScreen extends StatelessWidget {
                   onRefresh: c.load,
                   child: ListView(
                     padding: EdgeInsets.fromLTRB(16.w, 20.h, 16.w, 40.h),
-                    physics: const AlwaysScrollableScrollPhysics(),
+                    physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                     children: [
                       _StageHeader(c: c),
                       SizedBox(height: 16.h),

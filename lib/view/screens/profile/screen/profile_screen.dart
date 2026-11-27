@@ -56,9 +56,7 @@ class ProfileScreen extends GetView<ProfileController> {
                 backgroundColor: const Color(0xFF11111A),
                 strokeWidth: 2.5,
                 child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
+                  physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                   child: (SharePrefsHelper.isGuest || SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isEmpty)
                       ? _buildGuestProfileView()
                       : Obx(() {

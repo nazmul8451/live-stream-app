@@ -51,7 +51,7 @@ class MyTradesScreen extends GetView<MyTradesController> {
                 },
                 child: SingleChildScrollView(
                   padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  physics: const AlwaysScrollableScrollPhysics(),
+                  physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                   child: Column(
                     children: [
                       SizedBox(height: 24.h),

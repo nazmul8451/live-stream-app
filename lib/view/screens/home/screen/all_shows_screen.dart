@@ -132,7 +132,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                   }
 
                   return ListView(
-                    physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                    physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                     padding: EdgeInsets.fromLTRB(20.w, 4.h, 20.w, 32.h),
                     children: [
                       // ─── LIVE NOW SECTION ───

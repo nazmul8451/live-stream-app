@@ -50,7 +50,7 @@ class BidShwapScreen extends GetView<BidShwapController> {
                 },
                 child: SingleChildScrollView(
                   padding: EdgeInsets.symmetric(horizontal: 16.w),
-                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                  physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                   child: Column(
                   children: [
                     SizedBox(height: 24.h),

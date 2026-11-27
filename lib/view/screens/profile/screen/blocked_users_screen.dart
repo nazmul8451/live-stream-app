@@ -56,7 +56,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
               backgroundColor: const Color(0xFF161622),
               onRefresh: () => _safetyCtrl.fetchBlockedUsers(),
               child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+                physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                 children: [
                   SizedBox(height: 120.h),
                   Center(
@@ -111,7 +111,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
             backgroundColor: const Color(0xFF161622),
             onRefresh: () => _safetyCtrl.fetchBlockedUsers(),
             child: ListView.separated(
-              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
               padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
               itemCount: _safetyCtrl.blockedUsers.length,
               separatorBuilder: (context, index) => SizedBox(height: 12.h),

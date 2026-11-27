@@ -207,7 +207,7 @@ class MyInventoryScreen extends StatelessWidget {
                 onRefresh: c.load,
                 child: list.isEmpty
                     ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
+                        physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                         children: [
                           SizedBox(height: 120.h),
                           Icon(Icons.inventory_2_outlined, color: Colors.white24, size: 56.sp),

@@ -30,8 +30,7 @@ class TraderProfileScreen extends GetView<TraderProfileController> {
           backgroundColor: const Color(0xFF161622),
           onRefresh: () => controller.refreshAll(),
           child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics()),
+            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

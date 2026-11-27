@@ -35,6 +35,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
       });
     }
     return CustomBackground(
+      safeAreaBottom: false,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -103,8 +104,12 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
               final List<MapEntry<String, String>> extraSpecs =
                   _buildExtraSpecs(product);
 
-              return SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+              return RefreshIndicator(
+                color: const Color(0xFF8B9BFF),
+                backgroundColor: const Color(0xFF13131D),
+                onRefresh: controller.refreshProduct,
+                child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -244,6 +249,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                       ),
                     ),
                   ],
+                ),
                 ),
               );
             }),

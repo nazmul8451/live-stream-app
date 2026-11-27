@@ -37,7 +37,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
                   },
                   child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(horizontal: 20.w),
-                    physics: const AlwaysScrollableScrollPhysics(),
+                    physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

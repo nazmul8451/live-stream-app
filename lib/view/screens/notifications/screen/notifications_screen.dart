@@ -47,7 +47,7 @@ class NotificationsScreen extends GetView<NotificationController> {
           color: const Color(0xFF8B9BFF),
           backgroundColor: const Color(0xFF161622),
           child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
+            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
             padding: EdgeInsets.symmetric(horizontal: 24.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

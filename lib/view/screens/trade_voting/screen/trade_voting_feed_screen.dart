@@ -86,7 +86,7 @@ class TradeVotingFeedScreen extends GetView<TradeVotingController> {
 
                     if (controller.errorMessage.value.isNotEmpty && controller.feedItems.isEmpty) {
                       return SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
+                        physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
                         child: Container(
                           padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 80.h),
                           alignment: Alignment.center,

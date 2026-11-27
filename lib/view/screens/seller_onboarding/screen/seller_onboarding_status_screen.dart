@@ -118,6 +118,7 @@ class _SellerOnboardingStatusScreenState
             backgroundColor: _card,
             color: _accent,
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
               padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 32.h),
               children: [
                 _header(s),
