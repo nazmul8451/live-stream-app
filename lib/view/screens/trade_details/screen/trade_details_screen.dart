@@ -44,7 +44,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () => Get.back(),
           ),
-          title: Text("Trade Details", style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.bold)),
+          title: Text("Listing", style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w600)),
           centerTitle: true,
           actions: [
             IconButton(
@@ -122,8 +122,8 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                               spacing: 8.w,
                               runSpacing: 6.h,
                               children: [
-                                if (category.isNotEmpty) _buildChip(category.toUpperCase(), const Color(0xFF8B9BFF)),
-                                if (condition.isNotEmpty) _buildChip(condition.toUpperCase(), const Color(0xFF9155FF)),
+                                if (category.isNotEmpty) _buildChip(category, const Color(0xFF8B9BFF)),
+                                if (condition.isNotEmpty) _buildChip(condition, const Color(0xFF8B9BFF)),
                               ],
                             ),
                           SizedBox(height: 12.h),
@@ -132,7 +132,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                           if (title.isNotEmpty)
                             Text(
                               title,
-                              style: TextStyle(color: Colors.white, fontSize: 24.sp, fontWeight: FontWeight.w900, height: 1.25),
+                              style: TextStyle(color: Colors.white, fontSize: 24.sp, fontWeight: FontWeight.w700, height: 1.25),
                             ),
 
                           // ── Pricing Row ────────────────────────────
@@ -150,9 +150,9 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
 
                           // ── Offering Box ───────────────────────────
                           _buildTradeBox(
-                            title: "OFFERING",
+                            title: "Offering",
                             name: title.isNotEmpty ? title : "This Item",
-                            subName: condition.isNotEmpty ? "${condition.toUpperCase()} condition" : "See description",
+                            subName: condition.isNotEmpty ? "$condition condition" : "See description",
                             isOffering: true,
                           ),
 
@@ -162,16 +162,16 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                               width: 44.h,
                               margin: EdgeInsets.symmetric(vertical: 10.h),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF282C36),
+                                color: const Color(0xFF13131D),
                                 shape: BoxShape.circle,
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 10.r)],
+                                border: Border.all(color: Colors.white.withOpacity(0.08)),
                               ),
                               child: Center(
                                 child: SvgPicture.asset(
                                   "assets/icons/updaont.svg",
                                   width: 20.sp,
                                   height: 20.sp,
-                                  colorFilter: const ColorFilter.mode(Color(0xFF8B9BFF), BlendMode.srcIn),
+                                  colorFilter: const ColorFilter.mode(Colors.white54, BlendMode.srcIn),
                                 ),
                               ),
                             ),
@@ -179,35 +179,35 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
 
                           // ── Looking For Box ────────────────────────
                           _buildTradeBox(
-                            title: "LOOKING FOR",
-                            name: lookingFor.isNotEmpty ? lookingFor : "Equal Value Swaps",
+                            title: "Looking for",
+                            name: lookingFor.isNotEmpty ? lookingFor : "Items of similar value",
                             subName: estValue.toString().isNotEmpty ? "Est. Value: \$$estValue" : "Open to offers",
                             isOffering: false,
-                            badge: targetCategory.isNotEmpty ? targetCategory.toUpperCase() : (allowTrade == true ? "ANY CATEGORY" : null),
+                            badge: targetCategory.isNotEmpty ? targetCategory : (allowTrade == true ? "Any category" : null),
                           ),
 
                           SizedBox(height: 28.h),
 
                           // ── Description ────────────────────────────
                           if (description.isNotEmpty) ...[
-                            _buildSectionLabel("DESCRIPTION"),
+                            _buildSectionLabel("Description"),
                             SizedBox(height: 12.h),
                             Text(
                               description,
-                              style: TextStyle(color: Colors.white60, fontSize: 14.sp, height: 1.65, fontWeight: FontWeight.w500),
+                              style: TextStyle(color: Colors.white70, fontSize: 14.sp, height: 1.6),
                             ),
                             SizedBox(height: 28.h),
                           ],
 
                           // ── Specifications / Details ───────────────
-                          _buildSectionLabel("PRODUCT DETAILS"),
+                          _buildSectionLabel("Details"),
                           SizedBox(height: 14.h),
                           _buildSpecGrid(product, category, condition, estValue, buyNowPrice, allowTrade, minValue, maxValue, targetCategory, createdAt),
 
                           // ── Extra dynamic fields ───────────────────
                           if (extraSpecs.isNotEmpty) ...[
                             SizedBox(height: 20.h),
-                            _buildSectionLabel("ADDITIONAL INFO"),
+                            _buildSectionLabel("More info"),
                             SizedBox(height: 14.h),
                             _buildExtraSpecsGrid(extraSpecs),
                           ],
@@ -215,7 +215,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                           SizedBox(height: 28.h),
 
                           // ── Trade Preferences ──────────────────────
-                          _buildSectionLabel("TRADE PREFERENCES"),
+                          _buildSectionLabel("Trade preferences"),
                           SizedBox(height: 14.h),
                           _buildTradePreferences(product, allowTrade, minValue, maxValue, targetCategory, lookingFor),
 
@@ -225,7 +225,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                           // Two large cards claiming "100% Secure Auth" took
                           // a third of the screen and said nothing true. One
                           // compact strip, describing what actually happens.
-                          _buildSectionLabel("BUYER PROTECTION"),
+                          _buildSectionLabel("Buyer protection"),
                           SizedBox(height: 14.h),
                           _buildBuyerProtection(),
 
@@ -234,12 +234,12 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                           // to show even when there was nothing to list.
                           if (_similarTrades(product).isNotEmpty) ...[
                             SizedBox(height: 28.h),
-                            _buildSectionLabel("SIMILAR TRADES"),
+                            _buildSectionLabel("Similar listings"),
                             SizedBox(height: 14.h),
                             _buildSimilarTrades(product),
                           ],
 
-                          SizedBox(height: 96.h),
+                          SizedBox(height: 130.h),
                         ],
                       ),
                     ),
@@ -264,13 +264,10 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                   left: 0,
                   right: 0,
                   child: Container(
-                    padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
+                    padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 8.h),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.black.withOpacity(0.0), Colors.black.withOpacity(0.95), Colors.black],
-                      ),
+                      color: const Color(0xFF0C0C14),
+                      border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
                     ),
                     child: SafeArea(
                       top: false,
@@ -281,24 +278,23 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                           child: GestureDetector(
                             onTap: () => _showEditListingDialog(context, product, controller),
                             child: Container(
-                              height: 56.h,
+                              height: 48.h,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF2E1E5D),
-                                borderRadius: BorderRadius.circular(28.r),
-                                border: Border.all(color: const Color(0xFF8B9BFF), width: 1.5),
+                                color: Colors.white.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(12.r),
                               ),
                               alignment: Alignment.center,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.edit_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
+                                  Icon(Icons.edit_outlined, color: Colors.white, size: 18.sp),
                                   SizedBox(width: 8.w),
                                   Text(
-                                    "Edit Listing",
+                                    "Edit",
                                     style: TextStyle(
-                                      color: const Color(0xFF8B9BFF),
+                                      color: Colors.white,
                                       fontSize: 15.sp,
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
@@ -306,30 +302,29 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                             ),
                           ),
                         ),
-                        SizedBox(width: 16.w),
+                        SizedBox(width: 12.w),
                         // Delete Listing Button
                         Expanded(
                           child: GestureDetector(
                             onTap: () => _showDeleteConfirmation(context, product, controller),
                             child: Container(
-                              height: 56.h,
+                              height: 48.h,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF3B1219),
-                                borderRadius: BorderRadius.circular(28.r),
-                                border: Border.all(color: const Color(0xFFEF4444), width: 1.5),
+                                borderRadius: BorderRadius.circular(12.r),
+                                border: Border.all(color: const Color(0xFFF87171).withOpacity(0.4)),
                               ),
                               alignment: Alignment.center,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.delete_outline_rounded, color: const Color(0xFFEF4444), size: 18.sp),
+                                  Icon(Icons.delete_outline_rounded, color: const Color(0xFFF87171), size: 18.sp),
                                   SizedBox(width: 8.w),
                                   Text(
-                                    "Delete Listing",
+                                    "Delete",
                                     style: TextStyle(
-                                      color: const Color(0xFFEF4444),
+                                      color: const Color(0xFFF87171),
                                       fontSize: 15.sp,
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
@@ -358,13 +353,10 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                 left: 0,
                 right: 0,
                 child: Container(
-                  padding: EdgeInsets.fromLTRB(20.w, 14.h, 20.w, 0),
+                  padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 8.h),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Colors.black.withOpacity(0.0), Colors.black.withOpacity(0.95), Colors.black],
-                    ),
+                    color: const Color(0xFF0C0C14),
+                    border: Border(top: BorderSide(color: Colors.white.withOpacity(0.06))),
                   ),
                   child: SafeArea(
                     top: false,
@@ -381,45 +373,40 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                               );
                             },
                             child: Container(
-                              height: 56.h,
+                              height: 48.h,
                               decoration: BoxDecoration(
                                 color: hasBuyNow ? Colors.white.withOpacity(0.08) : const Color(0xFF8B9BFF),
-                                borderRadius: BorderRadius.circular(28.r),
-                                border: hasBuyNow ? Border.all(color: Colors.white.withOpacity(0.1)) : null,
-                                boxShadow: hasBuyNow ? [] : [
-                                  BoxShadow(color: const Color(0xFF8B9BFF).withOpacity(0.3), blurRadius: 16.r, offset: const Offset(0, 4)),
-                                ],
+                                borderRadius: BorderRadius.circular(12.r),
                               ),
                               alignment: Alignment.center,
                               child: Text(
-                                "Make Offer",
+                                "Make offer",
                                 style: TextStyle(
-                                  color: hasBuyNow ? Colors.white : const Color(0xFF0F172A),
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w900,
+                                  color: hasBuyNow ? Colors.white : const Color(0xFF0F0B1E),
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      if ((allowsOffers || hasTrade) && hasBuyNow) SizedBox(width: 16.w),
+                      if ((allowsOffers || hasTrade) && hasBuyNow) SizedBox(width: 12.w),
                       if (hasBuyNow)
                         Expanded(
                           child: GestureDetector(
                             onTap: controller.isOrdering.value ? null : () => controller.buyProduct(),
                             child: Container(
-                              height: 56.h,
+                              height: 48.h,
                               decoration: BoxDecoration(
                                 color: const Color(0xFF8B9BFF),
-                                borderRadius: BorderRadius.circular(28.r),
-                                boxShadow: [BoxShadow(color: const Color(0xFF8B9BFF).withOpacity(0.3), blurRadius: 16.r, offset: const Offset(0, 4))],
+                                borderRadius: BorderRadius.circular(12.r),
                               ),
                               alignment: Alignment.center,
                               child: controller.isOrdering.value
                                   ? ButtonLoader()
                                   : Text(
-                                      "Buy Now \$$buyNowPriceVal",
-                                      style: TextStyle(color: const Color(0xFF0F172A), fontSize: 16.sp, fontWeight: FontWeight.w900),
+                                      "Buy now · \$$buyNowPriceVal",
+                                      style: TextStyle(color: const Color(0xFF0F0B1E), fontSize: 15.sp, fontWeight: FontWeight.w600),
                                     ),
                             ),
                           ),
@@ -459,7 +446,6 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
       }
     }
 
-    final estValue = product['estValue'] ?? product['buyNowPrice'] ?? '';
     final isSold = product['isSold'] == true || product['status'] == 'sold';
 
     final List<String> imageUrls = images.map<String>((img) {
@@ -471,7 +457,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
     if (imageUrls.isEmpty) imageUrls.add('');
 
     return SizedBox(
-      height: 420.h,
+      height: 360.h,
       child: Stack(
         children: [
           PageView.builder(
@@ -480,7 +466,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
             itemBuilder: (context, i) => GestureDetector(
               onTap: () => _openFullScreenImageViewer(context, imageUrls, i),
               child: Container(
-                color: const Color(0xFFF0F0F0),
+                color: const Color(0xFF101018),
                 child: _buildDetailsProductImage(imageUrls[i], fit: BoxFit.contain),
               ),
             ),
@@ -495,27 +481,11 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
                     decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(12.r)),
-                    child: Text("SOLD", style: TextStyle(color: Colors.white, fontSize: 22.sp, fontWeight: FontWeight.w900, letterSpacing: 4)),
+                    child: Text("Sold", style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ),
             ),
-
-          // Top badges
-          Positioned(
-            top: 16.h,
-            left: 16.w,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildBadge("OPEN TRADE", const Color(0xFF8B9BFF)),
-                if (estValue.toString().isNotEmpty) ...[
-                  SizedBox(height: 8.h),
-                  _buildBadge("\$$estValue EST. VALUE", Colors.black.withOpacity(0.75)),
-                ],
-              ],
-            ),
-          ),
 
           // No expand button: tapping the photo itself opens the
           // fullscreen viewer (see the PageView's GestureDetector above).
@@ -545,6 +515,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
             ),
 
           // Image counter pill
+          if (imageUrls.length > 1)
           Positioned(
             bottom: 16.h,
             right: 16.w,
@@ -692,46 +663,29 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
   // PRICING ROW
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildPricingRow({required String estValue, String? buyNowPrice}) {
+    final double buy = double.tryParse(buyNowPrice ?? '') ?? 0;
+    final double est = double.tryParse(estValue) ?? 0;
+    String money(double v) => '\$${v.toStringAsFixed(v % 1 == 0 ? 0 : 2)}';
+
+    if (buy <= 0) {
+      return Text(
+        est > 0 ? "Est. value ${money(est)}" : "Open to offers",
+        style: TextStyle(color: Colors.white70, fontSize: 15.sp, fontWeight: FontWeight.w500),
+      );
+    }
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-          decoration: BoxDecoration(
-            color: const Color(0xFF8B9BFF).withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: const Color(0xFF8B9BFF).withOpacity(0.25)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.attach_money_rounded, color: const Color(0xFF8B9BFF), size: 16.sp),
-              Text(
-                "\$$estValue est.",
-                style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w800),
-              ),
-            ],
-          ),
+        Text(
+          money(buy),
+          style: TextStyle(color: Colors.white, fontSize: 22.sp, fontWeight: FontWeight.w700),
         ),
-        if (buyNowPrice != null && double.tryParse(buyNowPrice) != null && double.parse(buyNowPrice) > 0) ...[
-          SizedBox(width: 10.w),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFF8BFF).withOpacity(0.10),
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: const Color(0xFFFF8BFF).withOpacity(0.20)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.shopping_bag_outlined, color: const Color(0xFFFF8BFF), size: 15.sp),
-                SizedBox(width: 4.w),
-                Text(
-                  "Buy \$$buyNowPrice",
-                  style: TextStyle(color: const Color(0xFFFF8BFF), fontSize: 13.sp, fontWeight: FontWeight.w800),
-                ),
-              ],
-            ),
+        if (est > 0 && est != buy) ...[
+          SizedBox(width: 8.w),
+          Text(
+            "est. value ${money(est)}",
+            style: TextStyle(color: Colors.white54, fontSize: 13.sp),
           ),
         ],
       ],
@@ -757,43 +711,47 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
 
     if (category.isNotEmpty) specs.add(_SpecItem("Category", category, Icons.category_outlined));
     if (condition.isNotEmpty) specs.add(_SpecItem("Condition", condition, Icons.stars_outlined));
-    if (estValue != null && estValue.toString().isNotEmpty) specs.add(_SpecItem("Est. Value", "\$$estValue", Icons.attach_money_rounded));
+    if (estValue != null && estValue.toString().isNotEmpty) specs.add(_SpecItem("Est. value", "\$$estValue", Icons.attach_money_rounded));
     if (buyNowPrice != null && double.tryParse(buyNowPrice.toString()) != null && double.parse(buyNowPrice.toString()) > 0)
-      specs.add(_SpecItem("Buy Now Price", "\$$buyNowPrice", Icons.shopping_bag_outlined));
+      specs.add(_SpecItem("Buy now price", "\$$buyNowPrice", Icons.shopping_bag_outlined));
     
     // Shipping Weight (Feature 1)
     final shippingWeight = product['shippingWeight'];
     final shippingWeightUnit = product['shippingWeightUnit'] ?? 'lbs';
     if (shippingWeight != null && shippingWeight.toString().isNotEmpty && (double.tryParse(shippingWeight.toString()) ?? 0) > 0) {
-      specs.add(_SpecItem("Shipping Weight", "$shippingWeight $shippingWeightUnit", Icons.scale_outlined));
+      specs.add(_SpecItem("Shipping weight", "$shippingWeight $shippingWeightUnit", Icons.scale_outlined));
     }
 
-    specs.add(_SpecItem("Trade Allowed", allowTrade == true ? "Yes" : "No", Icons.swap_horiz_rounded));
     
     // Custom Offers & Min Offer Amount (Feature 2)
     final allowOffers = product['allowOffers'];
     if (allowOffers != null) {
-      specs.add(_SpecItem("Custom Offers", (allowOffers == true || allowOffers == 'true') ? "Accepted" : "Disabled", Icons.local_offer_outlined));
+      specs.add(_SpecItem("Price offers", (allowOffers == true || allowOffers == 'true') ? "Accepted" : "Not accepted", Icons.local_offer_outlined));
     }
     final minOfferAmount = product['minOfferAmount'];
     if (minOfferAmount != null && (double.tryParse(minOfferAmount.toString()) ?? 0) > 0) {
-      specs.add(_SpecItem("Min Acceptable Offer", "\$$minOfferAmount", Icons.price_check_rounded));
+      specs.add(_SpecItem("Lowest offer", "\$$minOfferAmount", Icons.price_check_rounded));
     }
 
-    if (minValue != null && minValue.toString().isNotEmpty) specs.add(_SpecItem("Min Trade Value", "\$$minValue", Icons.arrow_downward_rounded));
-    if (maxValue != null && maxValue.toString().isNotEmpty) specs.add(_SpecItem("Max Trade Value", "\$$maxValue", Icons.arrow_upward_rounded));
-    if (targetCategory.isNotEmpty) specs.add(_SpecItem("Target Category", targetCategory, Icons.filter_list_rounded));
+    // An unset range is 0; printing "$0" read like a real limit.
+    if ((num.tryParse(minValue?.toString() ?? '') ?? 0) > 0) specs.add(_SpecItem("Min trade value", "\$$minValue", Icons.arrow_downward_rounded));
+    if ((num.tryParse(maxValue?.toString() ?? '') ?? 0) > 0) specs.add(_SpecItem("Max trade value", "\$$maxValue", Icons.arrow_upward_rounded));
+    if (targetCategory.isNotEmpty) specs.add(_SpecItem("Wanted category", targetCategory, Icons.filter_list_rounded));
     if (createdAt.isNotEmpty) {
       try {
         final dt = DateTime.parse(createdAt).toLocal();
-        specs.add(_SpecItem("Listed On", "${dt.day}/${dt.month}/${dt.year}", Icons.calendar_today_outlined));
+        specs.add(_SpecItem("Listed on", "${dt.day}/${dt.month}/${dt.year}", Icons.calendar_today_outlined));
       } catch (_) {}
     }
 
     if (specs.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      decoration: BoxDecoration(color: const Color(0xFF11111A), borderRadius: BorderRadius.circular(24.r)),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
       child: Column(
         children: List.generate(specs.length, (i) {
           final spec = specs[i];
@@ -801,27 +759,18 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
           return Column(
             children: [
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 13.h),
                 child: Row(
                   children: [
-                    Container(
-                      padding: EdgeInsets.all(7.r),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF8B9BFF).withOpacity(0.10),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(spec.icon, color: const Color(0xFF8B9BFF), size: 14.sp),
-                    ),
-                    SizedBox(width: 12.w),
                     Text(
                       spec.label,
-                      style: TextStyle(color: Colors.white54, fontSize: 12.sp, fontWeight: FontWeight.w600),
+                      style: TextStyle(color: Colors.white54, fontSize: 14.sp),
                     ),
-                    const Spacer(),
-                    Flexible(
+                    SizedBox(width: 16.w),
+                    Expanded(
                       child: Text(
                         spec.value,
-                        style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w500),
                         textAlign: TextAlign.end,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -831,7 +780,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                 ),
               ),
               if (!isLast)
-                Divider(color: Colors.white.withOpacity(0.04), height: 1, indent: 20.w, endIndent: 20.w),
+                Divider(color: Colors.white.withOpacity(0.06), height: 1, indent: 16.w, endIndent: 16.w),
             ],
           );
         }),
@@ -900,7 +849,11 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
 
   Widget _buildExtraSpecsGrid(List<MapEntry<String, String>> extras) {
     return Container(
-      decoration: BoxDecoration(color: const Color(0xFF11111A), borderRadius: BorderRadius.circular(24.r)),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
       child: Column(
         children: List.generate(extras.length, (i) {
           final entry = extras[i];
@@ -909,25 +862,29 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
               .replaceAllMapped(RegExp(r'([A-Z])'), (m) => ' ${m[0]}')
               .trim()
               .split(' ')
-              .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
-              .join(' ');
+              .join(' ')
+              .toLowerCase();
+          final niceLabel = label.isEmpty ? label : label[0].toUpperCase() + label.substring(1);
+          final rawValue = entry.value;
+          final niceValue = RegExp(r'^[a-z0-9]+(_[a-z0-9]+)+$').hasMatch(rawValue)
+              ? (rawValue.replaceAll('_', ' ')[0].toUpperCase() + rawValue.replaceAll('_', ' ').substring(1))
+              : rawValue;
           return Column(
             children: [
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 14.h),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 13.h),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      label,
-                      style: TextStyle(color: Colors.white54, fontSize: 12.sp, fontWeight: FontWeight.w600),
+                      niceLabel,
+                      style: TextStyle(color: Colors.white54, fontSize: 14.sp),
                     ),
-                    const Spacer(),
                     SizedBox(width: 16.w),
-                    Flexible(
+                    Expanded(
                       child: Text(
-                        entry.value,
-                        style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
+                        niceValue,
+                        style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w500),
                         textAlign: TextAlign.end,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
@@ -937,7 +894,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                 ),
               ),
               if (!isLast)
-                Divider(color: Colors.white.withOpacity(0.04), height: 1, indent: 20.w, endIndent: 20.w),
+                Divider(color: Colors.white.withOpacity(0.06), height: 1, indent: 16.w, endIndent: 16.w),
             ],
           );
         }),
@@ -957,15 +914,11 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
     String lookingFor,
   ) {
     return Container(
-      padding: EdgeInsets.all(20.r),
+      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A1035), Color(0xFF0F0F1A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(color: const Color(0xFF8B9BFF).withOpacity(0.12)),
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -973,28 +926,13 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
           // Trade toggle row
           Row(
             children: [
-              Container(
-                padding: EdgeInsets.all(8.r),
-                decoration: BoxDecoration(color: const Color(0xFF8B9BFF).withOpacity(0.12), shape: BoxShape.circle),
-                child: Icon(Icons.swap_horiz_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
-              ),
+              Icon(Icons.swap_horiz_rounded, color: Colors.white70, size: 20.sp),
               SizedBox(width: 12.w),
-              Text("Trade Accepted", style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w800)),
+              Text("Open to trades", style: TextStyle(color: Colors.white, fontSize: 15.sp, fontWeight: FontWeight.w500)),
               const Spacer(),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
-                decoration: BoxDecoration(
-                  color: allowTrade == true ? const Color(0xFF8B9BFF).withOpacity(0.15) : Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(20.r),
-                ),
-                child: Text(
-                  allowTrade == true ? "YES" : "NO",
-                  style: TextStyle(
-                    color: allowTrade == true ? const Color(0xFF8B9BFF) : Colors.white38,
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+              Text(
+                allowTrade == true ? "Yes" : "No",
+                style: TextStyle(color: Colors.white70, fontSize: 14.sp, fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -1012,9 +950,9 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Looking For", style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                      Text("Looking for", style: TextStyle(color: Colors.white54, fontSize: 13.sp)),
                       SizedBox(height: 4.h),
-                      Text(lookingFor, style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w700)),
+                      Text(lookingFor, style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 ),
@@ -1028,10 +966,10 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
               children: [
                 Icon(Icons.filter_list_rounded, color: Colors.white38, size: 16.sp),
                 SizedBox(width: 10.w),
-                Text("Preferred Category:", style: TextStyle(color: Colors.white38, fontSize: 12.sp, fontWeight: FontWeight.w600)),
+                Text("Preferred category", style: TextStyle(color: Colors.white54, fontSize: 13.sp)),
                 SizedBox(width: 8.w),
                 Flexible(
-                  child: Text(targetCategory, style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800)),
+                  child: Text(targetCategory, style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w500)),
                 ),
               ],
             ),
@@ -1046,14 +984,14 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
               children: [
                 Icon(Icons.monetization_on_outlined, color: Colors.white38, size: 16.sp),
                 SizedBox(width: 10.w),
-                Text("Accepted Value Range:", style: TextStyle(color: Colors.white38, fontSize: 12.sp, fontWeight: FontWeight.w600)),
+                Text("Value range", style: TextStyle(color: Colors.white54, fontSize: 13.sp)),
                 SizedBox(width: 8.w),
                 Text(
                   [
                     if ((num.tryParse(minValue?.toString() ?? '') ?? 0) > 0) "\$$minValue",
                     if ((num.tryParse(maxValue?.toString() ?? '') ?? 0) > 0) "\$$maxValue",
                   ].join(" – "),
-                  style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
@@ -1068,26 +1006,17 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
   // ──────────────────────────────────────────────────────────────────────────
 
   Widget _buildSectionLabel(String label) {
-    return Text(label, style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w900, letterSpacing: 1.2));
+    return Text(label, style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w600));
   }
 
   Widget _buildChip(String label, Color color) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 5.h),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: color.withOpacity(0.25)),
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(8.r),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 11.sp, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
-    );
-  }
-
-  Widget _buildBadge(String text, Color color) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(10.r)),
-      child: Text(text, style: TextStyle(color: color == const Color(0xFF8B9BFF) ? Colors.black : Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w900)),
+      child: Text(label, style: TextStyle(color: Colors.white70, fontSize: 12.sp, fontWeight: FontWeight.w500)),
     );
   }
 
@@ -1134,10 +1063,10 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
         "bio": sellerMap?['bio'] ?? sellerMap?['description'] ?? '',
       }),
       child: Container(
-        padding: EdgeInsets.fromLTRB(18.r, 16.r, 18.r, 6.r),
+        padding: EdgeInsets.fromLTRB(16.r, 14.r, 16.r, 4.r),
         decoration: BoxDecoration(
-          color: const Color(0xFF161622),
-          borderRadius: BorderRadius.circular(24.r),
+          color: const Color(0xFF13131D),
+          borderRadius: BorderRadius.circular(16.r),
           border: Border.all(color: Colors.white.withOpacity(0.06)),
         ),
         child: Column(
@@ -1145,12 +1074,10 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
           children: [
             // Without a label the row read as an unexplained contact.
             Text(
-              "SOLD BY",
+              "Sold by",
               style: TextStyle(
-                color: Colors.white38,
-                fontSize: 10.sp,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.6,
+                color: Colors.white54,
+                fontSize: 13.sp,
               ),
             ),
             SizedBox(height: 12.h),
@@ -1161,7 +1088,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                   imageUrl: avatarUrl,
                   radius: 24.r,
                   backgroundColor: const Color(0xFF232238),
-                  iconColor: const Color(0xFF8B9BFF),
+                  iconColor: Colors.white38,
                   iconSize: 26.sp,
                 ),
                 SizedBox(width: 14.w),
@@ -1181,7 +1108,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 15.sp,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w600,
                                 height: 1.3,
                               ),
                               maxLines: 2,
@@ -1201,9 +1128,8 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                       Text(
                         facts.join('  \u2022  '),
                         style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w600,
+                          color: Colors.white54,
+                          fontSize: 13.sp,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1225,8 +1151,8 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                     "View seller profile",
                     style: TextStyle(
                       color: const Color(0xFF8B9BFF),
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w800,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                   SizedBox(width: 4.w),
@@ -1241,57 +1167,32 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
   }
 
   Widget _buildTradeBox({required String title, required String name, required String subName, required bool isOffering, String? badge}) {
-    final primaryColor = isOffering ? const Color(0xFF8B9BFF) : const Color(0xFF9155FF);
-    final labelColor = isOffering ? const Color(0xFF8B9BFF) : const Color(0xFFFF8BFF);
-
     return Container(
-      padding: EdgeInsets.all(24.r),
-      decoration: BoxDecoration(color: const Color(0xFF161622), borderRadius: BorderRadius.circular(32.r)),
-      child: Stack(
+      width: double.infinity,
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            left: 0,
-            top: 2.h,
-            bottom: 2.h,
-            child: Container(width: 6.w, decoration: BoxDecoration(color: primaryColor, borderRadius: BorderRadius.circular(20.r))),
-          ),
-          Padding(
-            padding: EdgeInsets.only(left: 28.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(title, style: TextStyle(color: labelColor, fontSize: 11.sp, fontWeight: FontWeight.w900, letterSpacing: 2)),
-                    Icon(
-                      isOffering ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-                      color: isOffering ? Colors.white70 : labelColor,
-                      size: 26.sp,
-                    ),
-                  ],
-                ),
-                SizedBox(height: 18.h),
-                Text(name, style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-                SizedBox(height: 8.h),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(subName, style: TextStyle(color: Colors.white38, fontSize: 14.sp, fontWeight: FontWeight.w700),
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
-                    ),
-                    if (badge != null) ...[
-                      SizedBox(width: 14.w),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
-                        decoration: BoxDecoration(color: const Color(0xFF2E1E5D), borderRadius: BorderRadius.circular(10.r)),
-                        child: Text(badge, style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.sp, fontWeight: FontWeight.w900)),
-                      ),
-                    ],
-                  ],
-                ),
+          Text(title, style: TextStyle(color: Colors.white54, fontSize: 13.sp)),
+          SizedBox(height: 6.h),
+          Text(name, style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w600, height: 1.3)),
+          SizedBox(height: 4.h),
+          Row(
+            children: [
+              Expanded(
+                child: Text(subName, style: TextStyle(color: Colors.white54, fontSize: 13.sp),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+              if (badge != null) ...[
+                SizedBox(width: 12.w),
+                _buildChip(badge, const Color(0xFF8B9BFF)),
               ],
-            ),
+            ],
           ),
         ],
       ),
@@ -1351,10 +1252,11 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
     ];
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 6.h),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: const Color(0xFF11111A),
-        borderRadius: BorderRadius.circular(24.r),
+        color: const Color(0xFF13131D),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: Column(
         children: List.generate(items.length, (i) {
@@ -1366,16 +1268,8 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: EdgeInsets.all(7.r),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(9.r),
-                      ),
-                      child: Icon(icon,
-                          color: const Color(0xFF8B9BFF), size: 15.sp),
-                    ),
-                    SizedBox(width: 13.w),
+                    Icon(icon, color: Colors.white70, size: 20.sp),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1384,16 +1278,16 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                             title,
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w800,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           SizedBox(height: 2.h),
                           Text(
                             subtitle,
                             style: TextStyle(
-                              color: Colors.white38,
-                              fontSize: 11.5.sp,
+                              color: Colors.white54,
+                              fontSize: 13.sp,
                               height: 1.4,
                             ),
                           ),
@@ -1437,8 +1331,12 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
             child: Container(
               width: 270.w,
               margin: EdgeInsets.only(right: 14.w),
-              padding: EdgeInsets.all(16.r),
-              decoration: BoxDecoration(color: const Color(0xFF161622), borderRadius: BorderRadius.circular(24.r)),
+              padding: EdgeInsets.all(12.r),
+              decoration: BoxDecoration(
+                color: const Color(0xFF13131D),
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: Colors.white.withOpacity(0.06)),
+              ),
               child: Row(
                 children: [
                   Container(
@@ -1453,11 +1351,11 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w900), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(title, style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
                         SizedBox(height: 3.h),
-                        Text(lookingFor, style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(lookingFor, style: TextStyle(color: Colors.white54, fontSize: 12.sp), maxLines: 1, overflow: TextOverflow.ellipsis),
                         SizedBox(height: 3.h),
-                        Text(value, style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 11.sp, fontWeight: FontWeight.w900)),
+                        Text(value, style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -1472,7 +1370,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
 
   Widget _buildDetailsProductImage(String imgStr, {BoxFit fit = BoxFit.cover}) {
     if (imgStr.isEmpty) {
-      return Container(color: const Color(0xFF1A1A2E), child: Center(child: Icon(Icons.image_outlined, color: Colors.white12, size: 32.sp)));
+      return Container(color: const Color(0xFF1A1A25), child: Center(child: Icon(Icons.image_outlined, color: Colors.white24, size: 32.sp)));
     }
     if (imgStr.startsWith('data:image/') && imgStr.contains('base64,')) {
       try {
@@ -1570,11 +1468,11 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Make an Offer",
+                    "Make an offer",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 20.sp,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   GestureDetector(
@@ -1622,14 +1520,14 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 14.sp,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           SizedBox(height: 4.h),
                           Text(
-                            basePrice > 0 ? "Listed Price: \$${basePrice.toStringAsFixed(0)}" : "Open Trade",
+                            basePrice > 0 ? "Listed price: \$${basePrice.toStringAsFixed(0)}" : "Open to trades",
                             style: TextStyle(
                               color: const Color(0xFF8B9BFF),
                               fontSize: 12.sp,
@@ -1698,7 +1596,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                       style: TextStyle(
                         color: const Color(0xFF8B9BFF),
                         fontSize: 22.sp,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     SizedBox(width: 8.w),
@@ -1709,7 +1607,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20.sp,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                         ),
                         onChanged: validateOffer,
                         decoration: InputDecoration(
@@ -1836,11 +1734,11 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                   child: controller.isSubmittingOffer.value
                       ? ButtonLoader()
                       : Text(
-                          "Send Offer",
+                          "Send offer",
                           style: TextStyle(
                             color: const Color(0xFF0F172A),
                             fontSize: 16.sp,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                 ),
@@ -1898,7 +1796,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
             style: TextStyle(
               color: const Color(0xFF8B9BFF),
               fontSize: 11.sp,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -1928,7 +1826,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
               SizedBox(height: 20.h),
               Text(
                 "Offer Sent! 🎁",
-                style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w900),
+                style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w700),
               ),
               SizedBox(height: 10.h),
               Text(
@@ -1948,8 +1846,8 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    "Got It",
-                    style: TextStyle(color: const Color(0xFF0F172A), fontSize: 15.sp, fontWeight: FontWeight.w900),
+                    "Got it",
+                    style: TextStyle(color: const Color(0xFF0F172A), fontSize: 15.sp, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -1974,7 +1872,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
           children: [
             const Icon(Icons.delete_forever_rounded, color: Color(0xFFEF4444)),
             SizedBox(width: 10.w),
-            const Text("Delete Listing", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            const Text("Delete listing", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ],
         ),
         content: const Text(
@@ -2056,12 +1954,12 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Edit Listing", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.bold)),
+                  Text("Edit listing", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.bold)),
                   IconButton(icon: const Icon(Icons.close, color: Colors.white54), onPressed: () => Get.back()),
                 ],
               ),
               SizedBox(height: 16.h),
-              _buildEditTextField("Item Title", titleCtrl),
+              _buildEditTextField("Title", titleCtrl),
               SizedBox(height: 12.h),
               _buildEditTextField("Description", descCtrl, maxLines: 3),
               SizedBox(height: 12.h),
@@ -2076,7 +1974,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
               Obx(() => SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 activeColor: const Color(0xFF8B9BFF),
-                title: const Text("List on Trade Market", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                title: const Text("Open to trades", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                 subtitle: const Text("Allow other users to offer trades for this item", style: TextStyle(color: Colors.white38, fontSize: 11)),
                 value: allowTradeRx.value,
                 onChanged: (v) => allowTradeRx.value = v,
@@ -2084,7 +1982,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
               Obx(() => SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 activeColor: const Color(0xFF8B9BFF),
-                title: const Text("Allow Offers", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                title: const Text("Accept price offers", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
                 subtitle: const Text("Accept price negotiation offers", style: TextStyle(color: Colors.white38, fontSize: 11)),
                 value: allowOffersRx.value,
                 onChanged: (v) => allowOffersRx.value = v,
@@ -2144,7 +2042,7 @@ class TradeDetailsScreen extends GetView<TradeDetailsController> {
                   ),
                   child: isSaving.value
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : Text("Save Changes", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
+                      : Text("Save changes", style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.bold)),
                 )),
               ),
             ],
