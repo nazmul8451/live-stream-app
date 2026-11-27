@@ -129,13 +129,6 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFE50914),
                               borderRadius: BorderRadius.circular(16.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFE50914).withValues(alpha: 0.4),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -146,7 +139,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                                 ),
                                 SizedBox(width: 5.w),
-                                Text("LIVE", style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                                Text("Live", style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w700)),
                               ],
                             ),
                           ),
@@ -176,7 +169,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   SizedBox(width: 3.w),
                                   Text(
                                     "00:${ctrl.bidTimer.value.toString().padLeft(2, '0')}${isSudden ? ' ⚡' : ''}",
-                                    style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w900),
+                                    style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w700),
                                   ),
                                 ],
                               ),
@@ -198,7 +191,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                 SizedBox(width: 3.w),
                                 Text(
                                   "${ctrl.likeCount.value}",
-                                  style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w800),
+                                  style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
@@ -226,15 +219,8 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                               decoration: BoxDecoration(
                                 color: const Color(0xFFE50914).withValues(alpha: 0.9),
                                 borderRadius: BorderRadius.circular(16.r),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFE50914).withValues(alpha: 0.3),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
                               ),
-                              child: Text("End", style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w900)),
+                              child: Text("End", style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w700)),
                             ),
                           ),
                         ],
@@ -359,20 +345,20 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                       ),
                                       child: Text(
                                         cat.toUpperCase(),
-                                        style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 8.sp, fontWeight: FontWeight.w900),
+                                        style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 8.sp, fontWeight: FontWeight.w700),
                                       ),
                                     );
                                   }),
                                   Obx(() => Text(
                                     ctrl.currentProductTitle.value.isEmpty ? "Auction Item" : ctrl.currentProductTitle.value,
-                                    style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w900),
+                                    style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.w700),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   )),
                                   SizedBox(height: 4.h),
                                   Obx(() => Text(
                                     "Last Bid: \$${ctrl.currentBidPrice.value.toStringAsFixed(0)}",
-                                    style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w800),
+                                    style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w600),
                                   )),
                                 ],
                               ),
@@ -557,13 +543,6 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
             color: const Color(0xFF1E1E2C),
             borderRadius: BorderRadius.circular(32.r),
             border: Border.all(color: Colors.white10),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF8B9BFF).withOpacity(0.1),
-                blurRadius: 30,
-                spreadRadius: 5,
-              ),
-            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -583,7 +562,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
               SizedBox(height: 24.h),
               Text(
                 hasWinner ? "Auction Completed!" : (ctrl.isUnsold.value ? "Reserve Not Met" : "Auction Ended"),
-                style: TextStyle(color: ctrl.isUnsold.value ? Colors.redAccent : Colors.white, fontSize: 22.sp, fontWeight: FontWeight.w900),
+                style: TextStyle(color: ctrl.isUnsold.value ? Colors.redAccent : Colors.white, fontSize: 22.sp, fontWeight: FontWeight.w700),
               ),
               SizedBox(height: 12.h),
               if (hasWinner) ...[
@@ -600,7 +579,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       const TextSpan(text: "Winning Amount: "),
                       TextSpan(
                         text: "\$$finalPrice",
-                        style: const TextStyle(color: Color(0xFF8B9BFF), fontWeight: FontWeight.w900),
+                        style: const TextStyle(color: Color(0xFF8B9BFF), fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),
@@ -614,8 +593,8 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     border: Border.all(color: Colors.amber.withOpacity(0.3)),
                   ),
                   child: Text(
-                    "STATUS: AWAITING PAYMENT",
-                    style: TextStyle(color: Colors.amber, fontSize: 10.sp, fontWeight: FontWeight.w900, letterSpacing: 1),
+                    "Awaiting payment",
+                    style: TextStyle(color: Colors.amber, fontSize: 10.sp, fontWeight: FontWeight.w700),
                   ),
                 ),
               ] else ...[
@@ -648,7 +627,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     icon: Icon(Icons.casino_rounded, color: Colors.white, size: 18.sp),
                     label: Text(
                       "Spin Wheel / Randomize for Winner",
-                      style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+                      style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -673,7 +652,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     icon: Icon(Icons.chat_bubble_outline_rounded, color: const Color(0xFF8B9BFF), size: 18.sp),
                     label: Text(
                       "Chat with Winner (@$winnerName)",
-                      style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800),
+                      style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
@@ -693,7 +672,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       icon: Icon(Icons.play_arrow_rounded, size: 20.sp),
                       label: Text(
                         "Start New Auction",
-                        style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+                        style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -717,7 +696,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       icon: Icon(Icons.stop_circle_outlined, color: Colors.redAccent, size: 18.sp),
                       label: Text(
                         "End Live Stream",
-                        style: TextStyle(color: Colors.redAccent, fontSize: 13.sp, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: Colors.redAccent, fontSize: 13.sp, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),
@@ -751,20 +730,9 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
           child: Container(
             padding: EdgeInsets.all(24.r),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1E1435), Color(0xFF130E26)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFF1E1435),
               borderRadius: BorderRadius.circular(28.r),
               border: Border.all(color: const Color(0xFFBD8BFF), width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFBD8BFF).withValues(alpha: 0.35),
-                  blurRadius: 28,
-                  offset: const Offset(0, 8),
-                ),
-              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -772,23 +740,18 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                 Container(
                   padding: EdgeInsets.all(16.r),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFBD8BFF), Color(0xFF8B9BFF)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: const Color(0xFFBD8BFF),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(Icons.celebration_rounded, color: Colors.white, size: 36.sp),
                 ),
                 SizedBox(height: 16.h),
                 Text(
-                  "🎉 GIVEAWAY WINNER! 🎉",
+                  "Giveaway winner",
                   style: TextStyle(
                     color: const Color(0xFFBD8BFF),
                     fontSize: 16.sp,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 SizedBox(height: 10.h),
@@ -798,7 +761,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 22.sp,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 SizedBox(height: 6.h),
@@ -813,7 +776,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     style: TextStyle(
                       color: const Color(0xFF22C55E),
                       fontSize: 13.sp,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -831,7 +794,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     ),
                     child: Text(
                       "Dismiss",
-                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w900),
+                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -1120,7 +1083,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 13.sp,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -1189,7 +1152,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                 onTap: () => _showEditNumberDialog("Starting Bid", startingBid.value, (val) => startingBid.value = val),
                                 child: Text(
                                   "\$${startingBid.value.toInt()}",
-                                  style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900),
+                                  style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w700),
                                 ),
                               )),
                               Row(
@@ -1251,7 +1214,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                 onTap: () => _showEditNumberDialog("Bid Increment", bidIncrement.value, (val) => bidIncrement.value = val),
                                 child: Text(
                                   "\$${bidIncrement.value.toInt()}",
-                                  style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900),
+                                  style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w700),
                                 ),
                               )),
                               Row(
@@ -1345,11 +1308,11 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                         : null,
                                   ),
                                   child: Text(
-                                    isFast ? "${t}s ⚡" : "${t}s",
+                                    isFast ? "${t}s · fast" : "${t}s",
                                     style: TextStyle(
                                       color: isSelected ? Colors.white : const Color(0xFF8A96BC),
                                       fontSize: 12.sp,
-                                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -1386,7 +1349,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   style: TextStyle(
                                     color: isCustom ? Colors.white : const Color(0xFF8A96BC),
                                     fontSize: 12.sp,
-                                    fontWeight: isCustom ? FontWeight.w800 : FontWeight.w600,
+                                    fontWeight: isCustom ? FontWeight.w600 : FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -1584,19 +1547,8 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   width: double.infinity,
                   height: 52.h,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF7A40F2), Color(0xFF3F8CFF)],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                    ),
+                    color: const Color(0xFF7A40F2),
                     borderRadius: BorderRadius.circular(16.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF3F8CFF).withValues(alpha: 0.35),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1613,12 +1565,11 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       ),
                       SizedBox(width: 12.w),
                       Text(
-                        "START AUCTION",
+                        "Start auction",
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 14.sp,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -1680,7 +1631,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
               children: [
                 Text(
                   "Select Product to Auction",
-                  style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w900),
+                  style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w700),
                 ),
                 IconButton(
                   onPressed: () => Get.back(),
@@ -1788,7 +1739,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Edit $title", style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800)),
+              Text("Edit $title", style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w600)),
               SizedBox(height: 14.h),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 14.w),
@@ -1799,13 +1750,13 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                 ),
                 child: Row(
                   children: [
-                    Text("\$ ", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 18.sp, fontWeight: FontWeight.w900)),
+                    Text("\$ ", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 18.sp, fontWeight: FontWeight.w700)),
                     Expanded(
                       child: TextField(
                         controller: textCtrl,
                         autofocus: true,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w600),
                         decoration: const InputDecoration(border: InputBorder.none),
                       ),
                     ),
@@ -1860,7 +1811,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Custom Duration", style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800)),
+              Text("Custom Duration", style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w600)),
               SizedBox(height: 14.h),
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 14.w),
@@ -1876,7 +1827,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                         controller: textCtrl,
                         autofocus: true,
                         keyboardType: TextInputType.number,
-                        style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w800),
+                        style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w600),
                         decoration: const InputDecoration(
                           hintText: "Seconds",
                           hintStyle: TextStyle(color: Colors.white30),
@@ -2129,7 +2080,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     style: TextStyle(
                       color: const Color(0xFF8B9BFF),
                       fontSize: 12.sp,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -2149,13 +2100,6 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
           color: const Color(0xFF2A1B4E).withOpacity(0.9),
           borderRadius: BorderRadius.circular(16.r),
           border: Border.all(color: const Color(0xFFBD8BFF).withOpacity(0.5), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFBD8BFF).withOpacity(0.2),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2187,7 +2131,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                         style: TextStyle(
                           color: const Color(0xFFBD8BFF),
                           fontSize: 13.sp,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
@@ -2209,7 +2153,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     ),
                     child: Text(
                       "Accept \$$offerAmt",
-                      style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w900),
+                      style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -2241,21 +2185,9 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
       return Container(
         padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFF8B9BFF).withOpacity(0.55),
-              const Color(0xFFBD8BFF).withOpacity(0.55),
-            ],
-          ),
+          color: Color(0xFF8B9BFF).withOpacity(0.55),
           borderRadius: BorderRadius.circular(16.r),
           border: Border.all(color: const Color(0xFFBD8BFF).withOpacity(0.5), width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFBD8BFF).withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -2279,7 +2211,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12.sp,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       SizedBox(width: 6.w),
@@ -2290,11 +2222,11 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                           borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Text(
-                          "HOST",
+                          "Host",
                           style: TextStyle(
                             color: const Color(0xFF8B9BFF),
                             fontSize: 8.sp,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -2457,7 +2389,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
               SizedBox(height: 16.h),
               Text(
                 "End Live Session?",
-                style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w900),
+                style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w700),
               ),
               SizedBox(height: 6.h),
               Text(
@@ -2532,7 +2464,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       ),
                       child: Text(
                         "End & Exit",
-                        style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w900),
+                        style: TextStyle(color: Colors.white, fontSize: 12.sp, fontWeight: FontWeight.w700),
                       ),
                     ),
                   ),
@@ -2550,7 +2482,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
       children: [
         Text(title, style: TextStyle(color: Colors.white38, fontSize: 11.sp, fontWeight: FontWeight.w600)),
         SizedBox(height: 4.h),
-        Text(value, style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 16.sp, fontWeight: FontWeight.w900)),
+        Text(value, style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 16.sp, fontWeight: FontWeight.w700)),
       ],
     );
   }
@@ -2672,7 +2604,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     SizedBox(width: 8.w),
                     Text(
                       "Live Inventory & Giveaways",
-                      style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                      style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -2709,7 +2641,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                           style: TextStyle(
                             color: selectedTabIndex.value == 0 ? Colors.white : Colors.white60,
                             fontSize: 12.sp,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -2730,7 +2662,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                           style: TextStyle(
                             color: selectedTabIndex.value == 1 ? const Color(0xFF0F0B1E) : Colors.white60,
                             fontSize: 12.sp,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -2879,7 +2811,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   children: [
                                     Text(
                                       "Mark as Giveaway Item 🎁",
-                                      style: TextStyle(color: Colors.white, fontSize: 12.5.sp, fontWeight: FontWeight.w800),
+                                      style: TextStyle(color: Colors.white, fontSize: 12.5.sp, fontWeight: FontWeight.w600),
                                     ),
                                     SizedBox(height: 2.h),
                                     Text(
@@ -2945,7 +2877,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                               isSubmitting.value
                                   ? "Adding Item..."
                                   : (isGiveaway.value ? "Add & Run Giveaway 🎁" : "Add to Live Inventory 📦"),
-                              style: TextStyle(fontSize: 13.5.sp, fontWeight: FontWeight.w900),
+                              style: TextStyle(fontSize: 13.5.sp, fontWeight: FontWeight.w700),
                             ),
                           ),
                         ),
@@ -3124,8 +3056,8 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                                       borderRadius: BorderRadius.circular(4.r),
                                                     ),
                                                     child: Text(
-                                                      "GIVEAWAY 🎁",
-                                                      style: TextStyle(color: const Color(0xFFFFB800), fontSize: 9.sp, fontWeight: FontWeight.w900),
+                                                      "Giveaway",
+                                                      style: TextStyle(color: const Color(0xFFFFB800), fontSize: 9.sp, fontWeight: FontWeight.w700),
                                                     ),
                                                   ),
                                                 ],
@@ -3171,7 +3103,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                               children: [
                                                 Icon(Icons.gavel_rounded, color: const Color(0xFF8B9BFF), size: 12.sp),
                                                 SizedBox(width: 4.w),
-                                                Text("Auction", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w800)),
+                                                Text("Auction", style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w600)),
                                               ],
                                             ),
                                           ),
@@ -3201,7 +3133,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                                   style: TextStyle(
                                                     color: isGiveawayItem ? Colors.black : const Color(0xFFFFB800),
                                                     fontSize: 10.5.sp,
-                                                    fontWeight: FontWeight.w800,
+                                                    fontWeight: FontWeight.w600,
                                                   ),
                                                 ),
                                               ],
@@ -3235,7 +3167,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   icon: Icon(Icons.card_giftcard_rounded, size: 16.sp),
                                   label: Text(
                                     "Set as Giveaways (${selectedItems.length}) 🎁",
-                                    style: TextStyle(fontSize: 11.5.sp, fontWeight: FontWeight.w900),
+                                    style: TextStyle(fontSize: 11.5.sp, fontWeight: FontWeight.w700),
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFFFFB800),
@@ -3256,7 +3188,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   icon: Icon(Icons.inventory_2_rounded, size: 16.sp),
                                   label: Text(
                                     "Add to Show (${selectedItems.length}) 📦",
-                                    style: TextStyle(fontSize: 11.5.sp, fontWeight: FontWeight.w900),
+                                    style: TextStyle(fontSize: 11.5.sp, fontWeight: FontWeight.w700),
                                   ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF10B981),
@@ -3322,7 +3254,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   children: [
                     Text(
                       "Live Giveaway Spots 🎁",
-                      style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                      style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700),
                     ),
                     Obx(() {
                       final giveaways = ctrl.streamInventoryItems.where((e) => e['isGiveaway'] == true).toList();
@@ -3360,7 +3292,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                         SizedBox(height: 16.h),
                         Text(
                           "No Giveaway Spots Assigned Yet",
-                          style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                          style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700),
                         ),
                         SizedBox(height: 6.h),
                         Padding(
@@ -3378,7 +3310,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                             _showLiveItemManagerSheet(initialTabIndex: 1);
                           },
                           icon: Icon(Icons.add_circle_outline_rounded, size: 18.sp),
-                          label: Text("+ Assign Products from Inventory", style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800)),
+                          label: Text("+ Assign Products from Inventory", style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFFFB800),
                             foregroundColor: Colors.black,
@@ -3444,20 +3376,20 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                         borderRadius: BorderRadius.circular(6.r),
                                       ),
                                       child: Text(
-                                        "GIVEAWAY SPOT #${idx + 1} 🎁",
-                                        style: TextStyle(color: const Color(0xFFFFB800), fontSize: 9.5.sp, fontWeight: FontWeight.w900),
+                                        "Giveaway spot ${idx + 1}",
+                                        style: TextStyle(color: const Color(0xFFFFB800), fontSize: 9.5.sp, fontWeight: FontWeight.w700),
                                       ),
                                     ),
                                     SizedBox(height: 4.h),
                                     Text(
                                       title,
-                                      style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
+                                      style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w600),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     SizedBox(height: 2.h),
                                     Text(
-                                      [if (category.isNotEmpty) category, if (condition.isNotEmpty) condition, 'FREE'].join(' • '),
+                                      [if (category.isNotEmpty) category, if (condition.isNotEmpty) condition, 'Free'].join(' · '),
                                       style: TextStyle(color: Colors.white54, fontSize: 11.sp),
                                     ),
                                   ],
@@ -3480,7 +3412,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                 ctrl.runItemGiveaway(itemTitle: title, productId: pid, itemImage: image);
                               },
                               icon: Icon(Icons.stars_rounded, color: Colors.black, size: 16.sp),
-                              label: Text("Run This Giveaway 🎲", style: TextStyle(color: Colors.black, fontSize: 12.5.sp, fontWeight: FontWeight.w900)),
+                              label: Text("Run This Giveaway 🎲", style: TextStyle(color: Colors.black, fontSize: 12.5.sp, fontWeight: FontWeight.w700)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFFFB800),
                                 elevation: 0,
@@ -3505,7 +3437,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                   _showLiveItemManagerSheet(initialTabIndex: 1);
                 },
                 icon: Icon(Icons.add_rounded, color: const Color(0xFFFFB800), size: 18.sp),
-                label: Text("+ Add More Giveaway Spots from Inventory", style: TextStyle(color: const Color(0xFFFFB800), fontSize: 12.5.sp, fontWeight: FontWeight.w800)),
+                label: Text("+ Add More Giveaway Spots from Inventory", style: TextStyle(color: const Color(0xFFFFB800), fontSize: 12.5.sp, fontWeight: FontWeight.w600)),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: const Color(0xFFFFB800).withValues(alpha: 0.5)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
@@ -3557,7 +3489,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                 SizedBox(width: 8.w),
                 Text(
                   "Live Show Sales",
-                  style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                  style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700),
                 ),
                 const Spacer(),
                 IconButton(
@@ -3580,11 +3512,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
               return Container(
                 padding: EdgeInsets.all(14.r),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1E2640), Color(0xFF14192A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: const Color(0xFF1E2640),
                   borderRadius: BorderRadius.circular(16.r),
                   border: Border.all(color: const Color(0xFF2E3B66)),
                 ),
@@ -3594,11 +3522,11 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("TOTAL REVENUE", style: TextStyle(color: Colors.white54, fontSize: 10.sp, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                          Text("Total revenue", style: TextStyle(color: Colors.white54, fontSize: 10.sp, fontWeight: FontWeight.w700)),
                           SizedBox(height: 4.h),
                           Text(
                             "\$${rev.toStringAsFixed(2)}",
-                            style: TextStyle(color: const Color(0xFF10B981), fontSize: 22.sp, fontWeight: FontWeight.w900),
+                            style: TextStyle(color: const Color(0xFF10B981), fontSize: 22.sp, fontWeight: FontWeight.w700),
                           ),
                         ],
                       ),
@@ -3610,11 +3538,11 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("ITEMS SOLD", style: TextStyle(color: Colors.white54, fontSize: 10.sp, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                            Text("Items sold", style: TextStyle(color: Colors.white54, fontSize: 10.sp, fontWeight: FontWeight.w700)),
                             SizedBox(height: 4.h),
                             Text(
                               "$count items ($paidCount paid)",
-                              style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
+                              style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -3627,11 +3555,11 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text("TIPS EARNED", style: TextStyle(color: const Color(0xFFFFB800), fontSize: 10.sp, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                            Text("Tips", style: TextStyle(color: const Color(0xFFFFB800), fontSize: 10.sp, fontWeight: FontWeight.w700)),
                             SizedBox(height: 4.h),
                             Text(
                               "\$${ctrl.totalTipsReceived.value.toStringAsFixed(2)}",
-                              style: TextStyle(color: const Color(0xFFFFD700), fontSize: 15.sp, fontWeight: FontWeight.w900),
+                              style: TextStyle(color: const Color(0xFFFFD700), fontSize: 15.sp, fontWeight: FontWeight.w700),
                             ),
                           ],
                         ),
@@ -3694,13 +3622,13 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     String statusText;
                     if (paymentStatus == 'paid' || paymentStatus == 'completed') {
                       statusColor = const Color(0xFF10B981);
-                      statusText = "PAID";
+                      statusText = "Paid";
                     } else if (paymentStatus == 'failed') {
                       statusColor = Colors.redAccent;
-                      statusText = "FAILED";
+                      statusText = "Failed";
                     } else {
                       statusColor = const Color(0xFFFFB800);
-                      statusText = "PENDING";
+                      statusText = "Pending";
                     }
 
                     return Container(
@@ -3737,7 +3665,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   children: [
                                     Text(
                                       title,
-                                      style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w800),
+                                      style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w600),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -3753,11 +3681,11 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    isGiveaway ? "FREE" : "\$${price.toStringAsFixed(2)}",
+                                    isGiveaway ? "Free" : "\$${price.toStringAsFixed(2)}",
                                     style: TextStyle(
                                       color: isGiveaway ? const Color(0xFFFFB800) : Colors.white,
                                       fontSize: 14.sp,
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                   SizedBox(height: 4.h),
@@ -3770,7 +3698,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                     ),
                                     child: Text(
                                       statusText,
-                                      style: TextStyle(color: statusColor, fontSize: 9.5.sp, fontWeight: FontWeight.w900),
+                                      style: TextStyle(color: statusColor, fontSize: 9.5.sp, fontWeight: FontWeight.w700),
                                     ),
                                   ),
                                 ],
@@ -3797,7 +3725,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                         SizedBox(width: 4.w),
                                         Text(
                                           "Giveaway Claimed",
-                                          style: TextStyle(color: const Color(0xFFFFB800), fontSize: 10.sp, fontWeight: FontWeight.w800),
+                                          style: TextStyle(color: const Color(0xFFFFB800), fontSize: 10.sp, fontWeight: FontWeight.w600),
                                         ),
                                       ],
                                     ),
@@ -3817,7 +3745,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                         SizedBox(width: 4.w),
                                         Text(
                                           "Spin Prize: $spinPrize",
-                                          style: TextStyle(color: const Color(0xFFFF6584), fontSize: 10.sp, fontWeight: FontWeight.w800),
+                                          style: TextStyle(color: const Color(0xFFFF6584), fontSize: 10.sp, fontWeight: FontWeight.w600),
                                         ),
                                       ],
                                     ),
@@ -3857,7 +3785,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                 }
                               },
                               child: Text(
-                                "📄 View USPS Shipping Label PDF",
+                                "View shipping label",
                                 style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.5.sp, fontWeight: FontWeight.w700, decoration: TextDecoration.underline),
                               ),
                             ),
@@ -4049,7 +3977,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
               Container(
                 padding: EdgeInsets.all(16.r),
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(colors: [Color(0xFFFF6584), Color(0xFFBD8BFF)]),
+                  color: const Color(0xFFFF6584),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(Icons.emoji_events_rounded, color: Colors.white, size: 36.sp),
@@ -4058,7 +3986,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
               Text(
                 "Selected: $selectedItem!",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900),
+                style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w700),
               ),
               SizedBox(height: 8.h),
               Container(
@@ -4193,7 +4121,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                   SizedBox(width: 8.w),
                   Text(
                     "Spin Wheel / Randomizer",
-                    style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900),
+                    style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700),
                   ),
                 ],
               ),
@@ -4250,7 +4178,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                   style: TextStyle(
                     color: _wheelItems.length >= 4 ? const Color(0xFFFF6584) : const Color(0xFF10B981),
                     fontSize: 10.5.sp,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -4349,12 +4277,6 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                       color: const Color(0xFF0F111D),
                       shape: BoxShape.circle,
                       border: Border.all(color: const Color(0xFFFF6584), width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF6584).withValues(alpha: 0.4),
-                          blurRadius: 10,
-                        ),
-                      ],
                     ),
                     child: Icon(Icons.stars_rounded, color: const Color(0xFFFF6584), size: 22.sp),
                   ),
@@ -4389,7 +4311,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                   icon: Icon(Icons.casino_rounded, size: 18.sp),
                   label: Text(
                     _isSpinning ? "Spinning..." : "Spin Wheel 🎡",
-                    style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+                    style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -4408,7 +4330,7 @@ class _SpinWheelSheetWidgetState extends State<_SpinWheelSheetWidget> with Singl
                   icon: Icon(Icons.shuffle_rounded, size: 18.sp),
                   label: Text(
                     "Shuffle 🎲",
-                    style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w900),
+                    style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),

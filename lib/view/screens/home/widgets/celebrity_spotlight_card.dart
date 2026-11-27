@@ -64,43 +64,14 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
               children: [
                 Row(
                   children: [
-                    Container(
-                      padding: EdgeInsets.all(5.r),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFD54F), Color(0xFFF59E0B)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFFD54F).withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        "👑",
-                        style: TextStyle(fontSize: 12.sp, height: 1.1),
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Color(0xFFFFF7D6), Color(0xFFFFD54F), Color(0xFFF59E0B)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ).createShader(bounds),
-                      child: Text(
-                        "CELEBRITY SPOTLIGHT",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.1,
-                        ),
+                    Icon(Icons.star_rounded, color: const Color(0xFFFFD54F), size: 18.sp),
+                    SizedBox(width: 6.w),
+                    Text(
+                      "Featured guest",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -119,12 +90,6 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
                           color: const Color(0xFFFF2D55).withValues(alpha: 0.75),
                           width: 1.0,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF2D55).withValues(alpha: 0.25 * _pulseAnimation.value),
-                            blurRadius: 8 * _pulseAnimation.value,
-                          ),
-                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -139,12 +104,11 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
                           ),
                           SizedBox(width: 4.w),
                           Text(
-                            "LIVE NOW",
+                            "Live now",
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 9.5.sp,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -191,29 +155,7 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
           width: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24.r),
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFFFFD54F), // Champagne Gold
-                Color(0xFFC084FC), // Lavender Amethyst
-                Color(0xFFF59E0B), // Warm Amber
-                Color(0xFF818CF8), // Cyber Indigo
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFFFD54F).withValues(alpha: 0.22 * _pulseAnimation.value),
-                blurRadius: 18 * _pulseAnimation.value,
-                spreadRadius: 1,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: const Color(0xFF9333EA).withValues(alpha: 0.16),
-                blurRadius: 20,
-                spreadRadius: 1,
-              ),
-            ],
+            color: const Color(0xFFFFD54F),
           ),
           padding: EdgeInsets.all(1.6.r), // Fine glowing luxury border
           child: Container(
@@ -278,32 +220,20 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFFFD54F), Color(0xFFF59E0B)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
+                              color: const Color(0xFFFFD54F),
                               borderRadius: BorderRadius.circular(10.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFFFD54F).withValues(alpha: 0.4),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text("👑", style: TextStyle(fontSize: 10.sp)),
+                                const SizedBox.shrink(),
                                 SizedBox(width: 4.w),
                                 Text(
-                                  "VIP CELEBRITY",
+                                  "Featured",
                                   style: TextStyle(
                                     color: const Color(0xFF140D2B),
                                     fontSize: 9.5.sp,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 0.5,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
@@ -331,7 +261,7 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 10.5.sp,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
@@ -349,9 +279,7 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
                             padding: EdgeInsets.all(1.5.r),
                             decoration: const BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [Color(0xFFFFD54F), Color(0xFFF59E0B)],
-                              ),
+                              color: const Color(0xFFFFD54F),
                             ),
                             child: CircleAvatar(
                               radius: 17.r,
@@ -379,7 +307,7 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 14.sp,
-                                          fontWeight: FontWeight.w900,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                     ),
@@ -415,7 +343,7 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16.sp,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 0.2,
                         ),
                       ),
@@ -454,7 +382,7 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
                                   (agoraCtrl.isHost.value && agoraCtrl.isLive.value));
                           final bool isHost = agoraCtrl?.isHost.value ?? false;
 
-                          String btnText = "Watch Celebrity Stream 🔥";
+                          String btnText = "Watch";
                           IconData btnIcon = Icons.play_arrow_rounded;
                           if (isLiveActive) {
                             btnText = isHost ? "Return to My Stream" : "Return to Stream";
@@ -463,22 +391,8 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
 
                           return Container(
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFFFFD54F), // Champagne Gold
-                                  Color(0xFFF59E0B), // Warm Amber
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
+                              color: const Color(0xFFFFD54F),
                               borderRadius: BorderRadius.circular(22.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFFFD54F).withValues(alpha: 0.35),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
                             ),
                             child: ElevatedButton(
                               onPressed: () {
@@ -513,10 +427,9 @@ class _CelebritySpotlightCardState extends State<CelebritySpotlightCard>
                                   Text(
                                     btnText,
                                     style: TextStyle(
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                       fontSize: 13.5.sp,
                                       color: const Color(0xFF140D2B),
-                                      letterSpacing: 0.3,
                                     ),
                                   ),
                                 ],

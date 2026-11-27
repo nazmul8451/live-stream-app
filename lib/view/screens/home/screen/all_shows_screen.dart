@@ -62,8 +62,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18.sp,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.3,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -99,7 +98,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                     children: [
                       _buildTabChip(0, "All Shows ($allCount)"),
                       SizedBox(width: 8.w),
-                      _buildTabChip(1, "Live Now 🔴 ${liveCount > 0 ? '($liveCount)' : ''}"),
+                      _buildTabChip(1, "Live now ${liveCount > 0 ? '($liveCount)' : ''}"),
                       SizedBox(width: 8.w),
                       _buildTabChip(2, "Upcoming 📅 ${upcomingCount > 0 ? '($upcomingCount)' : ''}"),
                     ],
@@ -157,7 +156,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                                 style: TextStyle(
                                   color: const Color(0xFFFF6B6B),
                                   fontSize: 14.sp,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -198,7 +197,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                                 style: TextStyle(
                                   color: const Color(0xFF8B9BFF),
                                   fontSize: 14.sp,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -267,7 +266,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
           style: TextStyle(
             color: isSelected ? Colors.white : Colors.white60,
             fontSize: 11.5.sp,
-            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
           ),
         ),
       ),
@@ -296,13 +295,6 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
         color: const Color(0xFF140F2D),
         borderRadius: BorderRadius.circular(22.r),
         border: Border.all(color: const Color(0xFFFF4B4B).withValues(alpha: 0.6), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF4B4B).withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,12 +343,6 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                       decoration: BoxDecoration(
                         color: const Color(0xFFFF4B4B),
                         borderRadius: BorderRadius.circular(8.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF4B4B).withValues(alpha: 0.5),
-                            blurRadius: 8,
-                          ),
-                        ],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -368,7 +354,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 10.sp,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -392,7 +378,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 10.sp,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -430,7 +416,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12.sp,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           shadows: const [
                             Shadow(color: Colors.black, blurRadius: 4),
                           ],
@@ -456,7 +442,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 15.sp,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     height: 1.2,
                   ),
                 ),
@@ -499,7 +485,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13.sp,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -700,7 +686,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 10.sp,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -762,7 +748,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 10.sp,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -784,7 +770,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14.sp,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     height: 1.2,
                   ),
                 ),
@@ -808,7 +794,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                         style: TextStyle(
                           color: isMine ? const Color(0xFF8B9BFF) : Colors.white70,
                           fontSize: 11.5.sp,
-                          fontWeight: isMine ? FontWeight.w900 : FontWeight.w600,
+                          fontWeight: isMine ? FontWeight.w700 : FontWeight.w600,
                         ),
                       ),
                     ),
@@ -821,11 +807,11 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
                           borderRadius: BorderRadius.circular(4.r),
                         ),
                         child: Text(
-                          "HOST",
+                          "Host",
                           style: TextStyle(
                             color: const Color(0xFF8B9BFF),
                             fontSize: 9.sp,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -887,7 +873,7 @@ class _AllShowsScreenState extends State<AllShowsScreen> {
             style: TextStyle(
               color: Colors.white,
               fontSize: 16.sp,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
           SizedBox(height: 6.h),

@@ -28,8 +28,7 @@ class AllLiveShowsScreen extends StatelessWidget {
             style: TextStyle(
               color: Colors.white,
               fontSize: 20.sp,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
+              fontWeight: FontWeight.w700,
             ),
           ),
           centerTitle: true,
@@ -155,10 +154,10 @@ class AllLiveShowsScreen extends StatelessWidget {
                     child: Row(
                       children: [
                         if (isCelebrity) ...[
-                          _buildSmallBadge("👑 VIP", const Color(0xFFFFD700), textColor: const Color(0xFF1E1435)),
+                          _buildSmallBadge("VIP", const Color(0xFFFFD700), textColor: const Color(0xFF1E1435)),
                           SizedBox(width: 8.w),
                         ],
-                        _buildSmallBadge("LIVE", const Color(0xFFFF4D4D), showDot: true),
+                        _buildSmallBadge("Live", const Color(0xFFFF4D4D), showDot: true),
                         SizedBox(width: 8.w),
                         _buildSmallBadge(
                           viewers,
@@ -177,8 +176,7 @@ class AllLiveShowsScreen extends StatelessWidget {
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.9),
                             fontSize: 48.sp,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 10,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         Text(
@@ -186,8 +184,7 @@ class AllLiveShowsScreen extends StatelessWidget {
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.9),
                             fontSize: 48.sp,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 10,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -253,7 +250,7 @@ class AllLiveShowsScreen extends StatelessWidget {
                     "Join",
                     style: TextStyle(
                       fontSize: 13.sp,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -288,7 +285,7 @@ class AllLiveShowsScreen extends StatelessWidget {
             style: TextStyle(
               color: textColor,
               fontSize: 10.sp,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

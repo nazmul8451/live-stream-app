@@ -111,16 +111,8 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
                 Container(
                   padding: EdgeInsets.all(10.r),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFB800), Color(0xFFFF528E)],
-                    ),
+                    color: const Color(0xFFFFB800),
                     shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFFB800).withValues(alpha: 0.4),
-                        blurRadius: 12.r,
-                      ),
-                    ],
                   ),
                   child: Icon(Icons.volunteer_activism_rounded, color: Colors.white, size: 22.sp),
                 ),
@@ -134,7 +126,7 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18.sp,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       SizedBox(height: 2.h),
@@ -159,12 +151,11 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
 
             // Preset Amount Buttons
             Text(
-              "SELECT TIP AMOUNT",
+              "Tip amount",
               style: TextStyle(
                 color: Colors.white54,
                 fontSize: 11.sp,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1,
+                fontWeight: FontWeight.w600,
               ),
             ),
             SizedBox(height: 10.h),
@@ -210,7 +201,7 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
                             style: TextStyle(
                               color: isSelected ? const Color(0xFF0F0B1E) : Colors.white,
                               fontSize: 15.sp,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -241,7 +232,7 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
                     style: TextStyle(
                       color: _isCustom ? const Color(0xFFFFB800) : Colors.white38,
                       fontSize: 16.sp,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   SizedBox(width: 8.w),
@@ -275,12 +266,11 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
 
             // Cheer Message Input & Quick Chips
             Text(
-              "ADD A MESSAGE (OPTIONAL)",
+              "Message (optional)",
               style: TextStyle(
                 color: Colors.white54,
                 fontSize: 11.sp,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1,
+                fontWeight: FontWeight.w600,
               ),
             ),
             SizedBox(height: 8.h),
@@ -360,7 +350,7 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
                   (c) => c['id'] == selectedId,
                   orElse: () => cards.first,
                 );
-                final brand = card['card']?['brand']?.toString().toUpperCase() ?? "CARD";
+                final brand = card['card']?['brand']?.toString().toUpperCase() ?? "Card";
                 final last4 = card['card']?['last4']?.toString() ?? "****";
 
                 return Container(
@@ -391,11 +381,11 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
                           borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Text(
-                          "SAVED",
+                          "Saved",
                           style: TextStyle(
                             color: const Color(0xFF22C55E),
                             fontSize: 10.sp,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -509,7 +499,7 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 13.sp,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                             Text(
@@ -517,7 +507,7 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
                               style: TextStyle(
                                 color: const Color(0xFFFFB800),
                                 fontSize: 14.sp,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ],
@@ -593,7 +583,7 @@ class _LiveTipBottomSheetState extends State<LiveTipBottomSheet> {
                                 : "Send Tip 💛",
                             style: TextStyle(
                               fontSize: 15.sp,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),

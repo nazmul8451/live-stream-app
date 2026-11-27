@@ -100,7 +100,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 22.sp,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   SizedBox(height: 4.h),
@@ -222,7 +222,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
             style: TextStyle(
               color: Colors.white,
               fontSize: 18.sp,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               height: 1.2,
             ),
           ),
@@ -252,7 +252,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
               "Clear Search",
               style: TextStyle(
                 fontSize: 14.sp,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -462,7 +462,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
           padding: EdgeInsets.symmetric(vertical: 16.h),
           alignment: Alignment.center,
           child: Text(
-            "All trades loaded ✨",
+            "That's everything for now",
             style: TextStyle(
               color: Colors.white30,
               fontSize: 12.sp,
@@ -483,7 +483,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text("Discover", style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+          Text("Discover", style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w700)),
           SizedBox(width: 24.sp),
         ],
       ),
@@ -493,7 +493,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
   Widget _buildHeroText() {
     return Text(
       "Explore live streams and\ntrending categories",
-      style: TextStyle(color: Colors.white, fontSize: 24.sp, fontWeight: FontWeight.w900, height: 1.1, letterSpacing: -0.5),
+      style: TextStyle(color: Colors.white, fontSize: 24.sp, fontWeight: FontWeight.w700, height: 1.1, letterSpacing: -0.5),
     );
   }
 
@@ -582,7 +582,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
                             style: TextStyle(
                               color: isSelected ? Colors.black : Colors.white24,
                               fontSize: 14.sp,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
@@ -618,7 +618,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
                     left: 20.w,
                     child: Row(
                       children: [
-                        _buildSmallBadge("LIVE", const Color(0xFFFF4D4D), showDot: true),
+                        _buildSmallBadge("Live", const Color(0xFFFF4D4D), showDot: true),
                         SizedBox(width: 8.w),
                         _buildSmallBadge("$viewers", Colors.black.withOpacity(0.6), icon: Icons.visibility_outlined),
                       ],
@@ -628,8 +628,8 @@ class DiscoverScreen extends GetView<DiscoverController> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text("LVE", style: TextStyle(color: Colors.white, fontSize: 52.sp, fontWeight: FontWeight.w900, letterSpacing: 10)),
-                        Text("STREAM", style: TextStyle(color: Colors.white, fontSize: 52.sp, fontWeight: FontWeight.w900, letterSpacing: 10)),
+                        Text("LVE", style: TextStyle(color: Colors.white, fontSize: 52.sp, fontWeight: FontWeight.w700)),
+                        Text("STREAM", style: TextStyle(color: Colors.white, fontSize: 52.sp, fontWeight: FontWeight.w700)),
                       ],
                     ),
                   ),
@@ -664,7 +664,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
                     elevation: 0,
                   ),
-                  child: Text("Join", style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
+                  child: Text("Join", style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
@@ -700,23 +700,23 @@ class DiscoverScreen extends GetView<DiscoverController> {
                     margin: EdgeInsets.all(8.r),
                     padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                     decoration: BoxDecoration(color: const Color(0xFF8B9BFF), borderRadius: BorderRadius.circular(6.r)),
-                    child: Text(badge, style: TextStyle(color: Colors.black, fontSize: 8.sp, fontWeight: FontWeight.w900)),
+                    child: Text(badge, style: TextStyle(color: Colors.black, fontSize: 8.sp, fontWeight: FontWeight.w700)),
                   ),
                 ),
               ],
             ),
           ),
           SizedBox(height: 12.h),
-          Text(category, style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.sp, fontWeight: FontWeight.w900)),
+          Text(category, style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.sp, fontWeight: FontWeight.w700)),
           Text(title, style: TextStyle(color: Colors.white, fontSize: 14.sp, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
-          Text(price, style: TextStyle(color: const Color(0xFFD677FF), fontSize: 13.sp, fontWeight: FontWeight.w900)),
+          Text(price, style: TextStyle(color: const Color(0xFFD677FF), fontSize: 13.sp, fontWeight: FontWeight.w700)),
           SizedBox(height: 12.h),
           Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(vertical: 8.h),
             alignment: Alignment.center,
             decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12.r)),
-            child: Text(badge == "BUY NOW" ? "BUY NOW" : "BID NOW", style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w900)),
+            child: Text(badge == "BUY NOW" ? "BUY NOW" : "BID NOW", style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -756,7 +756,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(title, style: TextStyle(color: Colors.white, fontSize: 28.sp, fontWeight: FontWeight.w900, height: 1.1)),
+                  Text(title, style: TextStyle(color: Colors.white, fontSize: 28.sp, fontWeight: FontWeight.w700, height: 1.1)),
                   Text(price, style: TextStyle(color: Colors.white38, fontSize: 15.sp, fontWeight: FontWeight.w700)),
                   SizedBox(height: 24.h),
                   SizedBox(
@@ -765,7 +765,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
                     child: ElevatedButton(
                       onPressed: () => Get.toNamed(AppRoute.tradeDetails, arguments: item['raw']),
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8B9BFF), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26.r))),
-                      child: Text("Inquire Trade", style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900)),
+                      child: Text("Inquire Trade", style: TextStyle(color: Colors.black, fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ],
@@ -804,9 +804,9 @@ class DiscoverScreen extends GetView<DiscoverController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w900)),
+                  Text(title, style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700)),
                   SizedBox(height: 6.h),
-                  Text(val, style: TextStyle(color: const Color(0xFFD677FF), fontSize: 14.sp, fontWeight: FontWeight.w900)),
+                  Text(val, style: TextStyle(color: const Color(0xFFD677FF), fontSize: 14.sp, fontWeight: FontWeight.w700)),
                   Text(lookingFor, style: TextStyle(color: Colors.white38, fontSize: 12.sp, fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
                 ],
               ),
@@ -866,7 +866,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("Trending Tags", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w900)),
+              Text("Trending Tags", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w700)),
               Text("Tap to search", style: TextStyle(color: Colors.white38, fontSize: 12.sp, fontWeight: FontWeight.w600)),
             ],
           ),
@@ -910,14 +910,14 @@ class DiscoverScreen extends GetView<DiscoverController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Top Sellers", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w900)),
+          Text("Top Sellers", style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w700)),
           SizedBox(height: 8.h),
           ...controller.topSellers.map((seller) {
             return Padding(
               padding: EdgeInsets.symmetric(vertical: 16.h),
               child: Row(
                 children: [
-                  Text(seller['rank']!, style: TextStyle(color: Colors.white24, fontSize: 14.sp, fontWeight: FontWeight.w900)),
+                  Text(seller['rank']!, style: TextStyle(color: Colors.white24, fontSize: 14.sp, fontWeight: FontWeight.w700)),
                   SizedBox(width: 20.w),
                   CircleAvatar(radius: 24.r, backgroundImage: NetworkImage(seller['image']!)),
                   SizedBox(width: 16.w),
@@ -946,9 +946,9 @@ class DiscoverScreen extends GetView<DiscoverController> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: TextStyle(color: Colors.white, fontSize: 22.sp, fontWeight: FontWeight.w900)),
+        Text(title, style: TextStyle(color: Colors.white, fontSize: 22.sp, fontWeight: FontWeight.w700)),
         if (onSeeAll != null)
-          GestureDetector(onTap: onSeeAll, child: Text(seeAllText, style: TextStyle(color: Colors.white38, fontSize: 12.sp, fontWeight: FontWeight.w900))),
+          GestureDetector(onTap: onSeeAll, child: Text(seeAllText, style: TextStyle(color: Colors.white38, fontSize: 12.sp, fontWeight: FontWeight.w700))),
         if (showFilter) Icon(Icons.tune_rounded, color: Colors.white38, size: 20.sp),
       ],
     );
@@ -972,7 +972,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900)),
+          Text(title, style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w700)),
           const Spacer(),
           if (showAvatars)
             Row(
@@ -982,7 +982,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
                 Container(
                   padding: EdgeInsets.all(8.r),
                   decoration: const BoxDecoration(color: Color(0xFF8B9BFF), shape: BoxShape.circle),
-                  child: Text("+12", style: TextStyle(color: Colors.black, fontSize: 10.sp, fontWeight: FontWeight.w900)),
+                  child: Text("+12", style: TextStyle(color: Colors.black, fontSize: 10.sp, fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
@@ -997,11 +997,11 @@ class DiscoverScreen extends GetView<DiscoverController> {
                     children: [
                       Text(
                         "24 Shows",
-                        style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w900),
+                        style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w700),
                       ),
                       Text(
                         "Today",
-                        style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w900),
+                        style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 13.sp, fontWeight: FontWeight.w700),
                       ),
                     ],
                   ),
@@ -1035,7 +1035,7 @@ class DiscoverScreen extends GetView<DiscoverController> {
         children: [
           if (showDot) ...[Icon(Icons.circle, color: Colors.white, size: 6.sp), SizedBox(width: 6.w)],
           if (icon != null) ...[Icon(icon, color: Colors.white, size: 14.sp), SizedBox(width: 6.w)],
-          Text(text, style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w900)),
+          Text(text, style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w700)),
         ],
       ),
     );

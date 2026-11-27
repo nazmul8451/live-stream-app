@@ -475,7 +475,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
             onPressed: () => Get.back(),
           ),
           title: Text(isScheduleMode ? "Schedule Show" : "Go Live Setup",
-              style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w900)),
+              style: TextStyle(color: Colors.white, fontSize: 18.sp, fontWeight: FontWeight.w700)),
           centerTitle: true,
         ),
         body: SafeArea(
@@ -511,7 +511,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                             children: [
                               Icon(Icons.videocam_rounded, color: _selectedModeIndex == 0 ? Colors.white : Colors.white54, size: 18.sp),
                               SizedBox(width: 8.w),
-                              Text("Go Live Now", style: TextStyle(color: _selectedModeIndex == 0 ? Colors.white : Colors.white60, fontSize: 13.sp, fontWeight: FontWeight.w800)),
+                              Text("Go Live Now", style: TextStyle(color: _selectedModeIndex == 0 ? Colors.white : Colors.white60, fontSize: 13.sp, fontWeight: FontWeight.w600)),
                             ],
                           ),
                         ),
@@ -534,7 +534,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                             children: [
                               Icon(Icons.event_available_rounded, color: _selectedModeIndex == 1 ? Colors.white : Colors.white54, size: 18.sp),
                               SizedBox(width: 8.w),
-                              Text("Schedule Show", style: TextStyle(color: _selectedModeIndex == 1 ? Colors.white : Colors.white60, fontSize: 13.sp, fontWeight: FontWeight.w800)),
+                              Text("Schedule Show", style: TextStyle(color: _selectedModeIndex == 1 ? Colors.white : Colors.white60, fontSize: 13.sp, fontWeight: FontWeight.w600)),
                             ],
                           ),
                         ),
@@ -751,7 +751,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                                         padding: EdgeInsets.symmetric(horizontal: 8.w),
                                         child: Text(
                                           p['title']?.toString() ?? "Product",
-                                          style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w800),
+                                          style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w600),
                                           maxLines: 2,
                                           textAlign: TextAlign.center,
                                           overflow: TextOverflow.ellipsis,
@@ -820,7 +820,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                           items: [5, 10, 15, 30, 60, 120, 180, 300].map((val) {
                             return DropdownMenuItem(
                               value: val,
-                              child: Text(val <= 15 ? "${val}s (Fast Auction ⚡)" : "${val}s"),
+                              child: Text(val <= 15 ? "${val}s (fast)" : "${val}s"),
                             );
                           }).toList(),
                           onChanged: (val) => setState(() => _timerDuration = val ?? 60),
@@ -879,18 +879,8 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                   width: double.infinity,
                   height: 60.h,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8B9BFF), Color(0xFFBD8BFF)],
-                    ),
+                    color: const Color(0xFF8B9BFF),
                     borderRadius: BorderRadius.circular(30.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF8B9BFF).withValues(alpha: 0.4),
-                        blurRadius: 20.r,
-                        spreadRadius: 2.r,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
                   ),
                   child: Center(
                     child: _isStarting
@@ -900,8 +890,8 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                             children: [
                               Icon(isScheduleMode ? Icons.event_available_rounded : Icons.videocam_rounded, color: Colors.white, size: 22.sp),
                               SizedBox(width: 10.w),
-                              Text(isScheduleMode ? "Schedule Show 📅" : "Go Live Now 🚀",
-                                  style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w900)),
+                              Text(isScheduleMode ? "Schedule show" : "Go live now",
+                                  style: TextStyle(color: Colors.white, fontSize: 17.sp, fontWeight: FontWeight.w700)),
                             ],
                           ),
                   ),
@@ -1030,7 +1020,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
                     SizedBox(height: 10.h),
                     Text(
                       "Upload Custom Thumbnail / Cover",
-                      style: TextStyle(color: Colors.white, fontSize: 13.5.sp, fontWeight: FontWeight.w800),
+                      style: TextStyle(color: Colors.white, fontSize: 13.5.sp, fontWeight: FontWeight.w600),
                     ),
                     SizedBox(height: 4.h),
                     Text(
@@ -1049,7 +1039,7 @@ class _GoLiveSetupScreenState extends State<GoLiveSetupScreen> {
 
   Widget _sectionLabel(String label) {
     return Text(label,
-        style: TextStyle(color: Colors.white60, fontSize: 12.sp, fontWeight: FontWeight.w800, letterSpacing: 0.5));
+        style: TextStyle(color: Colors.white60, fontSize: 12.sp, fontWeight: FontWeight.w600));
   }
 
   Widget _inputField(TextEditingController ctrl, String hint,
