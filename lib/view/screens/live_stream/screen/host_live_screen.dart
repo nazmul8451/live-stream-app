@@ -146,6 +146,40 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                             ),
                           ),
                           SizedBox(width: 6.w),
+                          // AUDIENCE badge: watching now + joined in total.
+                          // Always visible so the host can say "N have joined us".
+                          Obx(() => Container(
+                                padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 5.h),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.45),
+                                  borderRadius: BorderRadius.circular(16.r),
+                                  border: Border.all(color: Colors.white24),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.remove_red_eye_outlined, color: Colors.white, size: 12.sp),
+                                    SizedBox(width: 3.w),
+                                    Text(
+                                      "${ctrl.viewersCount.value} watching",
+                                      style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w700),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      height: 10.h,
+                                      margin: EdgeInsets.symmetric(horizontal: 6.w),
+                                      color: Colors.white30,
+                                    ),
+                                    Icon(Icons.groups_rounded, color: const Color(0xFF8B9BFF), size: 13.sp),
+                                    SizedBox(width: 3.w),
+                                    Text(
+                                      "${ctrl.totalJoined.value} joined",
+                                      style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 10.sp, fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                          SizedBox(width: 6.w),
                           // TIMER badge (when auction is active)
                           Obx(() {
                             if (!ctrl.auctionActive.value) return const SizedBox.shrink();
@@ -1558,9 +1592,10 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                       colorText: Colors.white,
                     );
                   } else {
+                    final why = ctrl.lastAuctionError.value;
                     showAppSnackbar(
-                      "Error",
-                      "Failed to start new auction.",
+                      "Could not start the auction",
+                      why.isNotEmpty ? why : "Please try again.",
                       snackPosition: SnackPosition.BOTTOM,
                       backgroundColor: Colors.redAccent.withValues(alpha: 0.8),
                       colorText: Colors.white,

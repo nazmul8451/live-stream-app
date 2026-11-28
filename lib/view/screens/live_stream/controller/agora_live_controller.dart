@@ -110,6 +110,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     }
   }
   final RxString viewersCount = "1".obs;
+  /// Signed-in people who have joined this show at least once.
+  final RxInt totalJoined = 0.obs;
 
   // Analytics & Performance metrics
   final Rx<DateTime?> streamStartTime = Rx<DateTime?>(null);
@@ -607,6 +609,10 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         final count = data['viewersCount'] ?? data['count'];
         if (count != null) {
           viewersCount.value = count.toString();
+        }
+        final joined = data['totalJoined'];
+        if (joined != null) {
+          totalJoined.value = int.tryParse(joined.toString()) ?? totalJoined.value;
         }
       }
     }
@@ -2443,6 +2449,20 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  /// Why the last "start auction" attempt failed, in words the host can act on.
+  final RxString lastAuctionError = ''.obs;
+
+  /// The backend explains refusals ("This item is already being auctioned.",
+  /// "sold out", "only the host can..."). Show that instead of a bare code.
+  String _apiErrorMessage(dynamic res, String fallback) {
+    try {
+      final b = jsonDecode(res.body);
+      final m = b is Map ? (b['message'] ?? b['error']) : null;
+      if (m is String && m.trim().isNotEmpty) return m.trim();
+    } catch (_) {}
+    return fallback;
+  }
+
   Future<bool> resetAndStartNewAuction({
     required String productId,
     required double startingBid,
@@ -2454,6 +2474,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     bool autoExtend = true,
   }) async {
     isLoading.value = true;
+    lastAuctionError.value = '';
     try {
       if (productId.isNotEmpty && streamId.value.isNotEmpty) {
         this.bidIncrement.value = bidIncrement;
@@ -2474,7 +2495,12 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           currentProductTitle.value = productTitle;
           currentProductImage.value = productImage;
           currentBidPrice.value = startingBid;
-          await fetchProductReservePrice(productId);
+          // Optional extra: never let it undo an auction the server created.
+          try {
+            await fetchProductReservePrice(productId);
+          } catch (e) {
+            debugPrint("⚠️ fetchProductReservePrice failed (ignored): $e");
+          }
           lastBidderId.value = "";
           lastBidderName.value = "";
           showWinnerOverlay.value = false;
@@ -2530,10 +2556,18 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           startCountdown(timerDuration);
           return true;
         }
+        lastAuctionError.value = _apiErrorMessage(
+          itemRes,
+          'The server could not start the auction (error ${itemRes.statusCode}).',
+        );
+        debugPrint("❌ [startAuction] ${itemRes.statusCode}: ${itemRes.body}");
+      } else {
+        lastAuctionError.value = 'No show is running, or no product was chosen.';
       }
       return false;
-    } catch (e) {
-      debugPrint("❌ Failed to start new auction: $e");
+    } catch (e, st) {
+      lastAuctionError.value = 'Something went wrong while starting the auction. Check your connection and try again.';
+      debugPrint("❌ Failed to start new auction: $e\n$st");
       return false;
     } finally {
       isLoading.value = false;
@@ -2597,7 +2631,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         );
         return true;
       } else {
-        showAppSnackbar("Error", "Could not start 1-click auction (${res.statusCode})", snackPosition: SnackPosition.BOTTOM);
+        showAppSnackbar("Could not start the auction", _apiErrorMessage(res, "The server refused (error ${res.statusCode})."), snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       debugPrint("❌ [AgoraLiveController] quickStartAuctionItem error: $e");
