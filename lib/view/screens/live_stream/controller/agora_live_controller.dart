@@ -149,6 +149,9 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   /// The server never confirmed the win (e.g. the host can't take payments).
   final RxBool winConfirmFailed = false.obs;
   Timer? _winConfirmTimer;
+  /// Set when the host adds an item to the show, so the host screen can offer
+  /// "Start auction" for it straight away instead of leaving them guessing.
+  final Rxn<Map<String, dynamic>> itemReadyToAuction = Rxn<Map<String, dynamic>>();
   final RxBool isPlacingBid = false.obs;
   // Sudden Death & Auto Extend feature flags
   final RxBool isSuddenDeath = false.obs;
@@ -2771,10 +2774,15 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
             itemImage: image,
           );
         }
-        _showLiveToast(
-          isGiveaway ? "Giveaway item added 🎁" : "Item added 📦",
-          "'${title.trim()}' is now visible to your viewers.",
-        );
+        if (isGiveaway || prod == null) {
+          _showLiveToast(
+            isGiveaway ? "Giveaway item added 🎁" : "Item added 📦",
+            "'${title.trim()}' is now visible to your viewers.",
+          );
+        } else {
+          // The host screen shows "Item added" with a Start auction button.
+          itemReadyToAuction.value = {...prod, 'title': prod['title'] ?? title.trim()};
+        }
         return true;
       }
       _showLiveToast("Couldn't add item", _serverMessage(res.body, "Please check the details and try again."), isError: true);
@@ -2803,10 +2811,15 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         } else {
           streamInventoryItems.add(updatedMap);
         }
-        _showLiveToast(
-          isGiveaway ? "Giveaway Spot Added 🎁" : "Added to show 📦",
-          "'${item['title'] ?? 'Item'}' is now ${isGiveaway ? 'in the Giveaway section' : 'visible to viewers'}.",
-        );
+        if (isGiveaway) {
+          _showLiveToast(
+            "Giveaway Spot Added 🎁",
+            "'${item['title'] ?? 'Item'}' is now in the Giveaway section.",
+          );
+        } else {
+          // The host screen shows "Added to show" with a Start auction button.
+          itemReadyToAuction.value = updatedMap;
+        }
         return true;
       }
       _showLiveToast("Couldn't add item", _serverMessage(res.body, "Please try again."), isError: true);

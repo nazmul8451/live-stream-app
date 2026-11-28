@@ -32,11 +32,19 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
   final TextEditingController _chatController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   late AgoraLiveController ctrl;
+  Worker? _auctionPromptWorker;
 
   @override
   void initState() {
     super.initState();
     ctrl = Get.find<AgoraLiveController>();
+    // Right after an item is added, offer to auction it: the next step should
+    // be one tap away, not something the host has to find.
+    _auctionPromptWorker = ever<Map<String, dynamic>?>(ctrl.itemReadyToAuction, (item) {
+      if (item == null || !mounted) return;
+      ctrl.itemReadyToAuction.value = null;
+      _offerAuctionFor(item);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ctrl.isMinimized.value = false;
       ctrl.ensureHostCameraActive();
@@ -45,9 +53,37 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
 
   @override
   void dispose() {
+    _auctionPromptWorker?.dispose();
     _chatController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _offerAuctionFor(Map<String, dynamic> item) {
+    final title = (item['title'] ?? item['name'] ?? 'Item').toString();
+    final busy = ctrl.auctionActive.value;
+    if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
+    Get.snackbar(
+      "Item added 📦",
+      busy
+          ? "'$title' is in your show. Auction it when the current one ends."
+          : "'$title' is visible to your viewers. Start bidding on it now?",
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: const Color(0xFF10B981),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(12),
+      duration: const Duration(seconds: 8),
+      mainButton: TextButton(
+        onPressed: () {
+          if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
+          _showStartNewAuctionSheet(preselect: item);
+        },
+        child: Text(
+          busy ? "Set up next" : "Start auction",
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+        ),
+      ),
+    );
   }
 
   @override
