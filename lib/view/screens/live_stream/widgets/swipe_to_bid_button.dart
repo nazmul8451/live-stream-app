@@ -48,6 +48,11 @@ class _SwipeToBidButtonState extends State<SwipeToBidButton>
   Duration _lastTime = Duration.zero;
   double _velocity = 0.0;
 
+  // How far the knob must travel: bid on the spot at [_completeAt], or on
+  // release past [_releaseAt].
+  static const double _completeAt = 0.6;
+  static const double _releaseAt = 0.35;
+
   // Knob diameter (slightly smaller than container height for padding)
   double get _knobSize => (widget.height - 8.h).clamp(36.0, 42.0);
   double get _padding => 4.w;
@@ -95,19 +100,21 @@ class _SwipeToBidButtonState extends State<SwipeToBidButton>
     setState(() {
       _dragOffset = (e.localPosition.dx - _startX).clamp(0.0, maxDrag);
     });
-    // Light tick when the knob crosses the halfway point.
-    if (before < maxDrag * 0.5 && _dragOffset >= maxDrag * 0.5) {
+    // Light tick as the drag starts to count.
+    if (before < maxDrag * 0.15 && _dragOffset >= maxDrag * 0.15) {
       HapticFeedback.selectionClick();
     }
-    if (_dragOffset >= maxDrag * 0.8) _triggerSuccess(maxDrag);
+    // Bid as soon as the knob is past 60%, without waiting for the finger
+    // to lift, so a swipe feels instant.
+    if (_dragOffset >= maxDrag * _completeAt) _triggerSuccess(maxDrag);
   }
 
   void _onPointerUp(double maxDrag) {
     _pointer = null;
     if (widget.isLoading || _completedTriggered) return;
     final progress = maxDrag > 0 ? _dragOffset / maxDrag : 0.0;
-    // Dragged past half way, or a quick flick to the right after a short drag.
-    if (progress >= 0.5 || (_velocity > 300 && progress >= 0.2)) {
+    // Released past a third, or any quick flick to the right.
+    if (progress >= _releaseAt || (_velocity > 250 && progress >= 0.12)) {
       _triggerSuccess(maxDrag);
     } else if (_dragOffset > 0) {
       _animateReset(from: _dragOffset, to: 0.0);
