@@ -884,8 +884,15 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> with WidgetsBinding
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          _showCheckoutDialog(finalPrice);
+                        onPressed: () async {
+                          // In-app payment first; the web checkout is the fallback.
+                          final paid = await ctrl.payWinInApp(finalPrice);
+                          if (paid) {
+                            ctrl.showWinnerOverlay.value = false;
+                            _showOrderSuccessDialog(context, ctrl, finalPrice, paid: true);
+                          } else if (ctrl.winningPaymentId.value.isEmpty) {
+                            _showCheckoutDialog(finalPrice);
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFFB800),
@@ -1285,7 +1292,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> with WidgetsBinding
     );
   }
 
-  void _showOrderSuccessDialog(BuildContext context, AgoraLiveController ctrl, double winningAmount) {
+  void _showOrderSuccessDialog(BuildContext context, AgoraLiveController ctrl, double winningAmount, {bool paid = false}) {
     Get.dialog(
       Dialog(
         backgroundColor: const Color(0xFF1E1B2E),
@@ -1302,16 +1309,18 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> with WidgetsBinding
                   color: Color(0xFF22C55E),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.lock_outline_rounded, color: Colors.white, size: 32.sp),
+                child: Icon(paid ? Icons.check_rounded : Icons.lock_outline_rounded, color: Colors.white, size: 32.sp),
               ),
               SizedBox(height: 16.h),
               Text(
-                "Finish paying on Stripe",
+                paid ? "Payment complete" : "Finish paying on Stripe",
                 style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w700),
               ),
               SizedBox(height: 8.h),
               Text(
-                "Once Stripe confirms your payment, the order shows up in Purchases and the seller is told to ship it.",
+                paid
+                    ? "Your order is placed and the seller has been told to ship it. Track it in Purchases."
+                    : "Once Stripe confirms your payment, the order shows up in Purchases and the seller is told to ship it.",
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white70, fontSize: 13.sp),
               ),

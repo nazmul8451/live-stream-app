@@ -1,3 +1,4 @@
+import '../../../../data/services/win_payment_service.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
@@ -143,6 +144,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   final RxDouble reservePrice = 0.0.obs;
   final RxBool isUnsold = false.obs;
   final RxString winningCheckoutUrl = "".obs;
+  /// Server id of the win's payment, for paying in-app (PaymentSheet).
+  final RxString winningPaymentId = "".obs;
   /// True once the server has confirmed this viewer won (auction-won event).
   /// Until then the viewer sees "confirming", never a payment prompt.
   final RxBool winConfirmed = false.obs;
@@ -751,6 +754,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       if (rawUrl.isNotEmpty) {
         winningCheckoutUrl.value = rawUrl;
       }
+      winningPaymentId.value = data['paymentId']?.toString() ?? '';
       final winningBid = double.tryParse(data['winningBid']?.toString() ?? '0') ?? currentBidPrice.value;
       if (winningBid > 0) currentBidPrice.value = winningBid;
       showWinnerOverlay.value = true;
@@ -3267,6 +3271,33 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     return launched;
   }
 
+  /// Pays for the win inside the app (address + Stripe PaymentSheet).
+  /// Returns true once paid.
+  Future<bool> payWinInApp(double amount) async {
+    var id = winningPaymentId.value;
+    if (id.isEmpty && auctionItemId.value.isNotEmpty) {
+      // Older server message without the id: look the win up.
+      try {
+        final res = await _apiClient.getData('/auctions/wins/unpaid');
+        final list = jsonDecode(res.body)['data'];
+        if (list is List) {
+          for (final w in list) {
+            if (w is Map && w['auctionItemId']?.toString() == auctionItemId.value) {
+              id = (w['paymentId'] ?? '').toString();
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    if (id.isEmpty) return false;
+    winningPaymentId.value = id;
+    return WinPaymentService.pay(
+      paymentId: id,
+      amount: amount,
+      productTitle: currentProductTitle.value.isNotEmpty ? currentProductTitle.value : 'Auction item',
+    );
+  }
+
   /// Opens the server-made Stripe Checkout page for the auction the viewer won.
   ///
   /// The order itself is created by the server's Stripe webhook once the
@@ -3506,6 +3537,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     lastBidderId.value = '';
     lastBidderName.value = '';
     winningCheckoutUrl.value = '';
+    winningPaymentId.value = '';
     winConfirmed.value = false;
     winConfirmFailed.value = false;
     auctionActive.value = false;

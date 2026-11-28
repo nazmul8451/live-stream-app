@@ -6,9 +6,12 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../data/services/api_client.dart';
 import '../../../../global/helper/app_snackbar.dart';
+import '../../../../data/services/win_payment_service.dart';
+import 'purchases_controller.dart';
 
 /// An auction the buyer won but has not paid for yet.
 class UnpaidWin {
+  final String paymentId;
   final String auctionItemId;
   final String productTitle;
   final String productImage;
@@ -21,6 +24,7 @@ class UnpaidWin {
   final bool confirming;
 
   const UnpaidWin({
+    this.paymentId = '',
     required this.auctionItemId,
     required this.productTitle,
     required this.productImage,
@@ -32,6 +36,7 @@ class UnpaidWin {
   });
 
   factory UnpaidWin.fromJson(Map<String, dynamic> j) => UnpaidWin(
+        paymentId: (j['paymentId'] ?? '').toString(),
         auctionItemId: (j['auctionItemId'] ?? '').toString(),
         productTitle: (j['productTitle'] ?? 'Auction item').toString(),
         productImage: (j['productImage'] ?? '').toString(),
@@ -96,6 +101,22 @@ class UnpaidWinsController extends GetxController {
   }
 
   Future<void> pay(UnpaidWin win) async {
+    // Pay inside the app; the web checkout link is only a fallback.
+    if (win.paymentId.isNotEmpty) {
+      final paid = await WinPaymentService.pay(
+        paymentId: win.paymentId,
+        amount: win.amount,
+        productTitle: win.productTitle,
+      );
+      if (paid) {
+        showAppSnackbar('Payment complete', 'Your order is placed. The seller has been told to ship it.');
+        await load();
+        if (Get.isRegistered<PurchasesController>()) {
+          Get.find<PurchasesController>().load();
+        }
+      }
+      return;
+    }
     final uri = Uri.tryParse(win.checkoutUrl);
     if (uri == null || win.checkoutUrl.isEmpty) {
       showAppSnackbar('Payment link unavailable', 'Pull down to refresh and try again.');
