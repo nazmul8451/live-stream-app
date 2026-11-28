@@ -122,9 +122,18 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Row 1: Badges on left + Action buttons on right
+                      // Row 1: Badges on left + Action buttons on right.
+                      // The badges wrap onto a second line when the phone is
+                      // narrow, so Minimize and End always stay on screen.
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Expanded(
+                            child: Wrap(
+                              spacing: 6.w,
+                              runSpacing: 6.h,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
                           // LIVE badge
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
@@ -145,7 +154,6 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                               ],
                             ),
                           ),
-                          SizedBox(width: 6.w),
                           // AUDIENCE badge: watching now + joined in total.
                           // Always visible so the host can say "N have joined us".
                           Obx(() => Container(
@@ -179,7 +187,6 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   ],
                                 ),
                               )),
-                          SizedBox(width: 6.w),
                           // TIMER badge (when auction is active)
                           Obx(() {
                             if (!ctrl.auctionActive.value) return const SizedBox.shrink();
@@ -211,7 +218,6 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                               ),
                             );
                           }),
-                          if (ctrl.auctionActive.value) SizedBox(width: 6.w),
                           // LIKE counter badge
                           Obx(() => Container(
                             padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 5.h),
@@ -232,7 +238,10 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                               ],
                             ),
                           )),
-                          const Spacer(),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
                           // Minimize button
                           GestureDetector(
                             onTap: () => ctrl.minimizeStream(),
