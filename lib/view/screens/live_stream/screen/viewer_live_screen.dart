@@ -29,7 +29,7 @@ class ViewerLiveScreen extends StatefulWidget {
   State<ViewerLiveScreen> createState() => _ViewerLiveScreenState();
 }
 
-class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
+class _ViewerLiveScreenState extends State<ViewerLiveScreen> with WidgetsBindingObserver {
   late AgoraLiveController ctrl;
   final TextEditingController _chatController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -53,6 +53,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _chatFocus.addListener(() {
       if (mounted && _isTyping != _chatFocus.hasFocus) {
         setState(() => _isTyping = _chatFocus.hasFocus);
@@ -105,8 +106,24 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
     });
   }
 
+  // When the keyboard is closed (e.g. with the back key) drop the comment
+  // field's focus too. Otherwise closing any sheet (custom bid, tip) hands
+  // focus back to the field and the keyboard pops up over the auction result.
+  double _lastKeyboardInset = 0;
+  @override
+  void didChangeMetrics() {
+    final views = WidgetsBinding.instance.platformDispatcher.views;
+    if (views.isEmpty) return;
+    final inset = views.first.viewInsets.bottom;
+    if (_lastKeyboardInset > 0 && inset == 0 && _chatFocus.hasFocus) {
+      _chatFocus.unfocus();
+    }
+    _lastKeyboardInset = inset;
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _exitWorker?.dispose();
     _chatController.dispose();
     _chatFocus.dispose();
@@ -1110,8 +1127,6 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
   }
 
   void _showCheckoutDialog(double winningAmount) {
-    final addressCtrl = TextEditingController();
-    final zipCtrl = TextEditingController();
     final isPaying = false.obs;
 
     Get.bottomSheet(
@@ -1192,41 +1207,18 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
             ),
             SizedBox(height: 20.h),
 
-            // Shipping fields
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF161622),
-                borderRadius: BorderRadius.circular(14.r),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: TextField(
-                controller: addressCtrl,
-                style: TextStyle(color: Colors.white, fontSize: 13.sp),
-                decoration: InputDecoration(
-                  labelText: "Shipping Address",
-                  labelStyle: const TextStyle(color: Colors.white38),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+            // The server ships to the buyer's saved delivery address.
+            Row(
+              children: [
+                Icon(Icons.local_shipping_outlined, color: Colors.white54, size: 18.sp),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    "Ships to the delivery address saved in your profile. You'll pay securely on Stripe.",
+                    style: TextStyle(color: Colors.white60, fontSize: 12.sp),
+                  ),
                 ),
-              ),
-            ),
-            SizedBox(height: 12.h),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF161622),
-                borderRadius: BorderRadius.circular(14.r),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: TextField(
-                controller: zipCtrl,
-                style: TextStyle(color: Colors.white, fontSize: 13.sp),
-                decoration: InputDecoration(
-                  labelText: "ZIP / Postal Code",
-                  labelStyle: const TextStyle(color: Colors.white38),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                ),
-              ),
+              ],
             ),
             SizedBox(height: 24.h),
 
@@ -1240,8 +1232,6 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                       
                       final success = await ctrl.checkoutAuctionOrder(
                         subtotal: winningAmount,
-                        street: addressCtrl.text.trim(),
-                        postalCode: zipCtrl.text.trim(),
                       );
                       
                       isPaying.value = false;
@@ -1250,14 +1240,6 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                         ctrl.showWinnerOverlay.value = false; // Close Winner overlay
                         
                         _showOrderSuccessDialog(context, ctrl, winningAmount);
-                      } else {
-                        showAppSnackbar(
-                          "Payment Failed",
-                          "Could not process your auction checkout. Please try again.",
-                          backgroundColor: Colors.redAccent,
-                          colorText: Colors.white,
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -1301,16 +1283,16 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                   color: Color(0xFF22C55E),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.check_rounded, color: Colors.white, size: 36.sp),
+                child: Icon(Icons.lock_outline_rounded, color: Colors.white, size: 32.sp),
               ),
               SizedBox(height: 16.h),
               Text(
-                "Payment Successful!",
+                "Finish paying on Stripe",
                 style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w700),
               ),
               SizedBox(height: 8.h),
               Text(
-                "Your auction order message has been sent to your Inbox with full order details.",
+                "Once Stripe confirms your payment, the order shows up in Purchases and the seller is told to ship it.",
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white70, fontSize: 13.sp),
               ),

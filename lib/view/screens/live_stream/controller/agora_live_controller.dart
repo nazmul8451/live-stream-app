@@ -3265,211 +3265,39 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     return launched;
   }
 
-  Future<bool> checkoutAuctionOrder({
-    required double subtotal,
-    required String street,
-    required String postalCode,
-  }) async {
-    try {
-      String buyerId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
-      if (buyerId.isEmpty) {
-        buyerId = "607f1f77bcf86cd799439055";
-      }
-
-      String targetSellerId = sellerId.value;
-      if (targetSellerId.isEmpty) {
-        final rawSeller = activeStreamData['sellerId'] ?? activeStreamData['seller'] ?? activeStreamData['hostId'] ?? activeStreamData['user'];
-        if (rawSeller is Map) {
-          targetSellerId = (rawSeller['_id'] ?? rawSeller['id'] ?? '').toString();
-        } else if (rawSeller != null) {
-          targetSellerId = rawSeller.toString();
-        }
-      }
-      if (targetSellerId.isEmpty || targetSellerId.length < 10) {
-        targetSellerId = "607f1f77bcf86cd799439011";
-      }
-
-      String targetProductId = currentProductId.value;
-      if (targetProductId.isEmpty) {
-        final rawProd = activeStreamData['productId'] ?? activeStreamData['product'];
-        if (rawProd is Map) {
-          targetProductId = (rawProd['_id'] ?? rawProd['id'] ?? '').toString();
-        } else if (rawProd != null) {
-          targetProductId = rawProd.toString();
-        }
-      }
-      if (targetProductId.isEmpty || targetProductId.length < 10) {
-        targetProductId = auctionItemId.value.isNotEmpty ? auctionItemId.value : "607f1f77bcf86cd7994390aa";
-      }
-
-      final totalPaid = subtotal + 35.0;
-
-      final payload = {
-        "buyerId": buyerId,
-        "sellerId": targetSellerId,
-        "productId": targetProductId,
-        if (streamId.value.isNotEmpty) "streamId": streamId.value,
-        "purchaseType": "buy_now",
-        "amountDetails": {
-          "itemSubtotal": subtotal,
-          "shipping": 15.0,
-          "taxes": 12.0,
-          "processingFee": 8.0,
-          "charityContribution": 0.0,
-          "totalPaid": totalPaid,
-        },
-        "shippingAddress": {
-          "street": street.isEmpty ? "123 Live Stream St" : street,
-          "city": "Metropolis",
-          "state": "NY",
-          "postalCode": postalCode.isEmpty ? "10001" : postalCode,
-          "country": "US"
-        }
-      };
-
-      String orderId = "ORD-${DateTime.now().millisecondsSinceEpoch}";
-
-      // 1. Initiate Real Stripe Payment via flutter_stripe PaymentSheet or Web Session
-      bool paymentSuccess = false;
-      try {
-        // Direct checkout URL from auction-won socket / complete API
-        if (winningCheckoutUrl.value.isNotEmpty && winningCheckoutUrl.value.startsWith('http')) {
-          debugPrint("💳 [checkoutAuctionOrder] Using existing winningCheckoutUrl: ${winningCheckoutUrl.value}");
-          paymentSuccess = await openStripeUrl(winningCheckoutUrl.value);
-        } else {
-          final checkoutPayload = {
-            "amount": (totalPaid * 100).toInt(),
-            "currency": "usd",
-            "productName": currentProductTitle.value.isNotEmpty ? currentProductTitle.value : "Auction Item",
-            "quantity": 1,
-          };
-          debugPrint("💳 [checkoutAuctionOrder] Calling ${ApiUrl.createCheckoutSession} with payload: $checkoutPayload");
-          final sessionRes = await _apiClient.postData(ApiUrl.createCheckoutSession, checkoutPayload);
-          debugPrint("💳 [checkoutAuctionOrder] Session response (${sessionRes.statusCode}): ${sessionRes.body}");
-          
-          if (sessionRes.statusCode == 200 || sessionRes.statusCode == 201) {
-            final resBody = jsonDecode(sessionRes.body);
-            final data = resBody['data'];
-            if (data is Map && data.containsKey('clientSecret')) {
-              paymentSuccess = await _initAndPresentStripePaymentSheet(data);
-            } else {
-              String? stripeUrl;
-              if (data is Map) {
-                stripeUrl = (data['url'] ?? data['checkoutUrl'] ?? data['paymentUrl'] ?? data['redirectUrl'] ?? data['sessionUrl'])?.toString();
-              } else if (data is String && data.startsWith('http')) {
-                stripeUrl = data;
-              } else if (resBody['url'] != null) {
-                stripeUrl = resBody['url'].toString();
-              }
-              if (stripeUrl != null && stripeUrl.isNotEmpty && stripeUrl.startsWith('http')) {
-                debugPrint("💳 [checkoutAuctionOrder] Opening Stripe Checkout URL: $stripeUrl");
-                paymentSuccess = await openStripeUrl(stripeUrl);
-              } else {
-                debugPrint("⚠️ [StripeCheckout] Server did not return a valid Stripe checkout URL or clientSecret.");
-                paymentSuccess = false;
-              }
-            }
-          } else {
-            // Never treat a failed checkout-session request as a successful payment.
-            debugPrint("⚠️ [StripeCheckout] Create checkout session returned ${sessionRes.statusCode}.");
-            paymentSuccess = false;
-          }
-        }
-      } catch (e) {
-        debugPrint("⚠️ [StripeCheckout] Session launch exception: $e");
-        paymentSuccess = false;
-      }
-
-      if (!paymentSuccess) {
-        debugPrint("⛔ Payment not completed. Aborting order creation.");
-        showAppSnackbar(
-          "Payment Required",
-          "Payment was not completed. Order cannot be placed without a valid payment.",
-          backgroundColor: Colors.redAccent,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        return false;
-      }
-
-      // 2. Record order payload to /orders
-      try {
-        final response = await _apiClient.postData("/orders", payload);
-        debugPrint("📦 [/orders] status: ${response.statusCode}, body: ${response.body}");
-
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          final resBody = jsonDecode(response.body);
-          final orderObj = (resBody['data'] is Map) ? resBody['data'] : (resBody['order'] is Map ? resBody['order'] : {});
-          orderId = orderObj['_id'] ?? orderObj['id'] ?? orderId;
-        }
-      } catch (e) {
-        debugPrint("⚠️ [/orders] API call exception: $e");
-      }
-
-      final pTitle = currentProductTitle.value.isNotEmpty ? currentProductTitle.value : "Auction Item";
-      final pImg = currentProductImage.value;
-      final msgText = "🎉 Auction Order Confirmed!\n"
-          "• Product: $pTitle\n"
-          "• Winning Bid: \$${subtotal.toStringAsFixed(0)}\n"
-          "• Total Paid: \$${totalPaid.toStringAsFixed(0)}\n"
-          "• Shipping to: ${street.isEmpty ? "123 Live Stream St" : street}, ${postalCode.isEmpty ? "10001" : postalCode}";
-
-      // 1. Create/Get chat room between buyer & seller via POST /chat
-      String activeChatId = "";
-      try {
-        final createChatRes = await _apiClient.postData(ApiUrl.chat, {
-          'receiverId': targetSellerId,
-          'participants': [targetSellerId, buyerId],
-        });
-        if (createChatRes.statusCode == 200 || createChatRes.statusCode == 201) {
-          final resBody = jsonDecode(createChatRes.body);
-          final chatData = resBody['data'] ?? resBody;
-          if (chatData is Map) {
-            activeChatId = (chatData['_id'] ?? chatData['id'] ?? '').toString();
-          }
-        }
-      } catch (e) {
-        debugPrint("⚠️ [/chat] Create chat error: $e");
-      }
-
-      // 2. Send Order Confirmation message to /message (user inbox)
-      try {
-        final msgPayload = {
-          if (activeChatId.isNotEmpty) "chatId": activeChatId,
-          "receiverId": targetSellerId,
-          "text": msgText,
-          "message": msgText,
-          "isOrder": true,
-          "orderId": orderId,
-          "productTitle": pTitle,
-          "productImage": pImg,
-          "winningBid": subtotal,
-          "totalPaid": totalPaid,
-        };
-        await _apiClient.postData(ApiUrl.message, msgPayload);
-      } catch (e) {
-        debugPrint("⚠️ Inbox order message emit error: $e");
-      }
-
-      // 2. Emit socket order notification for instant inbox update
-      try {
-        final s = Get.find<SocketService>();
-        s.emitEvent("new-order-notification", {
-          "buyerId": buyerId,
-          "sellerId": targetSellerId,
-          "orderId": orderId,
-          "productTitle": pTitle,
-          "productImage": pImg,
-          "winningBid": subtotal,
-          "totalPaid": totalPaid,
-        });
-      } catch (_) {}
-
-      return true;
-    } catch (e) {
-      debugPrint("❌ checkoutAuctionOrder exception: $e");
-      return true;
+  /// Opens the server-made Stripe Checkout page for the auction the viewer won.
+  ///
+  /// The order itself is created by the server's Stripe webhook once the
+  /// payment really succeeds (it ships to the buyer's saved delivery address
+  /// and tells the seller). So the app must not record an order or tell the
+  /// seller "paid" here: opening the page is not a payment.
+  ///
+  /// Returns true when the checkout page was opened.
+  Future<bool> checkoutAuctionOrder({required double subtotal}) async {
+    final url = winningCheckoutUrl.value;
+    if (url.isEmpty || !url.startsWith('http')) {
+      debugPrint("⚠️ [checkoutAuctionOrder] No checkout link for this win yet.");
+      showAppSnackbar(
+        "Payment link not ready",
+        "Open Purchases to pay for this win.",
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return false;
     }
+    debugPrint("💳 [checkoutAuctionOrder] Opening checkout: $url");
+    final opened = await openStripeUrl(url);
+    if (!opened) {
+      showAppSnackbar(
+        "Couldn't open checkout",
+        "Please try again, or pay from Purchases.",
+        backgroundColor: Colors.redAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+    return opened;
   }
 
   Future<void> sendChatMessage(String msg, {required String role}) async {
