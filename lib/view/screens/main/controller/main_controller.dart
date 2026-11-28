@@ -15,6 +15,9 @@ import '../../profile/screen/profile_screen.dart';
 class MainController extends GetxController {
   var currentIndex = 0.obs; // Default to Home
   final RxInt unreadMessageCount = 0.obs;
+
+  /// Paid sales the seller still has to ship (red badge on Profile).
+  final RxInt pendingShipCount = 0.obs;
   bool _isFetchingUnread = false;
   DateTime? _lastUnreadFetch;
 
@@ -33,6 +36,24 @@ class MainController extends GetxController {
       Get.find<SocketService>().initSocket();
     }
     fetchUnreadMessageCount();
+    fetchPendingShipCount();
+  }
+
+  /// Counts this user's sales that are paid but not shipped yet.
+  Future<void> fetchPendingShipCount() async {
+    try {
+      final token = SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey);
+      if (token.isEmpty || SharePrefsHelper.isGuest || !Get.isRegistered<ApiClient>()) {
+        pendingShipCount.value = 0;
+        return;
+      }
+      final res = await Get.find<ApiClient>()
+          .getData('/orders/history?role=seller&period=all&status=paid&page=1&limit=1');
+      if (res.statusCode != 200) return;
+      final data = jsonDecode(res.body)['data'];
+      final total = (data is Map && data['meta'] is Map) ? data['meta']['total'] : null;
+      if (total is num) pendingShipCount.value = total.toInt();
+    } catch (_) {}
   }
 
   final Set<String> _locallyReadChatIds = <String>{};

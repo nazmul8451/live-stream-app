@@ -96,6 +96,9 @@ class SocketService extends GetxService {
 
       socket?.on('new-order', (data) {
         Get.log('📦 [SocketService] new-order event: $data');
+        if (Get.isRegistered<MainController>()) {
+          Get.find<MainController>().fetchPendingShipCount();
+        }
         if (data is Map) {
           final orderId = (data['orderId'] ?? data['_id'] ?? data['id'] ?? '').toString();
           final productTitle = (data['productTitle'] ?? 'your item').toString();

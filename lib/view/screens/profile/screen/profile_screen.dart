@@ -1,3 +1,4 @@
+import '../../main/controller/main_controller.dart';
 import '../../../../global/helper/seller_gate.dart';
 import '../../../../global/helper/notification_router.dart';
 import '../../../../global/helper/plain_text.dart';
@@ -1021,6 +1022,23 @@ class ProfileScreen extends GetView<ProfileController> {
             title: "Sold Items",
             subtitle: "Ship orders, print labels & view sales",
             showArrow: true,
+            trailing: Obx(() {
+              final n = Get.isRegistered<MainController>()
+                  ? Get.find<MainController>().pendingShipCount.value
+                  : 0;
+              if (n <= 0) return const SizedBox.shrink();
+              return Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF4B67),
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+                child: Text(
+                  "$n to ship",
+                  style: TextStyle(color: Colors.white, fontSize: 11.sp, fontWeight: FontWeight.w800),
+                ),
+              );
+            }),
             onTap: () => Get.toNamed(AppRoute.soldItems),
           ),
         ]),

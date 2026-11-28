@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import '../../../../data/services/api_client.dart';
 import '../model/order_history_model.dart';
+import '../../main/controller/main_controller.dart';
 
 /// Shared by Sold items (role=seller) and My purchases (role=buyer). Reads
 /// GET /orders/history; the server does all the money maths.
@@ -36,7 +37,14 @@ abstract class OrderHistoryController extends GetxController {
     load();
   }
 
-  Future<void> load() => _fetch(reset: true);
+  Future<void> load() {
+    // A seller looking at (or just having shipped from) Sold items: keep the
+    // "to ship" badge in step.
+    if (asSeller && Get.isRegistered<MainController>()) {
+      Get.find<MainController>().fetchPendingShipCount();
+    }
+    return _fetch(reset: true);
+  }
 
   Future<void> loadMore() async {
     if (!hasMore || isLoadingMore.value || isLoading.value) return;

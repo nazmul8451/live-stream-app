@@ -106,7 +106,9 @@ class CustomBottomNavbar extends StatelessWidget {
   }) {
     return Obx(() {
       final bool isSelected = controller.currentIndex.value == index;
-      final int unreadCount = isMessagesTab ? controller.unreadMessageCount.value : 0;
+      final int unreadCount = isMessagesTab
+          ? controller.unreadMessageCount.value
+          : (label == "Profile" ? controller.pendingShipCount.value : 0);
 
       return Expanded(
         child: InkWell(
@@ -164,7 +166,7 @@ class CustomBottomNavbar extends StatelessWidget {
                   ),
 
                   // Unread badge for Messenger
-                  if (isMessagesTab && unreadCount > 0)
+                  if (unreadCount > 0)
                     Positioned(
                       top: 0,
                       right: 4.w,
