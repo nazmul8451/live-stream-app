@@ -1325,7 +1325,9 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     if (!isHost.value && hasBidder && lastBidderId.value == me && !winConfirmed.value) {
       winConfirmFailed.value = false;
       _winConfirmTimer?.cancel();
-      _winConfirmTimer = Timer(const Duration(seconds: 20), () {
+      // The server closes an auction itself up to ~15s after the timer (if
+      // the host's app didn't), then makes the checkout: give it time.
+      _winConfirmTimer = Timer(const Duration(seconds: 45), () {
         if (!winConfirmed.value) winConfirmFailed.value = true;
       });
     }

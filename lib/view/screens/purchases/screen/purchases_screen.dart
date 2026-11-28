@@ -12,9 +12,14 @@ class PurchasesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.isRegistered<PurchasesController>()
+    final reopened = Get.isRegistered<PurchasesController>();
+    final controller = reopened
         ? Get.find<PurchasesController>()
         : Get.put(PurchasesController());
+    // A controller kept from an earlier visit holds old data: refresh it.
+    if (reopened) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => controller.load());
+    }
     final unpaid = Get.isRegistered<UnpaidWinsController>()
         ? Get.find<UnpaidWinsController>()
         : Get.put(UnpaidWinsController());

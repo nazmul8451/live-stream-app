@@ -13,6 +13,10 @@ class PurchasesController extends OrderHistoryController {
 
   @override
   Future<void> load() async {
+    // Show the loading placeholder right away. Without this the screen sat on
+    // "No purchases here" while the steps below ran, and only a pull to
+    // refresh seemed to bring the orders in.
+    if (rows.isEmpty) isLoading.value = true;
     // Replay any order that was paid for but never saved, so a charged buyer
     // sees it here instead of an empty list.
     try {

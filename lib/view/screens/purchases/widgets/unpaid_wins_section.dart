@@ -139,19 +139,27 @@ class UnpaidWinsSection extends StatelessWidget {
               style: TextStyle(color: _muted, fontSize: 11.5.sp, height: 1.3),
             )
           else
-            ElevatedButton(
-              onPressed: () => controller.pay(win),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _accent,
-                foregroundColor: const Color(0xFF0F0B1E),
-                padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20.r),
+            SizedBox(
+              height: 36.h,
+              child: FilledButton(
+                onPressed: () => controller.pay(win),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF0F0B1E),
+                  elevation: 0,
+                  padding: EdgeInsets.symmetric(horizontal: 14.w),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
                 ),
-              ),
-              child: Text(
-                'Pay now',
-                style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w700),
+                child: Text(
+                  'Pay ${_money(win.amount)}',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.1,
+                  ),
+                ),
               ),
             ),
         ],

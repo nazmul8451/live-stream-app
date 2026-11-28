@@ -729,19 +729,38 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> with WidgetsBinding
                 Icon(Icons.info_outline_rounded, color: const Color(0xFF8B9BFF), size: 48.sp),
               SizedBox(height: 22.h),
               Text(
-                failed ? "Sale not confirmed" : "You had the top bid!",
+                failed ? "Still confirming your win" : "You had the top bid!",
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w700),
               ),
               SizedBox(height: 10.h),
               Text(
                 failed
-                    ? "The seller couldn't take payment for this item, so the sale didn't go through. You have not been charged."
+                    ? "This is taking longer than usual. If the win is confirmed, your payment link shows up in Purchases, and you'll get a notification. You haven't been charged."
                     : "Confirming your win at \$${finalPrice.toStringAsFixed(0)}... your payment link will appear here.",
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.white70, fontSize: 13.sp, height: 1.45),
               ),
               SizedBox(height: 22.h),
+              if (failed) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      ctrl.showWinnerOverlay.value = false;
+                      Get.toNamed(AppRoute.purchases);
+                    },
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: const Color(0xFF0F0B1E),
+                      padding: EdgeInsets.symmetric(vertical: 12.h),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.r)),
+                    ),
+                    child: Text("Open Purchases", style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                SizedBox(height: 4.h),
+              ],
               TextButton(
                 onPressed: () => ctrl.showWinnerOverlay.value = false,
                 child: Text(
