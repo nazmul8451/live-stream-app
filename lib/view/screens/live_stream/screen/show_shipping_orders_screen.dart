@@ -37,6 +37,14 @@ class _ShowShippingOrdersScreenState extends State<ShowShippingOrdersScreen> {
 
   void _refresh() => setState(() => _data = _load());
 
+  String _payBy(dynamic expiresAt) {
+    final t = DateTime.tryParse(expiresAt?.toString() ?? '')?.toLocal();
+    if (t == null) return '';
+    final left = t.difference(DateTime.now());
+    if (left.isNegative) return 'link expired';
+    return left.inHours >= 1 ? 'pays within ${left.inHours}h' : 'pays within ${left.inMinutes}m';
+  }
+
   String _money(dynamic amount) => '\$${(amount as num? ?? 0).toStringAsFixed(2)}';
 
   @override
@@ -75,13 +83,38 @@ class _ShowShippingOrdersScreenState extends State<ShowShippingOrdersScreen> {
 
           final data = snapshot.data as Map? ?? {};
           final shipments = data['shipments'] as List? ?? [];
-          if (shipments.isEmpty) return const Center(child: Text('No paid orders for this show.'));
+          final awaiting = data['awaitingPayment'] as List? ?? [];
+          if (shipments.isEmpty && awaiting.isEmpty) {
+            return const Center(child: Text('No paid orders for this show.'));
+          }
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
               Text(data['show']?['title']?.toString() ?? 'Live show',
                 style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 12),
+              // Winners who haven't paid yet. Their items move to the list
+              // below once they pay; if the link expires the item is free to sell again.
+              if (awaiting.isNotEmpty) ...[
+                Text('Awaiting payment (${awaiting.length})',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(color: const Color(0xFFFFB547))),
+                const SizedBox(height: 6),
+                for (final win in awaiting)
+                  Card(
+                    child: ListTile(
+                      title: Text(win['productTitle']?.toString() ?? 'Auction item'),
+                      subtitle: Text([
+                        (win['winnerName']?.toString() ?? '').isEmpty ? 'Winner' : win['winnerName'].toString(),
+                        _payBy(win['expiresAt']),
+                      ].where((e) => e.isNotEmpty).join(' · ')),
+                      trailing: Text(_money(win['amount'])),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                if (shipments.isNotEmpty)
+                  Text('Paid — ready to ship', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 6),
+              ],
               for (final shipment in shipments)
                 Card(
                   child: ExpansionTile(

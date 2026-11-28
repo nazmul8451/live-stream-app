@@ -1,5 +1,7 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
+import '../../../../global/helper/plain_text.dart';
+import '../../../../global/widgets/user_avatar.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -35,6 +37,18 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
   // shop / custom-bid / swipe controls step aside.
   final FocusNode _chatFocus = FocusNode();
   bool _isTyping = false;
+  Worker? _exitWorker;
+
+  // Viewers can hide the comment feed to see the product clearly.
+  // Remembered between shows.
+  // Stored as "hidden" so the default (nothing saved yet) is shown.
+  static const _hideCommentsKey = 'live_hide_comments';
+  final RxBool _showComments = (!SharePrefsHelper.getBool(_hideCommentsKey)).obs;
+
+  void _toggleComments() {
+    _showComments.value = !_showComments.value;
+    SharePrefsHelper.setBool(_hideCommentsKey, !_showComments.value);
+  }
 
   @override
   void initState() {
@@ -45,6 +59,20 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
       }
     });
     ctrl = Get.find<AgoraLiveController>();
+    // The host ended the show: close this screen (and anything open on top
+    // of it, like the products sheet) and go back.
+    _exitWorker = ever<int>(ctrl.viewerExitSignal, (_) {
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route == null || !route.isActive) return;
+      final nav = Navigator.of(context);
+      nav.popUntil((r) => r == route);
+      if (nav.canPop()) {
+        nav.pop();
+      } else {
+        Get.offAllNamed(AppRoute.main);
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (SharePrefsHelper.isGuest || SharePrefsHelper.getString(SharePrefsHelper.accessTokenKey).isEmpty) {
         Get.back();
@@ -79,6 +107,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
 
   @override
   void dispose() {
+    _exitWorker?.dispose();
     _chatController.dispose();
     _chatFocus.dispose();
     _scrollController.dispose();
@@ -329,7 +358,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                                           Icon(isSudden ? Icons.bolt_rounded : Icons.timer_outlined, color: Colors.white, size: 11.sp),
                                           SizedBox(width: 3.w),
                                           Text(
-                                            "00:${ctrl.bidTimer.value.toString().padLeft(2, '0')}${isSudden ? ' ⚡' : ''}",
+                                            "${(ctrl.bidTimer.value ~/ 60).toString().padLeft(2, '0')}:${(ctrl.bidTimer.value % 60).toString().padLeft(2, '0')}${isSudden ? ' ⚡' : ''}",
                                             style: TextStyle(color: Colors.white, fontSize: 10.5.sp, fontWeight: FontWeight.w700),
                                           ),
                                         ],
@@ -588,10 +617,12 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
     final nextBid = currentBid > 0 ? (currentBid + ctrl.bidIncrement.value) : ctrl.bidIncrement.value;
     final isBidding = ctrl.isPlacingBid.value;
 
+    // Sits under the host bar so the product card and bid controls at the
+    // bottom stay visible while the buyer decides.
     return Positioned(
       left: 16.w,
       right: 16.w,
-      bottom: 110.h,
+      top: MediaQuery.of(context).padding.top + 96.h,
       child: Material(
         color: Colors.transparent,
         child: GestureDetector(
@@ -601,98 +632,50 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                   HapticFeedback.lightImpact();
                   ctrl.placeBid(nextBid);
                 },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
+          child: Container(
+            padding: EdgeInsets.fromLTRB(12.w, 10.h, 10.w, 10.h),
             decoration: BoxDecoration(
               color: const Color(0xFFFF2D55),
               borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.4), width: 1.5.w),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1),
             ),
             child: Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(8.r),
-                  decoration: const BoxDecoration(
-                    color: Colors.white24,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.gavel_rounded, color: Colors.white, size: 18.sp),
-                ),
+                Icon(Icons.gavel_rounded, color: Colors.white, size: 20.sp),
                 SizedBox(width: 10.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            "You've been outbid",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(width: 6.w),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.5.h),
-                            decoration: BoxDecoration(
-                              color: Colors.black38,
-                              borderRadius: BorderRadius.circular(8.r),
-                            ),
-                            child: Text(
-                              "Highest: \$${currentBid.toStringAsFixed(0)}",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 9.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        "You've been outbid",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.white, fontSize: 13.sp, fontWeight: FontWeight.w700),
                       ),
                       SizedBox(height: 2.h),
                       Text(
-                        "Tap to bid \$${nextBid.toStringAsFixed(0)} now",
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          fontSize: 11.sp,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        "Highest bid \$${currentBid.toStringAsFixed(0)}",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 11.sp, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
                 ),
+                SizedBox(width: 8.w),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+                  padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 9.h),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20.r),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.15),
-                        blurRadius: 6,
-                      ),
-                    ],
                   ),
                   child: isBidding
                       ? ButtonLoader(size: 16)
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              "Bid \$${nextBid.toStringAsFixed(0)}",
-                              style: TextStyle(
-                                color: const Color(0xFFFF2D55),
-                                fontSize: 11.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            SizedBox(width: 4.w),
-                            Icon(Icons.arrow_forward_rounded, color: const Color(0xFFFF2D55), size: 14.sp),
-                          ],
+                      : Text(
+                          "Bid \$${nextBid.toStringAsFixed(0)}",
+                          style: TextStyle(color: const Color(0xFFFF2D55), fontSize: 12.sp, fontWeight: FontWeight.w700),
                         ),
                 ),
               ],
@@ -1537,81 +1520,108 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
   }
 
   Widget _buildChat() {
-    return Container(
-      height: 200.h,
+    return Obx(() {
+      if (!_showComments.value) return const SizedBox.shrink();
+      final messages = ctrl.chatMessages;
+      return SizedBox(
+        height: 220.h,
+        child: ShaderMask(
+          // Older comments fade out as they drift towards the top.
+          shaderCallback: (rect) => const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.transparent, Colors.white, Colors.white],
+            stops: [0.0, 0.28, 1.0],
+          ).createShader(rect),
+          blendMode: BlendMode.dstIn,
+          child: ListView.builder(
+            // Reversed: the newest comment sits at the bottom and pushes the
+            // rest up, like Facebook or Instagram Live. Someone who scrolls
+            // up to read stays where they are.
+            controller: _scrollController,
+            reverse: true,
+            padding: EdgeInsets.only(top: 40.h, bottom: 4.h),
+            itemCount: messages.length,
+            itemBuilder: (context, i) {
+              final index = messages.length - 1 - i;
+              final m = messages[index];
+              return _CommentEntry(
+                key: ValueKey(m['messageId']?.isNotEmpty == true ? m['messageId'] : '$index-${m['msg']}'),
+                child: _buildCommentRow(m, index),
+              );
+            },
+          ),
+        ),
+      );
+    });
+  }
+
+  Widget _buildCommentRow(Map<String, String> m, int index) {
+    final canLike = (m['messageId'] ?? '').isNotEmpty;
+    final liked = m['likedByMe'] == 'true';
+    final likes = int.tryParse(m['likes'] ?? '0') ?? 0;
+    return Align(
       alignment: Alignment.bottomLeft,
-      child: Obx(() {
-        _scrollToBottom();
-        return ListView.builder(
-          controller: _scrollController,
-          shrinkWrap: true,
-          padding: EdgeInsets.only(bottom: 8.h),
-          itemCount: ctrl.chatMessages.length,
-          itemBuilder: (context, index) {
-            final m = ctrl.chatMessages[index];
-            final canLike = (m['messageId'] ?? '').isNotEmpty;
-            final liked = m['likedByMe'] == 'true';
-            final likes = int.tryParse(m['likes'] ?? '0') ?? 0;
-            return Align(
-              alignment: Alignment.bottomLeft,
-              child: Padding(
-                padding: EdgeInsets.only(bottom: 8.h),
-                child: !canLike
-                    ? _buildCommentBubble(m)
-                    : Row(
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 8.h),
+        child: !canLike
+            ? _buildCommentBubble(m)
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Flexible(
+                    child: GestureDetector(
+                      onDoubleTap: () => ctrl.toggleCommentLike(index),
+                      child: _buildCommentBubble(m),
+                    ),
+                  ),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => ctrl.toggleCommentLike(index),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                      child: Column(
                         mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Flexible(
-                            child: GestureDetector(
-                              onDoubleTap: () => ctrl.toggleCommentLike(index),
-                              child: _buildCommentBubble(m),
+                          AnimatedScale(
+                            scale: liked ? 1.15 : 1.0,
+                            duration: const Duration(milliseconds: 160),
+                            child: Icon(
+                              liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                              color: liked ? const Color(0xFFFF4D6D) : Colors.white70,
+                              size: 18.sp,
                             ),
                           ),
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => ctrl.toggleCommentLike(index),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  AnimatedScale(
-                                    scale: liked ? 1.15 : 1.0,
-                                    duration: const Duration(milliseconds: 160),
-                                    child: Icon(
-                                      liked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                      color: liked ? const Color(0xFFFF4D6D) : Colors.white70,
-                                      size: 18.sp,
-                                    ),
-                                  ),
-                                  if (likes > 0)
-                                    Text("$likes", style: TextStyle(color: Colors.white70, fontSize: 10.sp, fontWeight: FontWeight.w700)),
-                                ],
-                              ),
-                            ),
-                          ),
+                          if (likes > 0)
+                            Text("$likes", style: TextStyle(color: Colors.white70, fontSize: 10.sp, fontWeight: FontWeight.w700)),
                         ],
                       ),
+                    ),
+                  ),
+                ],
               ),
-            );
-          },
-        );
-      }),
+      ),
     );
+  }
+
+  /// "Placed bid: $101" → "bid $101".
+  String _bidLabel(String msg) {
+    final amount = RegExp(r'\$[\d,]+(\.\d+)?').firstMatch(msg)?.group(0);
+    return amount != null ? 'bid $amount' : msg;
   }
 
   Widget _buildCommentBubble(Map<String, String> m) {
     final user = m['user'] ?? '';
-    final msg = m['msg'] ?? '';
+    final msg = stripEmoji(m['msg'] ?? '');
     final role = m['role'] ?? 'viewer';
     final isBid = m['isBid'] == 'true';
     final userAvatar = m['userAvatar'] ?? '';
     final isJoin = m['isJoin'] == 'true';
+    if (msg.isEmpty && !isJoin && !isBid && m['isCustomOffer'] != 'true') {
+      return const SizedBox.shrink();
+    }
 
-    final ImageProvider avatarImg = userAvatar.isNotEmpty
-        ? NetworkImage(userAvatar)
-        : const NetworkImage("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200") as ImageProvider;
 
     if (isJoin) {
       return Container(
@@ -1623,10 +1633,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 10.r,
-              backgroundImage: avatarImg,
-            ),
+            UserAvatar(imageUrl: userAvatar, radius: 10.r),
             SizedBox(width: 6.w),
             Flexible(
               child: Text(
@@ -1654,10 +1661,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 12.r,
-              backgroundImage: avatarImg,
-            ),
+            UserAvatar(imageUrl: userAvatar, radius: 12.r),
             SizedBox(width: 8.w),
             Icon(Icons.gavel_rounded, color: const Color(0xFF8B9BFF), size: 14.sp),
             SizedBox(width: 6.w),
@@ -1674,7 +1678,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                     ),
                   ),
                   TextSpan(
-                    text: msg,
+                    text: _bidLabel(msg),
                     style: TextStyle(
                       color: const Color(0xFF8B9BFF),
                       fontSize: 12.sp,
@@ -1702,10 +1706,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 12.r,
-              backgroundImage: avatarImg,
-            ),
+            UserAvatar(imageUrl: userAvatar, radius: 12.r),
             SizedBox(width: 8.w),
             Icon(Icons.handshake_rounded, color: const Color(0xFFBD8BFF), size: 16.sp),
             SizedBox(width: 6.w),
@@ -1749,10 +1750,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 12.r,
-              backgroundImage: avatarImg,
-            ),
+            UserAvatar(imageUrl: userAvatar, radius: 12.r),
             SizedBox(width: 8.w),
             Flexible(
               child: Column(
@@ -1835,18 +1833,6 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
         ],
       ),
     );
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
   }
 
   Widget _buildProductCard() {
@@ -1937,13 +1923,18 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                   children: [
                     Obx(() {
                       final cat = ctrl.currentProductCategory.value;
-                      if (cat.isEmpty) return const SizedBox.shrink();
-                      return Padding(
-                        padding: EdgeInsets.only(right: 4.w),
-                        child: _buildBadgeTag(cat.toUpperCase()),
+                      // Skip empty values and raw database IDs (24 hex chars).
+                      if (cat.isEmpty || RegExp(r'^[a-fA-F0-9]{24}$').hasMatch(cat)) {
+                        return const SizedBox.shrink();
+                      }
+                      return Flexible(
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 4.w),
+                          child: _buildBadgeTag(cat.toUpperCase()),
+                        ),
                       );
                     }),
-                    _buildBadgeTag("Free shipping"),
+                    Flexible(child: _buildBadgeTag("Free shipping")),
                   ],
                 ),
                 SizedBox(height: 6.h),
@@ -1978,6 +1969,8 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(color: Colors.white70, fontSize: 8.sp, fontWeight: FontWeight.w700),
       ),
     );
@@ -1987,6 +1980,32 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Show / hide the comment feed
+        Obx(() {
+          final on = _showComments.value;
+          return GestureDetector(
+            onTap: _toggleComments,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 14.h),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    on ? Icons.chat_bubble_outline_rounded : Icons.comments_disabled_outlined,
+                    color: on ? Colors.white : Colors.white54,
+                    size: 24.sp,
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    on ? 'Hide chat' : 'Show chat',
+                    style: TextStyle(color: Colors.white70, fontSize: 9.sp, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
         // Mute Audio Toggle
         Obx(() => GestureDetector(
           onTap: ctrl.toggleViewerAudio,
@@ -2248,7 +2267,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                 isOutbid: isOutbid,
                 isLoading: isBidding,
                 height: 48.h,
-                width: 150.w,
+                width: 128.w,
                 onSwipeCompleted: () {
                   final dynamicNextBid = ctrl.currentBidPrice.value > 0
                       ? (ctrl.currentBidPrice.value + ctrl.bidIncrement.value)
@@ -2865,7 +2884,13 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                   itemBuilder: (context, index) {
                     final item = displayedList[index];
                     final title = item['title'] ?? item['name'] ?? 'Product';
-                    final category = item['category'] ?? 'Item';
+                    final rawCategory = (item['category'] is Map
+                            ? (item['category']['name'] ?? '')
+                            : (item['category'] ?? ''))
+                        .toString();
+                    final category = RegExp(r'^[a-fA-F0-9]{24}$').hasMatch(rawCategory) || rawCategory.isEmpty
+                        ? ''
+                        : rawCategory;
                     final price = item['buyNowPrice'] ?? item['price'] ?? item['startingBid'] ?? 0;
                     final isGiveaway = item['isGiveaway'] == true;
                     final condition = item['condition'] ?? '';
@@ -2951,7 +2976,7 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                                 ),
                                 SizedBox(height: 4.h),
                                 Text(
-                                  condition.isNotEmpty ? "$category • $condition" : "$category",
+                                  [category, condition].where((e) => e.toString().isNotEmpty).join(' • '),
                                   style: TextStyle(color: Colors.white54, fontSize: 10.5.sp),
                                 ),
                               ],
@@ -2974,7 +2999,11 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
                             )
                           else
                             Text(
-                              isGiveaway ? "Free" : "\$$price",
+                              isGiveaway
+                                  ? "Free"
+                                  : (!isCurrentlyLive && (double.tryParse('$price') ?? 0) <= 0)
+                                      ? "Up next"
+                                      : "\$$price",
                               style: TextStyle(
                                 color: isGiveaway ? const Color(0xFFFFB800) : const Color(0xFF10B981),
                                 fontSize: 13.5.sp,
@@ -2993,6 +3022,42 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
       ),
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+    );
+  }
+}
+
+/// Slides a new comment in from below and fades it in, so the feed moves
+/// upward smoothly as people talk.
+class _CommentEntry extends StatefulWidget {
+  const _CommentEntry({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<_CommentEntry> createState() => _CommentEntryState();
+}
+
+class _CommentEntryState extends State<_CommentEntry> with SingleTickerProviderStateMixin {
+  late final AnimationController _anim = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 260),
+  )..forward();
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final curve = CurvedAnimation(parent: _anim, curve: Curves.easeOutCubic);
+    return FadeTransition(
+      opacity: curve,
+      child: SlideTransition(
+        position: Tween(begin: const Offset(0, 0.35), end: Offset.zero).animate(curve),
+        child: widget.child,
+      ),
     );
   }
 }

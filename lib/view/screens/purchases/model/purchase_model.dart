@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 enum OrderStatus { inTransit, delivered, processing, cancelled }
 
 class PurchaseModel {

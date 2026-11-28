@@ -85,6 +85,7 @@ class TradeStatusController extends GetxController {
   bool get iHavePaid => myPayment?['status'] == 'paid';
 
   double get extraDue => (myPayment?['extraDue'] as num?)?.toDouble() ?? 0;
+  bool get extraForReturns => myPayment?['extraReason'] == 'return_shipping';
 
   Map<String, dynamic>? shipment(String leg) {
     final list = trade.value?['shipments'];

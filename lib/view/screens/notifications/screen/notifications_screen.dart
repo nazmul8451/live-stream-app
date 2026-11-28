@@ -236,14 +236,11 @@ class NotificationsScreen extends GetView<NotificationController> {
                 child: _buildButton(
                   "View Offer",
                   isPrimary: true,
-                  onTap: () {
-                    controller.markAsRead(item.id);
-                    Get.toNamed(AppRoute.newOffer);
-                  },
+                  onTap: () => controller.open(item),
                 ),
               ),
               SizedBox(width: 12.w),
-              Expanded(child: _buildButton("Decline", onTap: () => controller.dismissNotification(item.id))),
+              Expanded(child: _buildButton("Dismiss", onTap: () => controller.dismissNotification(item.id))),
             ],
           ),
         ],
@@ -309,17 +306,7 @@ class NotificationsScreen extends GetView<NotificationController> {
             "Join Stream",
             isPurple: true,
             icon: Icons.play_circle_fill_rounded,
-            onTap: () {
-              controller.markAsRead(item.id);
-              Map<String, dynamic> activeStream = {};
-              if (Get.isRegistered<AgoraLiveController>()) {
-                final agoraCtrl = Get.find<AgoraLiveController>();
-                if (agoraCtrl.liveStreamsList.isNotEmpty) {
-                  activeStream = agoraCtrl.liveStreamsList.first;
-                }
-              }
-              Get.toNamed(AppRoute.viewerLive, arguments: activeStream);
-            },
+            onTap: () => controller.open(item),
           ),
         ],
       ),
@@ -383,17 +370,7 @@ class NotificationsScreen extends GetView<NotificationController> {
           SizedBox(height: 20.h),
           _buildButton(
             "Bid Now",
-            onTap: () {
-              controller.markAsRead(item.id);
-              Map<String, dynamic> activeStream = {};
-              if (Get.isRegistered<AgoraLiveController>()) {
-                final agoraCtrl = Get.find<AgoraLiveController>();
-                if (agoraCtrl.liveStreamsList.isNotEmpty) {
-                  activeStream = agoraCtrl.liveStreamsList.first;
-                }
-              }
-              Get.toNamed(AppRoute.viewerLive, arguments: activeStream);
-            },
+            onTap: () => controller.open(item),
           ),
         ],
       ),
@@ -402,7 +379,7 @@ class NotificationsScreen extends GetView<NotificationController> {
 
   Widget _buildSecurityCard(NotificationModel item) {
     return GestureDetector(
-      onTap: () => controller.markAsRead(item.id),
+      onTap: () => controller.open(item),
       child: _buildBaseCard(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

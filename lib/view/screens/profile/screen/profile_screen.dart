@@ -1,4 +1,6 @@
 import '../../../../global/helper/seller_gate.dart';
+import '../../../../global/helper/notification_router.dart';
+import '../../../../global/helper/plain_text.dart';
 import '../../live_stream/screen/show_shipping_orders_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -701,13 +703,13 @@ class ProfileScreen extends GetView<ProfileController> {
               children: List.generate(currentList.length, (index) {
                 final item = currentList[index];
                 
-                String svgPath = "assets/icons/New Message.svg";
+                _ActivityStyle style = _ActivityStyle.general;
                 String title = "";
                 String subtitle = "";
                 String timeAgo = "";
 
                 if (isPurchases) {
-                  svgPath = "assets/icons/Purchase Made.svg";
+                  style = _ActivityStyle.purchase;
                   title = "Purchase Made";
                   final product = item['productId'] ?? item['product'] ?? item['item'];
                   String productTitle = 'Item';
@@ -732,31 +734,31 @@ class ProfileScreen extends GetView<ProfileController> {
                       ? _formatTimestamp(item['createdAt'].toString())
                       : "Recently";
                 } else {
-                  final type = item['type'] ?? "";
-                  if (type.toString().toLowerCase().contains('order')) {
-                    svgPath = "assets/icons/Order Delivered.svg";
-                  } else if (type.toString().toLowerCase().contains('trade')) {
-                    svgPath = "assets/icons/Trade Completed.svg";
-                  } else {
-                    svgPath = "assets/icons/New Message.svg";
-                  }
-                  title = item['title'] ?? "Alert";
-                  subtitle = item['text'] ?? item['message'] ?? "";
+                  style = _activityStyle((item['type'] ?? '').toString(), (item['title'] ?? '').toString());
+                  title = stripEmoji((item['title'] ?? 'Update').toString());
+                  subtitle = stripEmoji(
+                    (item['content'] ?? item['text'] ?? item['message'] ?? '').toString(),
+                  );
                   timeAgo = item['createdAt'] != null
                       ? _formatTimestamp(item['createdAt'].toString())
                       : "Just now";
                 }
 
                 return _buildActivityItem(
-                  svgPath: svgPath,
+                  style: style,
                   title: title,
                   subtitle: subtitle,
                   time: timeAgo,
                   isFirst: index == 0,
                   isLast: index == currentList.length - 1,
                   onTap: () {
-                    final itemId = item['_id'] ?? item['id'] ?? item['orderId'] ?? item;
-                    Get.toNamed(AppRoute.trackOrder, arguments: itemId);
+                    if (isPurchases) {
+                      final orderId = item['_id'] ?? item['id'] ?? item['orderId'];
+                      if (orderId != null) Get.toNamed(AppRoute.trackOrder, arguments: orderId.toString());
+                    } else if (item is Map) {
+                      // Opens what the notification is about (order, trade, show…).
+                      NotificationRouter.open(Map<String, dynamic>.from(item));
+                    }
                   },
                 );
               }),
@@ -767,25 +769,36 @@ class ProfileScreen extends GetView<ProfileController> {
     );
   }
 
+  _ActivityStyle _activityStyle(String type, String title) {
+    final t = '${type.toUpperCase()} ${title.toUpperCase()}';
+    if (t.contains('AUCTION') || t.contains(' WON')) return _ActivityStyle.auction;
+    if (t.contains('PAYMENT')) return _ActivityStyle.payment;
+    if (t.contains('ORDER') || t.contains('SHIP')) return _ActivityStyle.order;
+    if (t.contains('TRADE')) return _ActivityStyle.trade;
+    if (t.contains('STREAM') || t.contains('LIVE')) return _ActivityStyle.live;
+    if (t.contains('REVIEW')) return _ActivityStyle.review;
+    if (t.contains('FOLLOW')) return _ActivityStyle.follow;
+    if (t.contains('MESSAGE')) return _ActivityStyle.message;
+    return _ActivityStyle.general;
+  }
+
   String _formatTimestamp(String timestamp) {
     try {
-      final dateTime = DateTime.parse(timestamp);
+      final dateTime = DateTime.parse(timestamp).toLocal();
       final difference = DateTime.now().difference(dateTime);
-      if (difference.inMinutes < 60) {
-        return "${difference.inMinutes}m ago";
-      } else if (difference.inHours < 24) {
-        return "${difference.inHours}h ago";
-      } else {
-        return "${difference.inDays}d ago";
-      }
+      if (difference.inMinutes < 1) return "Just now";
+      if (difference.inMinutes < 60) return "${difference.inMinutes}m ago";
+      if (difference.inHours < 24) return "${difference.inHours}h ago";
+      if (difference.inDays < 7) return "${difference.inDays}d ago";
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return "${months[dateTime.month - 1]} ${dateTime.day}";
     } catch (_) {
       return "Recently";
     }
   }
 
   Widget _buildActivityItem({
-    IconData? icon,
-    String? svgPath,
+    required _ActivityStyle style,
     required String title,
     required String subtitle,
     required String time,
@@ -804,22 +817,14 @@ class ProfileScreen extends GetView<ProfileController> {
             Column(
               children: [
                 Container(
-                  width: 48.r,
-                  height: 48.r,
-                  padding: EdgeInsets.all(12.r),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF161622),
-                    shape: BoxShape.circle,
+                  width: 40.r,
+                  height: 40.r,
+                  decoration: BoxDecoration(
+                    color: style.color.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(color: style.color.withValues(alpha: 0.22)),
                   ),
-                  child: svgPath != null
-                      ? SvgPicture.asset(
-                          svgPath,
-                          colorFilter: const ColorFilter.mode(
-                            Color(0xFFFF8BFF),
-                            BlendMode.srcIn,
-                          ),
-                        )
-                      : Icon(icon, color: const Color(0xFFFF8BFF), size: 22.sp),
+                  child: Icon(style.icon, color: style.color, size: 20.sp),
                 ),
                 if (!isLast)
                   Expanded(
@@ -831,45 +836,58 @@ class ProfileScreen extends GetView<ProfileController> {
                   ),
               ],
             ),
-            SizedBox(width: 20.w),
+            SizedBox(width: 14.w),
 
             // Content
             Expanded(
               child: Padding(
-                padding: EdgeInsets.only(bottom: 32.h),
+                padding: EdgeInsets.only(top: 4.h, bottom: 24.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w700,
+                        Expanded(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        Text(
-                          time,
-                          style: TextStyle(
-                            color: Colors.white24,
-                            fontSize: 11.sp,
-                            fontWeight: FontWeight.w600,
+                        SizedBox(width: 10.w),
+                        Padding(
+                          padding: EdgeInsets.only(top: 2.h),
+                          child: Text(
+                            time,
+                            style: TextStyle(
+                              color: Colors.white38,
+                              fontSize: 11.5.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 6.h),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white38,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
+                    if (subtitle.isNotEmpty) ...[
+                      SizedBox(height: 4.h),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white60,
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w400,
+                          height: 1.35,
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -2802,4 +2820,22 @@ class ProfileScreen extends GetView<ProfileController> {
       ],
     );
   }
+}
+
+/// Icon and accent colour for each kind of activity row.
+enum _ActivityStyle {
+  order(Icons.local_shipping_outlined, Color(0xFF60A5FA)),
+  purchase(Icons.shopping_bag_outlined, Color(0xFF60A5FA)),
+  payment(Icons.receipt_long_outlined, Color(0xFF34D399)),
+  auction(Icons.gavel_rounded, Color(0xFFFBBF24)),
+  trade(Icons.swap_horiz_rounded, Color(0xFFA78BFA)),
+  live(Icons.sensors_rounded, Color(0xFFF87171)),
+  review(Icons.star_outline_rounded, Color(0xFFFBBF24)),
+  follow(Icons.person_add_alt_1_outlined, Color(0xFF2DD4BF)),
+  message(Icons.chat_bubble_outline_rounded, Color(0xFF8B9BFF)),
+  general(Icons.notifications_none_rounded, Color(0xFF94A3B8));
+
+  const _ActivityStyle(this.icon, this.color);
+  final IconData icon;
+  final Color color;
 }

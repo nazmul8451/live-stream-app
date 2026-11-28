@@ -1,3 +1,5 @@
+import '../../../../global/helper/plain_text.dart';
+
 enum NotificationType { tradeOffer, liveAlert, outbid, security }
 
 class NotificationModel {
@@ -11,6 +13,10 @@ class NotificationModel {
   final String? currentBid;
   final bool isRead;
 
+  /// The notification as the server sent it (type, metadata, actionUrl),
+  /// used to open the right screen when it is tapped.
+  final Map<String, dynamic> raw;
+
   const NotificationModel({
     required this.id,
     required this.type,
@@ -21,7 +27,21 @@ class NotificationModel {
     this.avatarUrl,
     this.currentBid,
     this.isRead = false,
+    this.raw = const {},
   });
+
+  NotificationModel copyWith({bool? isRead}) => NotificationModel(
+        id: id,
+        type: type,
+        title: title,
+        message: message,
+        timeAgo: timeAgo,
+        imageUrl: imageUrl,
+        avatarUrl: avatarUrl,
+        currentBid: currentBid,
+        isRead: isRead ?? this.isRead,
+        raw: raw,
+      );
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     // Determine the notification type based on raw string type
@@ -64,15 +84,16 @@ class NotificationModel {
     return NotificationModel(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
       type: type,
-      title: json['title']?.toString() ?? (type == NotificationType.tradeOffer ? "TRADE OFFER" : type == NotificationType.liveAlert ? "LIVE ALERT" : type == NotificationType.outbid ? "OUTBID ALERT" : "SECURITY"),
+      title: json['title'] != null ? stripEmoji(json['title'].toString()) : (type == NotificationType.tradeOffer ? "TRADE OFFER" : type == NotificationType.liveAlert ? "LIVE ALERT" : type == NotificationType.outbid ? "OUTBID ALERT" : "SECURITY"),
       message: [json['content'], json['text'], json['message']]
-          .map((value) => value?.toString().trim() ?? '')
+          .map((value) => stripEmoji(value?.toString() ?? ''))
           .firstWhere((value) => value.isNotEmpty, orElse: () => ''),
       timeAgo: timeAgo,
       imageUrl: json['imageUrl']?.toString() ?? json['image']?.toString(),
       avatarUrl: json['avatarUrl']?.toString() ?? json['avatar']?.toString(),
       currentBid: json['currentBid']?.toString() ?? json['bidAmount']?.toString(),
       isRead: json['isRead'] == true || json['read'] == true,
+      raw: json,
     );
   }
 }

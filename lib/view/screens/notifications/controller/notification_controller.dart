@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../../data/services/api_client.dart';
 import '../../../../data/services/api_url.dart';
 import '../model/notification_model.dart';
+import '../../../../global/helper/notification_router.dart';
 import 'package:live_stream_app/global/helper/app_snackbar.dart';
 
 class NotificationController extends GetxController {
@@ -59,6 +60,12 @@ class NotificationController extends GetxController {
 
   void setFilter(String filter) => selectedFilter.value = filter;
 
+  /// Marks the notification read and opens what it is about.
+  void open(NotificationModel item) {
+    if (!item.isRead) markAsRead(item.id);
+    NotificationRouter.open(item.raw);
+  }
+
   Future<void> markAsRead(String id) async {
     try {
       final response = await _apiClient.patchData("/notifications/$id/read", {});
@@ -66,17 +73,7 @@ class NotificationController extends GetxController {
         final idx = notifications.indexWhere((n) => n.id == id);
         if (idx != -1) {
           final old = notifications[idx];
-          notifications[idx] = NotificationModel(
-            id: old.id,
-            type: old.type,
-            title: old.title,
-            message: old.message,
-            timeAgo: old.timeAgo,
-            imageUrl: old.imageUrl,
-            avatarUrl: old.avatarUrl,
-            currentBid: old.currentBid,
-            isRead: true,
-          );
+          notifications[idx] = old.copyWith(isRead: true);
         }
       }
     } catch (e) {
@@ -106,17 +103,7 @@ class NotificationController extends GetxController {
         for (int i = 0; i < notifications.length; i++) {
           final old = notifications[i];
           if (!old.isRead) {
-            notifications[i] = NotificationModel(
-              id: old.id,
-              type: old.type,
-              title: old.title,
-              message: old.message,
-              timeAgo: old.timeAgo,
-              imageUrl: old.imageUrl,
-              avatarUrl: old.avatarUrl,
-              currentBid: old.currentBid,
-              isRead: true,
-            );
+            notifications[i] = old.copyWith(isRead: true);
           }
         }
         showAppSnackbar('Done', 'All notifications marked as read',

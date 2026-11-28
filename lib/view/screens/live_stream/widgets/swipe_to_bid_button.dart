@@ -121,9 +121,10 @@ class _SwipeToBidButtonState extends State<SwipeToBidButton>
     required double to,
     Curve curve = Curves.easeOutCubic,
   }) {
-    _resetAnimation = Tween<double>(begin: from, end: to).animate(
-      CurvedAnimation(parent: _resetController, curve: curve),
-    );
+    _resetAnimation = Tween<double>(
+      begin: from,
+      end: to,
+    ).animate(CurvedAnimation(parent: _resetController, curve: curve));
     _resetController.forward(from: 0.0);
   }
 
@@ -133,7 +134,9 @@ class _SwipeToBidButtonState extends State<SwipeToBidButton>
     final h = widget.height.h;
     final knobDiameter = _knobSize.r;
     final maxDrag = (w - knobDiameter - (_padding * 2)).clamp(0.0, 500.0);
-    final progress = maxDrag > 0 ? (_dragOffset / maxDrag).clamp(0.0, 1.0) : 0.0;
+    final progress = maxDrag > 0
+        ? (_dragOffset / maxDrag).clamp(0.0, 1.0)
+        : 0.0;
 
     final isOutbid = widget.isOutbid;
     final formattedAmount = "\$${widget.amount.toStringAsFixed(0)}";
@@ -169,27 +172,38 @@ class _SwipeToBidButtonState extends State<SwipeToBidButton>
               padding: EdgeInsets.only(left: knobDiameter + 8.w, right: 12.w),
               child: Opacity(
                 opacity: (1.0 - (progress * 1.5)).clamp(0.0, 1.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      isOutbid ? "Outbid · bid " : "Swipe to bid ",
-                      style: TextStyle(
-                        color: isOutbid ? Colors.white.withValues(alpha: 0.85) : const Color(0xFF0F0B1E).withValues(alpha: 0.75),
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          isOutbid ? "Outbid · bid " : "Swipe to bid ",
+                          style: TextStyle(
+                            color: isOutbid
+                                ? Colors.white.withValues(alpha: 0.85)
+                                : const Color(
+                                    0xFF0F0B1E,
+                                  ).withValues(alpha: 0.75),
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          formattedAmount,
+                          style: TextStyle(
+                            color: isOutbid
+                                ? Colors.white
+                                : const Color(0xFF0F0B1E),
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      formattedAmount,
-                      style: TextStyle(
-                        color: isOutbid ? Colors.white : const Color(0xFF0F0B1E),
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -237,13 +251,17 @@ class _SwipeToBidButtonState extends State<SwipeToBidButton>
                           child: CircularProgressIndicator(
                             strokeWidth: 2.2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              isOutbid ? const Color(0xFFE5484D) : const Color(0xFF0F0B1E),
+                              isOutbid
+                                  ? const Color(0xFFE5484D)
+                                  : const Color(0xFF0F0B1E),
                             ),
                           ),
                         )
                       : Icon(
                           Icons.arrow_forward_rounded,
-                          color: isOutbid ? const Color(0xFFE5484D) : const Color(0xFF0F0B1E),
+                          color: isOutbid
+                              ? const Color(0xFFE5484D)
+                              : const Color(0xFF0F0B1E),
                           size: 18.sp,
                         ),
                 ),

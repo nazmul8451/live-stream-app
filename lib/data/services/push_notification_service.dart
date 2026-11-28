@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../global/helper/notification_router.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -372,165 +373,11 @@ class PushNotificationService {
     );
   }
 
-  /// 4️⃣ FCM Redirection Map (Deep-Linking Actions)
-  /// Dispatches the user to the appropriate screen according to data.type
+  /// Opens the screen a tapped notification is about. The rules live in
+  /// [NotificationRouter] so the Notifications list behaves the same way.
   static void handleNotificationRedirection(Map<String, dynamic> data) {
     if (data.isEmpty) return;
-
-    final String type = (data['type'] ?? '').toString().toUpperCase().trim();
-    debugPrint("🧭 [PushNotificationService] Handling redirection for type: '$type' with payload: $data");
-
-    switch (type) {
-      // 1. NEW_MESSAGE -> Open Chat room with chatId / senderId
-      case 'NEW_MESSAGE':
-        final String chatId = (data['chatId'] ?? '').toString();
-        final String senderId = (data['senderId'] ?? data['participantId'] ?? data['userId'] ?? '').toString();
-        final String messagePreview = (data['messagePreview'] ?? '').toString();
-        if (chatId.isNotEmpty || senderId.isNotEmpty) {
-          Get.toNamed(AppRoute.messageDetails, arguments: {
-            if (chatId.isNotEmpty) 'chatId': chatId,
-            'senderId': senderId,
-            'partnerId': senderId,
-            'participantId': senderId,
-            'fullName': data['senderName'] ?? data['name'] ?? 'Chat',
-            'preview': messagePreview,
-          });
-        } else {
-          Get.toNamed(AppRoute.main);
-        }
-        break;
-
-      // 2. NEW_TRADE_OFFER / TRADE_OFFER / TRADE_ACCEPTED -> Open My Trades or Trade Detail
-      case 'NEW_TRADE_OFFER':
-      case 'TRADE_OFFER':
-        final String tradeOfferId = (data['tradeOfferId'] ?? data['tradeId'] ?? data['offerId'] ?? '').toString();
-        Get.toNamed(AppRoute.myTrades, arguments: {
-          if (tradeOfferId.isNotEmpty) 'tradeOfferId': tradeOfferId,
-        });
-        break;
-
-      case 'TRADE_ACCEPTED':
-        final String tradeOfferId = (data['tradeOfferId'] ?? data['tradeId'] ?? data['offerId'] ?? '').toString();
-        if (tradeOfferId.isNotEmpty) {
-          Get.toNamed(AppRoute.tradeDetails, arguments: {
-            'id': tradeOfferId,
-            '_id': tradeOfferId,
-            'tradeOfferId': tradeOfferId,
-          });
-        } else {
-          Get.toNamed(AppRoute.myTrades);
-        }
-        break;
-
-      // 3. TRADE_DECLINED -> Open Trade details / Trade list
-      case 'TRADE_DECLINED':
-        final String tradeOfferId = (data['tradeOfferId'] ?? data['tradeId'] ?? data['offerId'] ?? '').toString();
-        Get.toNamed(AppRoute.myTrades, arguments: {
-          'tradeOfferId': tradeOfferId,
-        });
-        break;
-
-      // 4. NEW_ORDER / ORDER_UPDATE -> Open Order Tracking/Shipment screen for orderId
-      case 'NEW_ORDER':
-      case 'ORDER_UPDATE':
-        final String orderId = (data['orderId'] ?? data['id'] ?? data['_id'] ?? '').toString();
-        if (orderId.isNotEmpty) {
-          Get.toNamed(AppRoute.trackOrder, arguments: {
-            'orderId': orderId,
-            'id': orderId,
-            '_id': orderId,
-          });
-        } else {
-          Get.toNamed(type == 'NEW_ORDER' ? AppRoute.soldItems : AppRoute.purchases);
-        }
-        break;
-
-      // 5. AUCTION_WON -> Open in-app Order Checkout / Summary screen
-      case 'AUCTION_WON':
-        final String prodTitle = (data['productTitle'] ?? data['title'] ?? data['name'] ?? 'Auction Item').toString();
-        final String price = (data['amount'] ?? data['winningBid'] ?? data['price'] ?? '150').toString().replaceAll('\$', '').trim();
-        final String auctionItemId = (data['auctionItemId'] ?? data['itemId'] ?? data['productId'] ?? '').toString();
-        final String sellerId = (data['sellerId'] ?? '').toString();
-        final String img = (data['imageUrl'] ?? data['image'] ?? '').toString();
-
-        Get.toNamed(AppRoute.checkout, arguments: {
-          "title": prodTitle,
-          "buyNowPrice": price,
-          "estValue": price,
-          "images": img.isNotEmpty ? [img] : [],
-          "sellerId": sellerId,
-          "condition": "AUTHENTICATED",
-          "productId": auctionItemId,
-        });
-        break;
-
-      // 6. STREAM_LIVE -> Join Agora live stream room for streamId
-      case 'STREAM_LIVE':
-        final String streamId = (data['streamId'] ?? data['channelName'] ?? '').toString();
-        final String sellerId = (data['sellerId'] ?? '').toString();
-        final String actionUrl = (data['actionUrl'] ?? '').toString();
-
-        Get.toNamed(AppRoute.viewerLive, arguments: {
-          'streamId': streamId,
-          'channelName': streamId,
-          '_id': streamId,
-          'id': streamId,
-          'sellerId': sellerId,
-          'actionUrl': actionUrl,
-        });
-        break;
-
-      // 7. NEW_REVIEW -> Open User Profile Reviews tab
-      case 'NEW_REVIEW':
-        final String reviewerId = (data['reviewerId'] ?? '').toString();
-        final String reviewId = (data['reviewId'] ?? '').toString();
-        if (reviewerId.isNotEmpty) {
-          Get.toNamed(AppRoute.traderProfile, arguments: {
-            'userId': reviewerId,
-            'reviewerId': reviewerId,
-            'reviewId': reviewId,
-            'initialTab': 'Reviews',
-          });
-        } else {
-          Get.toNamed(AppRoute.main);
-        }
-        break;
-
-      // 8. NEW_FOLLOW -> Open Follower's Trader Profile
-      case 'NEW_FOLLOW':
-        final String followerId = (data['followerId'] ?? data['userId'] ?? '').toString();
-        if (followerId.isNotEmpty) {
-          Get.toNamed(AppRoute.traderProfile, arguments: {
-            'id': followerId,
-            'traderId': followerId,
-          });
-        } else {
-          Get.toNamed(AppRoute.notifications);
-        }
-        break;
-
-      // 9. LIVE_TIP / NEW_REPORT -> Open Notifications
-      case 'LIVE_TIP':
-      case 'NEW_REPORT':
-        final String reportId = (data['reportId'] ?? '').toString();
-        Get.toNamed(AppRoute.notifications, arguments: {
-          if (reportId.isNotEmpty) 'reportId': reportId,
-        });
-        break;
-
-      default:
-        // Optional deep linking via actionUrl if provided
-        final String? actionUrl = data['actionUrl']?.toString();
-        if (actionUrl != null && actionUrl.isNotEmpty) {
-          final uri = Uri.tryParse(actionUrl);
-          if (uri != null) {
-            launchUrl(uri, mode: LaunchMode.externalApplication);
-            return;
-          }
-        }
-        // Fallback to notifications screen
-        Get.toNamed(AppRoute.notifications);
-        break;
-    }
+    debugPrint("🧭 [PushNotificationService] Notification tapped: $data");
+    NotificationRouter.open(data);
   }
 }

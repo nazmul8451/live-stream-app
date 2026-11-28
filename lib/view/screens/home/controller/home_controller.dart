@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -367,6 +368,54 @@ class HomeController extends GetxController {
       fetchRecentTrades(),
       fetchGiveawayData(),
     ]);
+    _startLiveAutoRefresh();
+  }
+
+  // ── Keep "Live now" current without pulling to refresh ──────────────────
+  // 1. The server announces whenever any show starts or ends.
+  // 2. Every 30 seconds as a fallback (viewer counts, missed signals).
+  // 3. Whenever the app comes back to the foreground.
+  Timer? _livePollTimer;
+  Timer? _liveDebounce;
+  AppLifecycleListener? _lifecycle;
+
+  void _onLiveListChanged(dynamic _) {
+    // Several shows can change at once; refresh once after they settle.
+    _liveDebounce?.cancel();
+    _liveDebounce = Timer(const Duration(milliseconds: 400), _refreshLiveLists);
+  }
+
+  void _refreshLiveLists() {
+    fetchLiveStreams().catchError((e) => Get.log("Live auto-refresh error: $e"));
+    fetchScheduledShows().catchError((e) => Get.log("Scheduled auto-refresh error: $e"));
+  }
+
+  void _startLiveAutoRefresh() {
+    try {
+      if (Get.isRegistered<SocketService>()) {
+        Get.find<SocketService>().on('live-streams-changed', _onLiveListChanged);
+      }
+    } catch (e) {
+      Get.log("Live list listener error: $e");
+    }
+    _livePollTimer?.cancel();
+    _livePollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      fetchLiveStreams().catchError((e) => Get.log("Live poll error: $e"));
+    });
+    _lifecycle ??= AppLifecycleListener(onResume: _refreshLiveLists);
+  }
+
+  @override
+  void onClose() {
+    _livePollTimer?.cancel();
+    _liveDebounce?.cancel();
+    _lifecycle?.dispose();
+    try {
+      if (Get.isRegistered<SocketService>()) {
+        Get.find<SocketService>().off('live-streams-changed', _onLiveListChanged);
+      }
+    } catch (_) {}
+    super.onClose();
   }
 
   Future<void> fetchGiveawayData() async {

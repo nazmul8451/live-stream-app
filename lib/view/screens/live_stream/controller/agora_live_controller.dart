@@ -125,7 +125,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   final RxString currentProductCategory = "".obs;
   final RxBool currentProductIsGiveaway = false.obs;
   final RxDouble currentBidPrice = 0.0.obs;
-  final RxDouble bidIncrement = 100.0.obs;
+  final RxDouble bidIncrement = 1.0.obs;
   final RxInt bidTimer = 60.obs;
   final RxBool auctionActive = false.obs;
   
@@ -208,6 +208,10 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   final RxBool isLive = false.obs;
   final RxBool isMinimized = false.obs;
   final RxBool isEnding = false.obs;
+
+  /// Bumped when the host ends the show (or ARIES closes it) so an open
+  /// viewer screen closes itself, whatever sheet or snackbar is on top.
+  final RxInt viewerExitSignal = 0.obs;
   Map<String, dynamic> activeStreamData = {};
   final RxBool isLoading = false.obs;
   final RxBool isCameraOn = true.obs;
@@ -487,6 +491,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.on('auction-won', _handleAuctionWonEvent);
       socketService.on('auction-payment-received', _handleAuctionPaymentReceivedEvent);
       socketService.on('new-reaction', _handleNewReactionEvent);
+      socketService.on('stream-like-state', _handleLikeStateEvent);
       socketService.on('stream-inventory-item-added', _handleStreamInventoryAddedEvent);
       socketService.on('live:inventory:updated', _handleStreamInventoryAddedEvent);
       socketService.on('spin-wheel:result', _handleSpinWheelResultEvent);
@@ -499,6 +504,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.on('newMessage', _handleSocketMessage);
       socketService.on('new message', _handleSocketMessage);
       socketService.on('new-chat-message', _handleStreamChatEvent);
+      socketService.on('chat-history', _handleChatHistoryEvent);
       socketService.on('chat-message-liked', _handleChatLikedEvent);
       socketService.on('stream-chat-error', _handleStreamChatError);
       socketService.on('message received', _handleSocketMessage);
@@ -540,7 +546,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         currentBidPrice.value = startingOrCurrent;
       }
 
-      final double inc = double.tryParse(itemMap['bidIncrement']?.toString() ?? '100') ?? 100.0;
+      final double inc = double.tryParse(itemMap['bidIncrement']?.toString() ?? '1') ?? 1.0;
       bidIncrement.value = inc;
 
       final prod = itemMap['product'] ?? itemMap['productId'];
@@ -1005,6 +1011,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.off('auction-won', _handleAuctionWonEvent);
       socketService.off('auction-payment-received', _handleAuctionPaymentReceivedEvent);
       socketService.off('new-reaction', _handleNewReactionEvent);
+      socketService.off('stream-like-state', _handleLikeStateEvent);
       socketService.off('stream-inventory-item-added', _handleStreamInventoryAddedEvent);
       socketService.off('live:inventory:updated', _handleStreamInventoryAddedEvent);
       socketService.off('spin-wheel:result', _handleSpinWheelResultEvent);
@@ -1017,6 +1024,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       socketService.off('newMessage', _handleSocketMessage);
       socketService.off('new message', _handleSocketMessage);
       socketService.off('new-chat-message', _handleStreamChatEvent);
+      socketService.off('chat-history', _handleChatHistoryEvent);
       socketService.off('chat-message-liked', _handleChatLikedEvent);
       socketService.off('stream-chat-error', _handleStreamChatError);
       socketService.off('message received', _handleSocketMessage);
@@ -1029,24 +1037,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   }
 
   // ─── STREAM REACTION (Feature 3) ──────────────────────────────────────────
-  void sendStreamReaction({String reactionType = 'heart'}) {
-    if (!isLiked.value) {
-      isLiked.value = true;
-      likeCount.value++;
-    }
-    triggerFloatingHeart();
-    try {
-      if (Get.isRegistered<SocketService>()) {
-        final socketService = Get.find<SocketService>();
-        socketService.emitEvent('stream-reaction', {
-          'streamId': streamId.value,
-          'reactionType': reactionType,
-        });
-      }
-    } catch (e) {
-      debugPrint("❌ [AgoraLiveSocket] Failed to emit stream-reaction: $e");
-    }
-  }
+  void sendStreamReaction({String reactionType = 'heart'}) => sendLike();
 
   void _handleNewReactionEvent(dynamic data) {
     if (data == null) return;
@@ -1101,7 +1092,10 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       duration: const Duration(seconds: 4),
     );
     if (!isHost.value || removedSeller) {
-      leaveStream();
+      final wasViewer = !isHost.value;
+      if (wasViewer) viewerExitSignal.value++;
+      // The viewer screen closes itself on the signal above.
+      leaveStream(navigate: !wasViewer);
     }
   }
 
@@ -1343,7 +1337,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     required String description,
     required String productId,
     required double startingBid,
-    double bidIncrement = 5.0,
+    double bidIncrement = 1.0,
     required int timerDuration,
     String productTitle = "",
     String productImage = "",
@@ -1664,7 +1658,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           if (sBid > 0 || currentBidPrice.value == 0) {
             currentBidPrice.value = sBid;
           }
-          bidIncrement.value = double.tryParse(item['bidIncrement']?.toString() ?? "100") ?? 100.0;
+          bidIncrement.value = double.tryParse(item['bidIncrement']?.toString() ?? "1") ?? 1.0;
           lastBidderId.value = item['highestBidder']?.toString() ?? "";
           auctionActive.value = true;
           final duration = int.tryParse(item['timerDuration']?.toString() ?? "60") ?? 60;
@@ -1753,7 +1747,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
               currentBidPrice.value = cBid;
             }
 
-            final inc = double.tryParse(itemMap['bidIncrement']?.toString() ?? '100') ?? 100.0;
+            final inc = double.tryParse(itemMap['bidIncrement']?.toString() ?? '1') ?? 1.0;
             bidIncrement.value = inc;
 
             final prod = itemMap['productId'] ?? itemMap['product'];
@@ -1825,10 +1819,15 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
         amount = currentBidPrice.value > 0 ? (currentBidPrice.value + bidIncrement.value) : bidIncrement.value;
       }
 
-      if (amount <= currentBidPrice.value) {
+      // Same rule as the server: the first bid can match the starting price;
+      // after that any amount at least one increment higher is fine.
+      final step = bidIncrement.value > 0 ? bidIncrement.value : 1.0;
+      final hasBids = lastBidderName.value.isNotEmpty;
+      final minimum = hasBids ? currentBidPrice.value + step : (currentBidPrice.value > 0 ? currentBidPrice.value : step);
+      if (amount < minimum) {
         showAppSnackbar(
-          "Invalid Bid",
-          "Bid must be strictly greater than current bid (\$${currentBidPrice.value.toStringAsFixed(0)})",
+          "Bid too low",
+          "Your bid must be at least \$${minimum.toStringAsFixed(minimum % 1 == 0 ? 0 : 2)}.",
           snackPosition: SnackPosition.BOTTOM,
         );
         return;
@@ -2442,7 +2441,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   Future<bool> resetAndStartNewAuction({
     required String productId,
     required double startingBid,
-    double bidIncrement = 5.0,
+    double bidIncrement = 1.0,
     required int timerDuration,
     String productTitle = "",
     String productImage = "",
@@ -2943,7 +2942,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   // ─────────────────────────────────────────────
   //  LEAVE STREAM (Viewer)
   // ─────────────────────────────────────────────
-  Future<void> leaveStream() async {
+  Future<void> leaveStream({bool navigate = true}) async {
     isEnding.value = true;
     isLive.value = false;
     isMinimized.value = false;
@@ -2985,7 +2984,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     } catch (_) {}
 
     // Gracefully navigate back to previous screen or /main
-    if (Get.currentRoute == AppRoute.viewerLive || Get.currentRoute == '/viewer_live') {
+    if (navigate && (Get.currentRoute == AppRoute.viewerLive || Get.currentRoute == '/viewer_live')) {
       if (Navigator.canPop(Get.context!)) {
         Get.back();
       } else {
@@ -3465,6 +3464,42 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  /// Recent comments sent when we join, so newcomers can read the conversation.
+  /// Placed before anything already on screen, skipping ones we already have.
+  void _handleChatHistoryEvent(dynamic data) {
+    if (data is! Map) return;
+    try {
+      if ((data['streamId'] ?? '').toString() != streamId.value) return;
+      final list = data['messages'];
+      if (list is! List) return;
+      final myId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+      final have = chatMessages.map((m) => m['messageId'] ?? '').where((id) => id.isNotEmpty).toSet();
+      final history = <Map<String, String>>[];
+      for (final raw in list) {
+        if (raw is! Map) continue;
+        final d = Map<String, dynamic>.from(raw);
+        final messageId = (d['messageId'] ?? '').toString();
+        if (messageId.isEmpty || have.contains(messageId)) continue;
+        final user = d['user'] is Map ? Map<String, dynamic>.from(d['user']) : <String, dynamic>{};
+        final senderId = (user['_id'] ?? '').toString();
+        final name = (user['name'] ?? 'User').toString();
+        final isFromHost = senderId.isNotEmpty && senderId == sellerId.value;
+        history.add({
+          "user": name.startsWith('@') ? name : '@$name',
+          "msg": (d['message'] ?? '').toString(),
+          "role": isFromHost ? "host" : (senderId == myId && isHost.value ? "host" : "viewer"),
+          "userAvatar": (user['image'] ?? '').toString(),
+          "messageId": messageId,
+          "likes": (d['likes'] ?? 0).toString(),
+          "likedByMe": d['likedByMe'] == true ? "true" : "false",
+        });
+      }
+      if (history.isNotEmpty) chatMessages.insertAll(0, history);
+    } catch (e) {
+      debugPrint("❌ [_handleChatHistoryEvent] $e");
+    }
+  }
+
   void _handleChatLikedEvent(dynamic data) {
     if (data is! Map) return;
     final messageId = (data['messageId'] ?? '').toString();
@@ -3504,29 +3539,18 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     } catch (_) {}
   }
 
-  // Hearts: every tap animates locally; taps are batched and sent ~1/sec.
-  int _pendingHearts = 0;
-  Timer? _heartFlushTimer;
-
+  // One like per user per show. Later taps still float a heart locally but
+  // don't change the count; the server enforces this too.
   void sendLike() {
     triggerFloatingHeart();
+    if (isLiked.value || streamId.value.isEmpty) return;
     isLiked.value = true;
     likeCount.value++;
-    _pendingHearts++;
-    _heartFlushTimer ??= Timer(const Duration(milliseconds: 900), _flushHearts);
-  }
-
-  void _flushHearts() {
-    _heartFlushTimer = null;
-    final count = _pendingHearts;
-    _pendingHearts = 0;
-    if (count <= 0 || streamId.value.isEmpty) return;
     try {
       if (Get.isRegistered<SocketService>()) {
         Get.find<SocketService>().emitEvent('stream-reaction', {
           'streamId': streamId.value,
           'reactionType': 'heart',
-          'count': count,
         });
       }
     } catch (e) {
@@ -3534,15 +3558,22 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
     }
   }
 
+  void _handleLikeStateEvent(dynamic data) {
+    if (data is! Map) return;
+    if (data['streamId']?.toString() != streamId.value) return;
+    if (data['liked'] == true) isLiked.value = true;
+    final lc = int.tryParse('${data['likesCount'] ?? ''}');
+    if (lc != null) likeCount.value = lc;
+  }
+
   /// Clears everything that belongs to a single show so nothing leaks into
   /// the next stream (controller is a permanent singleton).
   void _resetPerStreamState() {
     isFollowingHost.value = false;
-    _heartFlushTimer?.cancel();
-    _heartFlushTimer = null;
-    _pendingHearts = 0;
     isLiked.value = false;
     likeCount.value = 0;
+    // A new show starts with its own conversation (its history is sent on join).
+    chatMessages.clear();
     streamInventoryItems.clear();
     currentProductIsGiveaway.value = false;
     giveawayPrizeName.value = '';

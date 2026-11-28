@@ -1,5 +1,7 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
+import '../../../../global/helper/plain_text.dart';
+import '../../../../global/widgets/user_avatar.dart';
 import '../../../../data/helpers/api_list.dart';
 import 'package:flutter/cupertino.dart' show CupertinoSwitch;
 import 'dart:math' as math;
@@ -168,7 +170,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                                   Icon(isSudden ? Icons.bolt_rounded : Icons.timer_outlined, color: Colors.white, size: 11.sp),
                                   SizedBox(width: 3.w),
                                   Text(
-                                    "00:${ctrl.bidTimer.value.toString().padLeft(2, '0')}${isSudden ? ' ⚡' : ''}",
+                                    "${(ctrl.bidTimer.value ~/ 60).toString().padLeft(2, '0')}:${(ctrl.bidTimer.value % 60).toString().padLeft(2, '0')}${isSudden ? ' ⚡' : ''}",
                                     style: TextStyle(color: Colors.white, fontSize: 10.sp, fontWeight: FontWeight.w700),
                                   ),
                                 ],
@@ -258,12 +260,34 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                      // ── Auction Card (bottom)
             Obx(() {
               if (!ctrl.auctionActive.value) {
-                // No auction running: host still sees viewer chat
+                // No auction running: the host sees viewer chat and a clear
+                // way to put the next item up for bidding.
                 return Positioned(
                   bottom: 24.h,
                   left: 16.w,
                   right: 90.w,
-                  child: _buildChat(ctrl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildChat(ctrl),
+                      SizedBox(height: 12.h),
+                      ElevatedButton.icon(
+                        onPressed: () => _showStartNewAuctionSheet(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF8B9BFF),
+                          foregroundColor: const Color(0xFF0F0B1E),
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+                        ),
+                        icon: Icon(Icons.gavel_rounded, size: 20.sp),
+                        label: Text(
+                          "Start an auction",
+                          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }
               return Positioned(
@@ -863,7 +887,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
     // Open at the item's own price rather than a flat $100 — a $12 card and a
     // $4,000 card should not both start at the same number.
     final startingBid = _suggestedStartingBid(preselect).obs;
-    final bidIncrement = 5.0.obs;
+    final bidIncrement = 1.0.obs;
 
     // And follow the host if they switch to a different item.
     ever<Map<String, dynamic>?>(selectedProduct, (prod) {
@@ -2003,17 +2027,20 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
     );
   }
 
+  /// "Placed bid: $101" → "bid $101".
+  String _bidLabel(String msg) {
+    final amount = RegExp(r'\$[\d,]+(\.\d+)?').firstMatch(msg)?.group(0);
+    return amount != null ? 'bid $amount' : msg;
+  }
+
   Widget _buildCommentBubble(Map<String, String> m) {
     final user = m['user'] ?? '';
-    final msg = m['msg'] ?? '';
+    final msg = stripEmoji(m['msg'] ?? '');
     final role = m['role'] ?? 'viewer';
     final isBid = m['isBid'] == 'true';
     final userAvatar = m['userAvatar'] ?? '';
     final isJoin = m['isJoin'] == 'true';
 
-    final ImageProvider avatarImg = userAvatar.isNotEmpty
-        ? NetworkImage(userAvatar)
-        : const NetworkImage("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200") as ImageProvider;
 
     if (isJoin) {
       return Container(
@@ -2025,10 +2052,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 10.r,
-              backgroundImage: avatarImg,
-            ),
+            UserAvatar(imageUrl: userAvatar, radius: 10.r),
             SizedBox(width: 6.w),
             Flexible(
               child: Text(
@@ -2056,10 +2080,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 12.r,
-              backgroundImage: avatarImg,
-            ),
+            UserAvatar(imageUrl: userAvatar, radius: 12.r),
             SizedBox(width: 8.w),
             Icon(Icons.gavel_rounded, color: const Color(0xFF8B9BFF), size: 14.sp),
             SizedBox(width: 6.w),
@@ -2076,7 +2097,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     ),
                   ),
                   TextSpan(
-                    text: msg,
+                    text: _bidLabel(msg),
                     style: TextStyle(
                       color: const Color(0xFF8B9BFF),
                       fontSize: 12.sp,
@@ -2108,10 +2129,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircleAvatar(
-                  radius: 12.r,
-                  backgroundImage: avatarImg,
-                ),
+                UserAvatar(imageUrl: userAvatar, radius: 12.r),
                 SizedBox(width: 8.w),
                 Icon(Icons.handshake_rounded, color: const Color(0xFFBD8BFF), size: 16.sp),
                 SizedBox(width: 6.w),
@@ -2193,10 +2211,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 12.r,
-              backgroundImage: avatarImg,
-            ),
+            UserAvatar(imageUrl: userAvatar, radius: 12.r),
             SizedBox(width: 8.w),
             Expanded(
               child: Column(
@@ -2260,10 +2275,7 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 12.r,
-            backgroundImage: avatarImg,
-          ),
+          UserAvatar(imageUrl: userAvatar, radius: 12.r),
           SizedBox(width: 8.w),
           Flexible(
             child: Column(

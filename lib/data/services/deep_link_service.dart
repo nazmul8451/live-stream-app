@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:app_links/app_links.dart';
+import '../../view/screens/purchases/controller/purchases_controller.dart';
+import '../../view/screens/purchases/controller/unpaid_wins_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../core/app_route.dart';
@@ -88,6 +90,28 @@ class DeepLinkService extends GetxService {
       final host = uri.host; // Can be 'trade', 'profile', 'signup' if custom scheme
 
       debugPrint('🔗 [DeepLinkService] Safely handling host: $host, segments: $pathSegments');
+
+      // Back from Stripe Checkout (auction win): open My purchases, refreshed.
+      if (uri.scheme == 'culturecards' && host == 'purchases') {
+        AuthGuard.check(onAuthorized: () async {
+          const startupRoutes = {'/', AppRoute.onboarding, AppRoute.login};
+          if (startupRoutes.contains(Get.currentRoute)) {
+            Get.offAllNamed(AppRoute.main);
+            await Future.delayed(const Duration(milliseconds: 300));
+          }
+          if (Get.currentRoute != AppRoute.purchases) {
+            Get.toNamed(AppRoute.purchases);
+          }
+          final paid = uri.queryParameters['paid'] == '1';
+          if (Get.isRegistered<UnpaidWinsController>()) {
+            await Get.find<UnpaidWinsController>().load(afterPayment: paid);
+          }
+          if (Get.isRegistered<PurchasesController>()) {
+            await Get.find<PurchasesController>().load();
+          }
+        });
+        return;
+      }
 
       if (uri.scheme == 'culturecards' &&
           host == 'seller' &&

@@ -214,10 +214,14 @@ class _ActionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Shipping adjustment', style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700)),
+            Text(c.extraForReturns ? 'Return shipping due' : 'Shipping adjustment',
+                style: TextStyle(color: Colors.white, fontSize: 16.sp, fontWeight: FontWeight.w700)),
             SizedBox(height: 6.h),
-            Text('Your return label cost ${_money(c.extraDue)} more than estimated.',
-                style: TextStyle(color: Colors.white70, fontSize: 13.sp)),
+            Text(
+                c.extraForReturns
+                    ? 'Your payment did not fully cover shipping the items back. Please pay the remaining ${_money(c.extraDue)}.'
+                    : 'Your return label cost ${_money(c.extraDue)} more than estimated.',
+                style: TextStyle(color: Colors.white70, fontSize: 13.sp, height: 1.4)),
             SizedBox(height: 14.h),
             Obx(() => _button('Pay ${_money(c.extraDue)}', c.payExtra, busy: c.isPaying.value, color: Colors.orangeAccent)),
           ],
@@ -359,9 +363,15 @@ class _Items extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _side('You give', c.myItems, c.myCash),
-          Divider(color: Colors.white10, height: 28.h),
-          _side('You get from $name', c.theirItems, -c.myCash),
+          if (c.stage == 'cancelled') ...[
+            _side('Your item · returned to you', c.myItems, 0),
+            Divider(color: Colors.white10, height: 28.h),
+            _side("$name's item · returned to them", c.theirItems, 0),
+          ] else ...[
+            _side('You give', c.myItems, c.myCash),
+            Divider(color: Colors.white10, height: 28.h),
+            _side('You get from $name', c.theirItems, -c.myCash),
+          ],
         ],
       ),
     );
@@ -381,27 +391,69 @@ class _Receipt extends StatelessWidget {
           child: Row(
             children: [
               Expanded(child: Text(k, style: TextStyle(color: strong ? Colors.white : Colors.white60, fontSize: 13.sp, fontWeight: strong ? FontWeight.w800 : FontWeight.w500))),
-              Text(_money(v), style: TextStyle(color: strong ? _accent : Colors.white, fontSize: 13.sp, fontWeight: strong ? FontWeight.w800 : FontWeight.w500)),
+              Text(v is String ? v : _money(v), style: TextStyle(color: strong ? _accent : Colors.white, fontSize: 13.sp, fontWeight: strong ? FontWeight.w800 : FontWeight.w500)),
             ],
           ),
         );
     final refunded = (p['refundedAmount'] as num?) ?? 0;
-    return _box(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _label('Your payment'),
-          SizedBox(height: 8.h),
-          row(p['feeForfeited'] == true ? 'Trade fee (4%, kept)' : 'Trade fee (4%)', p['feeNet']),
-          if (((p['cashNet'] as num?) ?? 0) > 0) row('Cash added', p['cashNet']),
-          row('Packing material', p['materialFee']),
-          row('Shipping to ARIES', p['inboundLabel']),
-          row('Shipping back to you', p['outboundLabel']),
-          Divider(color: Colors.white10, height: 16.h),
-          row('Total charged', p['totalAmount'], strong: true),
-          if (refunded > 0) row('Refunded to your card', refunded, strong: true),
+    final processing = (p['processingFee'] as num?) ?? 0;
+    final cancelled = c.stage == 'cancelled';
+    final returnShipping = (p['returnShipping'] as num?) ?? 0;
+    final owed = (p['owed'] as num?) ?? 0;
+    final total = (p['totalAmount'] as num?) ?? 0;
+    final fullRefund = cancelled && (total - refunded).abs() < 0.01;
+    return Column(
+      children: [
+        _box(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _label('Your payment'),
+              SizedBox(height: 8.h),
+              row(p['feeForfeited'] == true ? 'Trade fee (4%, kept)' : 'Trade fee (4%)', p['feeNet']),
+              if (((p['cashNet'] as num?) ?? 0) > 0) row('Cash added', p['cashNet']),
+              row('Packing material', p['materialFee']),
+              row('Shipping to ARIES', p['inboundLabel']),
+              row('Shipping back to you', p['outboundLabel']),
+              if (processing > 0) row('Card processing', processing),
+              Divider(color: Colors.white10, height: 16.h),
+              row('Total charged', total, strong: true),
+              if (!cancelled && refunded > 0) row('Refunded to your card', refunded, strong: true),
+            ],
+          ),
+        ),
+        if (cancelled) ...[
+          SizedBox(height: 12.h),
+          _box(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _label('What happens to your money'),
+                SizedBox(height: 8.h),
+                if (fullRefund)
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 6.h),
+                    child: Text(
+                      'You get everything back. Your item is returned to you at no cost.',
+                      style: TextStyle(color: Colors.white70, fontSize: 13.sp, height: 1.4),
+                    ),
+                  ),
+                if (returnShipping > 0) row('Return shipping (yours to pay)', returnShipping),
+                row('Refunded to your card', refunded, strong: true),
+                if (owed > 0) row('Still owed for return shipping', owed, strong: true),
+                if (p['owedPaid'] == true) row('Remaining return shipping', 'Paid'),
+                if (refunded > 0) ...[
+                  SizedBox(height: 4.h),
+                  Text(
+                    'Refunds usually reach your card in 5–10 business days.',
+                    style: TextStyle(color: Colors.white38, fontSize: 11.5.sp),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
-      ),
+      ],
     );
   }
 }
