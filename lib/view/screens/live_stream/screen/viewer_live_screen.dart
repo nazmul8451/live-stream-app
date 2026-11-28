@@ -686,12 +686,71 @@ class _ViewerLiveScreenState extends State<ViewerLiveScreen> {
     );
   }
 
+  Widget _buildWinPendingOverlay(double finalPrice) {
+    final failed = ctrl.winConfirmFailed.value;
+    return Container(
+      color: Colors.black.withValues(alpha: 0.92),
+      padding: EdgeInsets.symmetric(horizontal: 24.w),
+      child: Center(
+        child: Container(
+          padding: EdgeInsets.all(28.r),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E2C),
+            borderRadius: BorderRadius.circular(32.r),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!failed)
+                SizedBox(
+                  width: 44.r,
+                  height: 44.r,
+                  child: const CircularProgressIndicator(color: Color(0xFFFFB800), strokeWidth: 3),
+                )
+              else
+                Icon(Icons.info_outline_rounded, color: const Color(0xFF8B9BFF), size: 48.sp),
+              SizedBox(height: 22.h),
+              Text(
+                failed ? "Sale not confirmed" : "You had the top bid!",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 20.sp, fontWeight: FontWeight.w700),
+              ),
+              SizedBox(height: 10.h),
+              Text(
+                failed
+                    ? "The seller couldn't take payment for this item, so the sale didn't go through. You have not been charged."
+                    : "Confirming your win at \$${finalPrice.toStringAsFixed(0)}... your payment link will appear here.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 13.sp, height: 1.45),
+              ),
+              SizedBox(height: 22.h),
+              TextButton(
+                onPressed: () => ctrl.showWinnerOverlay.value = false,
+                child: Text(
+                  "Continue watching",
+                  style: TextStyle(color: Colors.white54, fontSize: 14.sp, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildWinnerOverlay() {
     final String currentUserId = SharePrefsHelper.getString(SharePrefsHelper.userIdKey) ?? "";
     final hasWinner = ctrl.lastBidderId.value.isNotEmpty && !ctrl.isUnsold.value;
     final isWinner = hasWinner && ctrl.lastBidderId.value == currentUserId;
     final winnerName = ctrl.lastBidderName.value;
     final finalPrice = ctrl.currentBidPrice.value;
+
+    // Top bidder, but the server hasn't confirmed the sale yet: no payment
+    // prompt until it does.
+    if (isWinner && !ctrl.winConfirmed.value) {
+      return _buildWinPendingOverlay(finalPrice);
+    }
 
     return Container(
       color: Colors.black.withOpacity(0.92),

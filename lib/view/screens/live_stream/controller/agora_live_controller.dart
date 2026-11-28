@@ -143,6 +143,12 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   final RxDouble reservePrice = 0.0.obs;
   final RxBool isUnsold = false.obs;
   final RxString winningCheckoutUrl = "".obs;
+  /// True once the server has confirmed this viewer won (auction-won event).
+  /// Until then the viewer sees "confirming", never a payment prompt.
+  final RxBool winConfirmed = false.obs;
+  /// The server never confirmed the win (e.g. the host can't take payments).
+  final RxBool winConfirmFailed = false.obs;
+  Timer? _winConfirmTimer;
   final RxBool isPlacingBid = false.obs;
   // Sudden Death & Auto Extend feature flags
   final RxBool isSuddenDeath = false.obs;
@@ -731,6 +737,13 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
 
   void _handleAuctionWonEvent(dynamic data) {
     if (data is Map) {
+      // The server only sends this to the real winner, after it created the
+      // checkout (or charged a saved card).
+      _winConfirmTimer?.cancel();
+      winConfirmed.value = true;
+      winConfirmFailed.value = false;
+      final me = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+      if (me.isNotEmpty) lastBidderId.value = me;
       final rawUrl = data['checkoutUrl']?.toString() ?? '';
       if (rawUrl.isNotEmpty) {
         winningCheckoutUrl.value = rawUrl;
@@ -1303,6 +1316,16 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       isUnsold.value = false;
     }
     
+    // The local timer can only say who bid last. Whether that person really
+    // won (and can pay) is the server's call, confirmed by "auction-won".
+    final me = SharePrefsHelper.getString(SharePrefsHelper.userIdKey);
+    if (!isHost.value && hasBidder && lastBidderId.value == me && !winConfirmed.value) {
+      winConfirmFailed.value = false;
+      _winConfirmTimer?.cancel();
+      _winConfirmTimer = Timer(const Duration(seconds: 20), () {
+        if (!winConfirmed.value) winConfirmFailed.value = true;
+      });
+    }
     showWinnerOverlay.value = true;
     debugPrint("🏆 Auction Ended. Winner: ${lastBidderName.value} ($currentBidPrice) | Unsold: ${isUnsold.value} (Reserve: ${reservePrice.value})");
 
@@ -3608,6 +3631,19 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   /// Clears everything that belongs to a single show so nothing leaks into
   /// the next stream (controller is a permanent singleton).
   void _resetPerStreamState() {
+    // A new show must not inherit the last show's auction or "you won" screen.
+    _winConfirmTimer?.cancel();
+    showWinnerOverlay.value = false;
+    isCalculatingResult.value = false;
+    isUnsold.value = false;
+    lastBidderId.value = '';
+    lastBidderName.value = '';
+    winningCheckoutUrl.value = '';
+    winConfirmed.value = false;
+    winConfirmFailed.value = false;
+    auctionActive.value = false;
+    auctionItemId.value = '';
+    currentBidPrice.value = 0.0;
     isFollowingHost.value = false;
     isLiked.value = false;
     likeCount.value = 0;
