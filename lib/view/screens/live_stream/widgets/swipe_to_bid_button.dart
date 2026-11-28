@@ -39,6 +39,15 @@ class _SwipeToBidButtonState extends State<SwipeToBidButton>
   double _dragOffset = 0.0;
   bool _completedTriggered = false;
 
+  // Raw pointer tracking. The whole pill is the drag area and pointer events
+  // are read directly (Listener), so a scrolling parent or a swipe that
+  // starts beside the small knob can no longer steal the gesture.
+  int? _pointer;
+  double _startX = 0.0;
+  double _lastX = 0.0;
+  Duration _lastTime = Duration.zero;
+  double _velocity = 0.0;
+
   // Knob diameter (slightly smaller than container height for padding)
   double get _knobSize => (widget.height - 8.h).clamp(36.0, 42.0);
   double get _padding => 4.w;
@@ -63,34 +72,51 @@ class _SwipeToBidButtonState extends State<SwipeToBidButton>
     super.dispose();
   }
 
-  void _onDragStart(DragStartDetails details, double maxDrag) {
-    if (widget.isLoading || _completedTriggered) return;
+  void _onPointerDown(PointerDownEvent e) {
+    if (widget.isLoading || _completedTriggered || _pointer != null) return;
     _resetController.stop();
+    _pointer = e.pointer;
+    _startX = e.localPosition.dx - _dragOffset;
+    _lastX = e.localPosition.dx;
+    _lastTime = e.timeStamp;
+    _velocity = 0.0;
   }
 
-  void _onDragUpdate(DragUpdateDetails details, double maxDrag) {
-    if (widget.isLoading || _completedTriggered) return;
+  void _onPointerMove(PointerMoveEvent e, double maxDrag) {
+    if (e.pointer != _pointer || widget.isLoading || _completedTriggered)
+      return;
+    final dt = (e.timeStamp - _lastTime).inMicroseconds;
+    if (dt > 0) {
+      _velocity = (e.localPosition.dx - _lastX) / dt * 1e6;
+    }
+    _lastX = e.localPosition.dx;
+    _lastTime = e.timeStamp;
+    final before = _dragOffset;
     setState(() {
-      _dragOffset = (_dragOffset + details.delta.dx).clamp(0.0, maxDrag);
+      _dragOffset = (e.localPosition.dx - _startX).clamp(0.0, maxDrag);
     });
+    // Light tick when the knob crosses the halfway point.
+    if (before < maxDrag * 0.5 && _dragOffset >= maxDrag * 0.5) {
+      HapticFeedback.selectionClick();
+    }
+    if (_dragOffset >= maxDrag * 0.8) _triggerSuccess(maxDrag);
+  }
 
-    // Check if dragged past threshold during movement
-    if (_dragOffset >= maxDrag * 0.85 && !_completedTriggered) {
+  void _onPointerUp(double maxDrag) {
+    _pointer = null;
+    if (widget.isLoading || _completedTriggered) return;
+    final progress = maxDrag > 0 ? _dragOffset / maxDrag : 0.0;
+    // Dragged past half way, or a quick flick to the right after a short drag.
+    if (progress >= 0.5 || (_velocity > 300 && progress >= 0.2)) {
       _triggerSuccess(maxDrag);
+    } else if (_dragOffset > 0) {
+      _animateReset(from: _dragOffset, to: 0.0);
     }
   }
 
-  void _onDragEnd(DragEndDetails details, double maxDrag) {
-    if (widget.isLoading || _completedTriggered) return;
-
-    final velocity = details.primaryVelocity ?? 0;
-    final progress = maxDrag > 0 ? _dragOffset / maxDrag : 0.0;
-
-    // Fast flick to right (velocity > 350) or dragged >= 65%
-    if (velocity > 350 || progress >= 0.65) {
-      _triggerSuccess(maxDrag);
-    } else {
-      // Spring back to 0
+  void _onPointerCancel() {
+    _pointer = null;
+    if (!_completedTriggered && _dragOffset > 0) {
       _animateReset(from: _dragOffset, to: 0.0);
     }
   }
@@ -141,134 +167,126 @@ class _SwipeToBidButtonState extends State<SwipeToBidButton>
     final isOutbid = widget.isOutbid;
     final formattedAmount = "\$${widget.amount.toStringAsFixed(0)}";
 
-    return Container(
-      width: w,
-      height: h,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(h / 2),
-        color: isOutbid ? const Color(0xFFE5484D) : const Color(0xFF8B9BFF),
-      ),
-      child: Stack(
-        alignment: Alignment.centerLeft,
-        children: [
-          // Dynamic slide fill behind knob
-          if (progress > 0)
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: (_dragOffset + knobDiameter + _padding).clamp(0.0, w),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(h / 2),
-                  color: Colors.white.withValues(alpha: 0.18),
+    return Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: _onPointerDown,
+      onPointerMove: (e) => _onPointerMove(e, maxDrag),
+      onPointerUp: (_) => _onPointerUp(maxDrag),
+      onPointerCancel: (_) => _onPointerCancel(),
+      child: Container(
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(h / 2),
+          color: isOutbid ? const Color(0xFFE5484D) : const Color(0xFF8B9BFF),
+        ),
+        child: Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            // Dynamic slide fill behind knob
+            if (progress > 0)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: (_dragOffset + knobDiameter + _padding).clamp(0.0, w),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(h / 2),
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
                 ),
               ),
-            ),
 
-          // Track Label (Center text that gently fades as user slides)
-          Positioned.fill(
-            child: Padding(
-              padding: EdgeInsets.only(left: knobDiameter + 8.w, right: 12.w),
-              child: Opacity(
-                opacity: (1.0 - (progress * 1.5)).clamp(0.0, 1.0),
-                child: Center(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          isOutbid ? "Outbid · bid " : "Swipe to bid ",
-                          style: TextStyle(
-                            color: isOutbid
-                                ? Colors.white.withValues(alpha: 0.85)
-                                : const Color(
-                                    0xFF0F0B1E,
-                                  ).withValues(alpha: 0.75),
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w500,
+            // Track Label (Center text that gently fades as user slides)
+            Positioned.fill(
+              child: Padding(
+                padding: EdgeInsets.only(left: knobDiameter + 8.w, right: 12.w),
+                child: Opacity(
+                  opacity: (1.0 - (progress * 1.5)).clamp(0.0, 1.0),
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            isOutbid ? "Outbid · bid " : "Swipe to bid ",
+                            style: TextStyle(
+                              color: isOutbid
+                                  ? Colors.white.withValues(alpha: 0.85)
+                                  : const Color(
+                                      0xFF0F0B1E,
+                                    ).withValues(alpha: 0.75),
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        Text(
-                          formattedAmount,
-                          style: TextStyle(
-                            color: isOutbid
-                                ? Colors.white
-                                : const Color(0xFF0F0B1E),
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w700,
+                          Text(
+                            formattedAmount,
+                            style: TextStyle(
+                              color: isOutbid
+                                  ? Colors.white
+                                  : const Color(0xFF0F0B1E),
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
 
-          // Draggable Knob / Slider Thumb
-          Positioned(
-            left: _padding + _dragOffset,
-            child: GestureDetector(
-              onHorizontalDragStart: (d) => _onDragStart(d, maxDrag),
-              onHorizontalDragUpdate: (d) => _onDragUpdate(d, maxDrag),
-              onHorizontalDragEnd: (d) => _onDragEnd(d, maxDrag),
-              // If user taps instead of dragging, give a smooth nudge animation
-              onTap: () {
-                if (!widget.isLoading && !_completedTriggered) {
-                  HapticFeedback.selectionClick();
-                  _animateReset(from: 0.0, to: 24.w, curve: Curves.easeOut);
-                  Future.delayed(const Duration(milliseconds: 160), () {
-                    if (mounted) {
-                      _animateReset(from: 24.w, to: 0.0, curve: Curves.easeIn);
-                    }
-                  });
-                }
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: knobDiameter,
-                height: knobDiameter,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.28),
-                      blurRadius: 6,
-                      offset: const Offset(1, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: widget.isLoading
-                      ? SizedBox(
-                          width: 16.r,
-                          height: 16.r,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              isOutbid
-                                  ? const Color(0xFFE5484D)
-                                  : const Color(0xFF0F0B1E),
+            // Draggable Knob / Slider Thumb
+            Positioned(
+              left: _padding + _dragOffset,
+              child: IgnorePointer(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: knobDiameter,
+                  height: knobDiameter,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.28),
+                        blurRadius: 6,
+                        offset: const Offset(1, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: widget.isLoading
+                        ? SizedBox(
+                            width: 16.r,
+                            height: 16.r,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isOutbid
+                                    ? const Color(0xFFE5484D)
+                                    : const Color(0xFF0F0B1E),
+                              ),
                             ),
+                          )
+                        : Icon(
+                            Icons.arrow_forward_rounded,
+                            color: isOutbid
+                                ? const Color(0xFFE5484D)
+                                : const Color(0xFF0F0B1E),
+                            size: 18.sp,
                           ),
-                        )
-                      : Icon(
-                          Icons.arrow_forward_rounded,
-                          color: isOutbid
-                              ? const Color(0xFFE5484D)
-                              : const Color(0xFF0F0B1E),
-                          size: 18.sp,
-                        ),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
