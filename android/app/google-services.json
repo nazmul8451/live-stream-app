@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "123456789012",
-    "project_id": "culturecards-live-stream",
-    "storage_bucket": "culturecards-live-stream.appspot.com"
+    "project_number": "443707726754",
+    "project_id": "areis-b73bd",
+    "storage_bucket": "areis-b73bd.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789012:android:abcdef1234567890",
+        "mobilesdk_app_id": "1:443707726754:android:bd05c837704107888070fb",
         "android_client_info": {
           "package_name": "com.culturecards.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDummyKeyForLiveStreamApp"
+          "current_key": "AIzaSyAXcx_MkLt2gxTfMte5bz4q3ebJ14kjLOc"
         }
       ],
       "services": {

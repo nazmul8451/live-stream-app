@@ -25,10 +25,18 @@ void main() async {
   };
 
   // 1. Load environment variables safely
+  // `.env` is a hidden file and Android's asset packaging drops it, so every
+  // Android build ran without any config. Fall back to a visible copy.
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
     debugPrint("⚠️ Environment file (.env) load error: $e");
+    try {
+      await dotenv.load(fileName: "assets/config/app.env");
+      debugPrint("✅ Loaded environment from assets/config/app.env");
+    } catch (e2) {
+      debugPrint("⚠️ Environment fallback load error: $e2");
+    }
   }
 
   // 2. Initialize Stripe publishable key safely

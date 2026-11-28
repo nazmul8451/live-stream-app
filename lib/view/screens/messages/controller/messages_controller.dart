@@ -14,6 +14,10 @@ class MessagesController extends GetxController {
   
   var selectedFilter = 0.obs;
   var isLoading = true.obs;
+
+  /// Text typed in the search bar. Applied on top of the selected tab.
+  final searchQuery = ''.obs;
+  final TextEditingController searchTextController = TextEditingController();
   final filters = ["All", "Unread", "Orders", "Trades"];
 
   final chatRooms = <Map<String, dynamic>>[].obs;
@@ -490,8 +494,45 @@ class MessagesController extends GetxController {
     selectedFilter.value = index;
   }
 
+  void setSearch(String value) {
+    searchQuery.value = value.trim().toLowerCase();
+  }
+
+  void clearSearch() {
+    searchTextController.clear();
+    searchQuery.value = '';
+  }
+
+  @override
+  void onClose() {
+    searchTextController.dispose();
+    super.onClose();
+  }
+
+  bool _matchesSearch(Map<String, dynamic> item, String q) {
+    if (q.isEmpty) return true;
+    final List tags = item['tags'] is List ? item['tags'] as List : const [];
+    final haystack = [
+      item['name'],
+      item['message'],
+      ...tags,
+    ].map((e) => (e ?? '').toString().toLowerCase()).join(' ');
+    return haystack.contains(q);
+  }
+
   // --- FILTERED GETTERS ---
+  // Tab filter first, then the search bar on top of it.
   List<Map<String, dynamic>> get filteredUpdates {
+    final q = searchQuery.value;
+    return _tabUpdates.where((u) => _matchesSearch(u, q)).toList();
+  }
+
+  List<Map<String, dynamic>> get filteredChats {
+    final q = searchQuery.value;
+    return _tabChats.where((c) => _matchesSearch(c, q)).toList();
+  }
+
+  List<Map<String, dynamic>> get _tabUpdates {
     final idx = selectedFilter.value;
     if (idx == 0) return updateLogs;
     if (idx == 1) return updateLogs.where((u) => u['hasNew'] == true).toList();
@@ -518,7 +559,7 @@ class MessagesController extends GetxController {
     return updateLogs;
   }
 
-  List<Map<String, dynamic>> get filteredChats {
+  List<Map<String, dynamic>> get _tabChats {
     final idx = selectedFilter.value;
     if (idx == 0) return chatRooms;
     if (idx == 1) return chatRooms.where((c) => c['isSpecial'] == true).toList();

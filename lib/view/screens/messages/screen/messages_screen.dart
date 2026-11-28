@@ -110,7 +110,9 @@ class MessagesScreen extends GetView<MessagesController> {
                                     ),
                                     SizedBox(height: 20.h),
                                     Text(
-                                      "No messages yet",
+                                      msgCtrl.searchQuery.value.isNotEmpty
+                                          ? "No results found"
+                                          : "No messages yet",
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 18.sp,
@@ -119,7 +121,9 @@ class MessagesScreen extends GetView<MessagesController> {
                                     ),
                                     SizedBox(height: 8.h),
                                     Text(
-                                      "When you message a seller or make an offer, the chat shows up here.",
+                                      msgCtrl.searchQuery.value.isNotEmpty
+                                          ? "Nothing matches \"${msgCtrl.searchQuery.value}\". Try a different name or word."
+                                          : "When you message a seller or make an offer, the chat shows up here.",
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: Colors.white38,
@@ -184,6 +188,7 @@ class MessagesScreen extends GetView<MessagesController> {
   }
 
   Widget _buildSearchBar() {
+    final msgCtrl = _ctrl;
     return Container(
       height: 48.h,
       padding: EdgeInsets.symmetric(horizontal: 14.w),
@@ -198,6 +203,9 @@ class MessagesScreen extends GetView<MessagesController> {
           SizedBox(width: 12.w),
           Expanded(
             child: TextField(
+              controller: msgCtrl.searchTextController,
+              onChanged: msgCtrl.setSearch,
+              textInputAction: TextInputAction.search,
               style: TextStyle(color: Colors.white, fontSize: 14.sp),
               decoration: InputDecoration(
                 hintText: "Search chats and updates",
@@ -207,6 +215,15 @@ class MessagesScreen extends GetView<MessagesController> {
               ),
             ),
           ),
+          Obx(() => msgCtrl.searchQuery.value.isEmpty
+              ? const SizedBox.shrink()
+              : GestureDetector(
+                  onTap: msgCtrl.clearSearch,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 8.w),
+                    child: Icon(Icons.close_rounded, color: Colors.white54, size: 20.sp),
+                  ),
+                )),
         ],
       ),
     );

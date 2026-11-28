@@ -32,28 +32,28 @@ class DefaultFirebaseOptions {
 
   static FirebaseOptions get android => FirebaseOptions(
         apiKey: (dotenv.isInitialized ? dotenv.env['FIREBASE_ANDROID_API_KEY'] : null) ??
-            'AIzaSyDummyKeyForLiveStreamApp123456789',
+            'AIzaSyAXcx_MkLt2gxTfMte5bz4q3ebJ14kjLOc',
         appId: (dotenv.isInitialized ? dotenv.env['FIREBASE_ANDROID_APP_ID'] : null) ??
-            '1:123456789012:android:abcdef1234567890',
+            '1:443707726754:android:bd05c837704107888070fb',
         messagingSenderId: (dotenv.isInitialized ? dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] : null) ??
-            '123456789012',
+            '443707726754',
         projectId: (dotenv.isInitialized ? dotenv.env['FIREBASE_PROJECT_ID'] : null) ??
-            'culturecards-live-stream',
+            'areis-b73bd',
         storageBucket: (dotenv.isInitialized ? dotenv.env['FIREBASE_STORAGE_BUCKET'] : null) ??
-            'culturecards-live-stream.appspot.com',
+            'areis-b73bd.firebasestorage.app',
       );
 
   static FirebaseOptions get ios => FirebaseOptions(
         apiKey: (dotenv.isInitialized ? dotenv.env['FIREBASE_IOS_API_KEY'] : null) ??
-            'AIzaSyDummyKeyForLiveStreamApp123456789',
+            'AIzaSyAKWJLt7meehW1A7n7TiK7jnteQtxFMoiA',
         appId: (dotenv.isInitialized ? dotenv.env['FIREBASE_IOS_APP_ID'] : null) ??
-            '1:123456789012:ios:abcdef1234567890',
+            '1:443707726754:ios:55963db1de72b1408070fb',
         messagingSenderId: (dotenv.isInitialized ? dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] : null) ??
-            '123456789012',
+            '443707726754',
         projectId: (dotenv.isInitialized ? dotenv.env['FIREBASE_PROJECT_ID'] : null) ??
-            'culturecards-live-stream',
+            'areis-b73bd',
         storageBucket: (dotenv.isInitialized ? dotenv.env['FIREBASE_STORAGE_BUCKET'] : null) ??
-            'culturecards-live-stream.appspot.com',
+            'areis-b73bd.firebasestorage.app',
         iosBundleId: 'com.culturecards.app',
       );
 

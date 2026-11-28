@@ -47,7 +47,11 @@ class FloatingEmoji {
   });
 }
 
-String get agoraAppId => dotenv.env['AGORA_APP_ID'] ?? "040148b3e0a14154bc4eb74663dabf5f";
+/// Agora App ID. Falls back to the built-in id when `.env` could not be
+/// loaded (it is missing from Android builds), so joining a stream never
+/// depends on that file. The backend also sends the App ID with each token.
+String get agoraAppId =>
+    (dotenv.isInitialized ? dotenv.env['AGORA_APP_ID'] : null) ?? "040148b3e0a14154bc4eb74663dabf5f";
 
 class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   final ApiClient _apiClient = Get.find<ApiClient>();
@@ -1605,7 +1609,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
       await _initAgora(isHost: false, channel: channel);
       isLive.value = true;
       broadcastJoin();
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint("❌ [joinAsViewer] failed: $e\n$st");
       showAppSnackbar("Error", "Failed to join stream: $e", snackPosition: SnackPosition.BOTTOM);
     } finally {
       isLoading.value = false;
