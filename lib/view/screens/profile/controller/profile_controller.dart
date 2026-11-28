@@ -41,6 +41,9 @@ class ProfileController extends GetxController {
   final RxBool sellerVerified = false.obs; // Admin-approved seller status
   final RxBool isSwitchingRole = false.obs;
   final RxString sellerApplicationStatus = 'not_started'.obs;
+  /// Approved application with a Stripe account that can take payments and
+  /// pay out. Without it a seller can list and go live but cannot auction.
+  final RxBool sellerPayoutsReady = false.obs;
 
   Future<void> fetchSellerApplicationStatus() async {
     try {
@@ -48,8 +51,12 @@ class ProfileController extends GetxController {
         '${ApiUrl.sellerApplication}?refresh=false',
       );
       if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['data'];
         sellerApplicationStatus.value =
-            jsonDecode(response.body)['data']?['status'] ?? 'not_started';
+            (data is Map ? data['status'] : null)?.toString() ?? 'not_started';
+        sellerPayoutsReady.value = data is Map &&
+            data['status'] == 'approved' &&
+            data['stripePayoutReady'] == true;
       }
     } catch (error) {
       Get.log('Could not load seller application status: $error');
@@ -158,9 +165,8 @@ class ProfileController extends GetxController {
 
         // sellerVerified is the admin-approval flag (distinct from email verification)
         sellerVerified.value = data['sellerVerified'] ?? false;
-        if (role.value != 'seller') {
-          await fetchSellerApplicationStatus();
-        }
+        // Sellers need it too: it tells them whether payouts are set up.
+        await fetchSellerApplicationStatus();
         Get.log("✅ [Profile] Parsed role: ${role.value} | sellerVerified: ${sellerVerified.value}");
 
         // Stats block per culturecardsllc-server integration guide

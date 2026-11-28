@@ -1299,6 +1299,12 @@ class ProfileScreen extends GetView<ProfileController> {
 
   /// STATE 3 — Verified Seller: all features active
   Widget _buildVerifiedSellerCard() {
+    return Obx(() => _verifiedSellerCardBody(controller.sellerPayoutsReady.value));
+  }
+
+  /// Payouts are the one setup step a verified seller can still be missing.
+  /// Say so plainly and give the button that fixes it.
+  Widget _verifiedSellerCardBody(bool payoutsReady) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       padding: EdgeInsets.all(20.r),
@@ -1330,33 +1336,87 @@ class ProfileScreen extends GetView<ProfileController> {
                       ],
                     ),
                     SizedBox(height: 3.h),
-                    Text('Verified Merchant · All features unlocked', style: TextStyle(color: const Color(0xFF8B9BFF), fontSize: 12.sp, fontWeight: FontWeight.w600)),
+                    Text(
+                      payoutsReady ? 'Verified Merchant · Payouts ready' : 'Verified Merchant · Payouts not set up',
+                      style: TextStyle(
+                        color: payoutsReady ? const Color(0xFF8B9BFF) : const Color(0xFFFFB800),
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
           SizedBox(height: 16.h),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
-            decoration: BoxDecoration(
-              color: const Color(0xFF8B9BFF).withOpacity(0.06),
-              borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(color: const Color(0xFF8B9BFF).withOpacity(0.12)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.check_circle_rounded, color: const Color(0xFF8B9BFF), size: 15.sp),
-                SizedBox(width: 10.w),
-                Expanded(
-                  child: Text(
-                    'Your seller account is fully active. You can list products and host live auction streams.',
-                    style: TextStyle(color: const Color(0xFF8B9BFF).withOpacity(0.9), fontSize: 11.sp, fontWeight: FontWeight.w600, height: 1.45),
+          if (payoutsReady)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+              decoration: BoxDecoration(
+                color: const Color(0xFF8B9BFF).withOpacity(0.06),
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: const Color(0xFF8B9BFF).withOpacity(0.12)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle_rounded, color: const Color(0xFF8B9BFF), size: 15.sp),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: Text(
+                      'Your seller account is fully active. You can list products, host live shows and run auctions.',
+                      style: TextStyle(color: const Color(0xFF8B9BFF).withOpacity(0.9), fontSize: 11.sp, fontWeight: FontWeight.w600, height: 1.45),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: EdgeInsets.all(14.r),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFB800).withOpacity(0.07),
+                borderRadius: BorderRadius.circular(16.r),
+                border: Border.all(color: const Color(0xFFFFB800).withOpacity(0.25)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.account_balance_outlined, color: const Color(0xFFFFB800), size: 16.sp),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: Text(
+                          'Set up Stripe payouts to run auctions and get paid. Winners pay you through Stripe, so this comes first.',
+                          style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 11.5.sp, fontWeight: FontWeight.w600, height: 1.45),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12.h),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final hasApplication = controller.sellerApplicationStatus.value != 'not_started';
+                        await Get.toNamed(hasApplication ? AppRoute.sellerOnboardingStatus : AppRoute.sellerApplication);
+                        await controller.fetchProfileData();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFFB800),
+                        foregroundColor: const Color(0xFF0F0B1E),
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
+                      ),
+                      icon: Icon(Icons.open_in_new_rounded, size: 16.sp),
+                      label: Text('Set up payouts', style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           SizedBox(height: 14.h),
           Row(
             children: [
