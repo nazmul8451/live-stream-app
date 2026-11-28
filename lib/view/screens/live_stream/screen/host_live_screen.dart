@@ -1638,6 +1638,29 @@ class _HostLiveScreenState extends State<HostLiveScreen> {
                     );
                   } else {
                     final why = ctrl.lastAuctionError.value;
+                    if (ctrl.lastAuctionErrorNeedsPayouts.value) {
+                      if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
+                      Get.snackbar(
+                        "Set up payouts to auction",
+                        "Winners pay you through Stripe, so your Stripe payouts must be ready first. Your show keeps running while you do it.",
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: const Color(0xFF1E284A),
+                        colorText: Colors.white,
+                        margin: const EdgeInsets.all(12),
+                        duration: const Duration(seconds: 12),
+                        mainButton: TextButton(
+                          onPressed: () {
+                            if (Get.isSnackbarOpen) Get.closeCurrentSnackbar();
+                            ctrl.openPayoutSetup();
+                          },
+                          child: const Text(
+                            "Set up payouts",
+                            style: TextStyle(color: Color(0xFF8B9BFF), fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     showAppSnackbar(
                       "Could not start the auction",
                       why.isNotEmpty ? why : "Please try again.",

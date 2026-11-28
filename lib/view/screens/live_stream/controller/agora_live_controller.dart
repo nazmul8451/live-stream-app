@@ -2477,6 +2477,27 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
 
   /// Why the last "start auction" attempt failed, in words the host can act on.
   final RxString lastAuctionError = ''.obs;
+  /// The last refusal was "set up payouts first": the host gets a button that
+  /// takes them to the right setup screen instead of just a sentence.
+  final RxBool lastAuctionErrorNeedsPayouts = false.obs;
+
+  /// Opens wherever this seller finishes Stripe payouts. Sellers with an
+  /// application go to its status screen (it has "Continue Stripe setup");
+  /// older sellers approved before applications existed start the
+  /// application, which hands them straight to Stripe.
+  Future<void> openPayoutSetup() async {
+    var hasApplication = false;
+    try {
+      final res = await _apiClient.getData('${ApiUrl.sellerApplication}?refresh=false');
+      if (res.statusCode == 200) {
+        final b = jsonDecode(res.body);
+        final d = b is Map ? b['data'] : null;
+        final status = d is Map ? (d['status'] ?? '').toString() : '';
+        hasApplication = d is Map && status.isNotEmpty && status != 'none' && status != 'not_started';
+      }
+    } catch (_) {}
+    Get.toNamed(hasApplication ? AppRoute.sellerOnboardingStatus : AppRoute.sellerApplication);
+  }
 
   /// The backend explains refusals ("This item is already being auctioned.",
   /// "sold out", "only the host can..."). Show that instead of a bare code.
@@ -2501,6 +2522,7 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
   }) async {
     isLoading.value = true;
     lastAuctionError.value = '';
+    lastAuctionErrorNeedsPayouts.value = false;
     try {
       if (productId.isNotEmpty && streamId.value.isNotEmpty) {
         this.bidIncrement.value = bidIncrement;
@@ -2586,6 +2608,8 @@ class AgoraLiveController extends GetxController with WidgetsBindingObserver {
           itemRes,
           'The server could not start the auction (error ${itemRes.statusCode}).',
         );
+        lastAuctionErrorNeedsPayouts.value =
+            itemRes.statusCode == 409 && lastAuctionError.value.toLowerCase().contains('payout');
         debugPrint("❌ [startAuction] ${itemRes.statusCode}: ${itemRes.body}");
       } else {
         lastAuctionError.value = 'No show is running, or no product was chosen.';
